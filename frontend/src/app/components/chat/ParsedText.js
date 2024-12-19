@@ -1,26 +1,30 @@
 import React from "react";
 import Image from "next/image";
 
+// Event name constant for emote changes
+const EMOTE_CHANGE_EVENT = 'emoteChange';
+
 export function ParsedText({ message, screenshot }) {
-  const processMessage = (message) => {
+  // Process emotion tags at component level
+  const emoteRegex = /\[(neutral|happy|think|panic|celebrate|tired|disappointed|focused|confused|excited)\]/g;
+  const emoteMatch = message.match(emoteRegex);
+  const currentEmote = emoteMatch ? emoteMatch[0].slice(1, -1) : null;
+
+  // Handle emote change in useEffect
+  React.useEffect(() => {
+    if (currentEmote) {
+      window.dispatchEvent(new CustomEvent(EMOTE_CHANGE_EVENT, { 
+        detail: { emote: currentEmote }
+      }));
+    }
+  }, [currentEmote]);
+
+  const processMessage = (text) => {
     const processed = [];
     let currentText = '';
     let codeBlock = null;
     let language = "";
 
-    // Process emotion tags
-    const emoteRegex = /\[(neutral|happy|think|panic|celebrate|tired|disappointed|focused|confused|excited)\]/g;
-    const emoteMatch = message.match(emoteRegex);
-    if (emoteMatch) {
-      const emote = emoteMatch[0].slice(1, -1); // Remove brackets
-      window.dispatchEvent(new CustomEvent('emoteChange', { 
-        detail: { emote }
-      }));
-    }
-
-    // Remove emotion tags from the message for display
-    message = message.replace(emoteRegex, '');
-    
     // Helper to push accumulated text
     const pushText = () => {
       if (currentText) {
@@ -30,7 +34,7 @@ export function ParsedText({ message, screenshot }) {
     };
 
     // Split message into lines for processing
-    const lines = message.split("\n").filter(line => line.trim() !== '');
+    const lines = text.split("\n").filter(line => line.trim() !== '');
     
     lines.forEach((line, lineIndex) => {
       if (line.startsWith("```")) {
@@ -139,7 +143,9 @@ export function ParsedText({ message, screenshot }) {
     }
   };
 
-  const contentBlocks = processMessage(message);
+  // Remove emotion tags from the message before processing
+  const cleanedMessage = message.replace(emoteRegex, '');
+  const contentBlocks = processMessage(cleanedMessage);
 
   return (
     <div className="parsed-text">

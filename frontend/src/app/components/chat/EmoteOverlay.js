@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 
+// Event name constant for emote changes
+const EMOTE_CHANGE_EVENT = 'emoteChange';
+
 export default function EmoteOverlay({ character }) {
   const [currentEmote, setCurrentEmote] = useState('neutral');
   const [videoIndex, setVideoIndex] = useState(0);
@@ -88,8 +91,8 @@ export default function EmoteOverlay({ character }) {
       }
     };
 
-    window.addEventListener('emoteChange', handleEmoteChange);
-    return () => window.removeEventListener('emoteChange', handleEmoteChange);
+    window.addEventListener(EMOTE_CHANGE_EVENT, handleEmoteChange);
+    return () => window.removeEventListener(EMOTE_CHANGE_EVENT, handleEmoteChange);
   }, []);
 
   return (

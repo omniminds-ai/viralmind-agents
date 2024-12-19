@@ -23,7 +23,7 @@ export default function SocialIcons() {
         <FaTelegramPlane size={30} className="pointer" />
       </a>
       <a
-        href="https://solscan.io/account/"
+        href="https://solscan.io/token/HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump"
         target="_blank"
         className="pointer imgIcon"
       >
