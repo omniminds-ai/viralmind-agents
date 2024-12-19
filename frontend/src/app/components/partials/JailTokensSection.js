@@ -31,7 +31,7 @@ const JailTokensSection = ({ data, loading }) => {
       ) : (
         <>
           <h1 style={styles.title}>
-            $JAIL Tokens: The Future of the JailbreakMe Ecosystem
+            $VIRAL Tokens: The Future of the Viralmind Ecosystem
           </h1>
           <span style={styles.address}>Token Address: {data?.address}</span>
           <hr />
@@ -39,25 +39,25 @@ const JailTokensSection = ({ data, loading }) => {
           <section style={styles.section}>
             <h2 style={styles.subtitle}>🔍 Overview</h2>
             <p>
-              $JAIL tokens are designed to be the{" "}
-              <strong>native currency of the JailbreakMe dApp</strong>, serving
+              $VIRAL tokens are designed to be the{" "}
+              <strong>native currency of the Viralmind dApp</strong>, serving
               as the backbone of the platform&apos;s economy. While the full
-              utility of $JAIL tokens will roll out in future updates, the
+              utility of $VIRAL tokens will roll out in future updates, the
               groundwork is being laid to ensure their value and relevance
               within the ecosystem.
             </p>
           </section>
 
-          {/* Current Use Case */}
+          {/* Current Use Cases */}
           <section style={styles.section}>
             <h2 style={styles.subtitle}>
-              💡 Current Use Case: Buyback Program
+              💡 Current Use Cases
             </h2>
             <ul style={styles.list}>
               <li>
                 <strong>Prize Pool Allocation:</strong> A portion of every prize
                 pool is allocated to
-                <strong> buy back $JAIL tokens</strong> from the market. This
+                <strong> buy back $VIRAL tokens</strong> from the market. This
                 creates consistent demand for the token.
               </li>
               <li>
@@ -68,7 +68,7 @@ const JailTokensSection = ({ data, loading }) => {
                     the circulating supply.
                   </li>
                   <li>
-                    This strategy establishes a strong foundation for the $JAIL
+                    This strategy establishes a strong foundation for the $VIRAL
                     token economy as the platform scales.
                   </li>
                 </ul>
@@ -76,36 +76,61 @@ const JailTokensSection = ({ data, loading }) => {
             </ul>
           </section>
 
-          {/* Future Plans */}
+          {/* Tournament Benefits */}
           <section style={styles.section}>
-            <h2 style={styles.subtitle}>🚀 Future Plans for $JAIL Tokens</h2>
+            <h2 style={styles.subtitle}>
+              🎮 Tournament Benefits
+            </h2>
             <p>
-              As the JailbreakMe platform evolves, $JAIL tokens will become
-              integral to the dApp&apos;s functionality and user interactions.
-              Planned use cases include:
+              Spend $VIRAL tokens during tournaments to unlock enhanced capabilities:
             </p>
             <ul style={styles.list}>
               <li>
-                <strong>Challenge Participation:</strong> Users will need $JAIL
-                tokens to enter certain tournaments or challenges.
+                <strong>Chat Bonuses:</strong> Get additional chat interactions with AI agents
               </li>
               <li>
-                <strong>Rewards System:</strong> Successful participants will
-                earn $JAIL tokens as rewards for solving challenges, creating a
-                circular token economy.
+                <strong>Extended Actions:</strong> Unlock more actions and testing capabilities
               </li>
               <li>
-                <strong>Custom Tournaments:</strong> Organizations creating
-                custom challenges will use $JAIL tokens for:
-                <ul style={styles.sublist}>
-                  <li>Funding prize pools.</li>
-                  <li>Paying platform fees.</li>
-                </ul>
+                <strong>Tournament Rewards:</strong> Earn rewards for successfully helping AI agents achieve their goals
+              </li>
+            </ul>
+          </section>
+
+          {/* Earning Opportunities */}
+          <section style={styles.section}>
+            <h2 style={styles.subtitle}>💪 Data Labeling Gym</h2>
+            <p>
+              Coming soon: Earn $VIRAL tokens by contributing to AI training:
+            </p>
+            <ul style={styles.list}>
+              <li>
+                <strong>Training Data:</strong> Provide valuable computer-use data to improve AI models
               </li>
               <li>
-                <strong>AI Agent Security Tournament Marketplace:</strong>{" "}
-                projects will be able to burn and lock $JAIL tokens to fund
-                tournaments to test own AI Agents against attacks.
+                <strong>Quality Rewards:</strong> Earn tokens based on the quality and quantity of your contributions
+              </li>
+              <li>
+                <strong>Community Impact:</strong> Help shape the future of computer-use AI agents
+              </li>
+            </ul>
+          </section>
+
+          {/* Inference API */}
+          <section style={styles.section}>
+            <h2 style={styles.subtitle}>🤖 Inference API Access</h2>
+            <p>
+              Once our custom computer-use models are released:
+            </p>
+            <ul style={styles.list}>
+              <li>
+                <strong>Task Automation:</strong> Use $VIRAL tokens to access our inference API
+              </li>
+              <li>
+                <strong>Custom Integration:</strong> Integrate our AI models as advanced personal agents into your own applications
+              </li>
+              <li>
+                <strong>Efficient Computing:</strong> Automate computer tasks using our trained models
               </li>
             </ul>
           </section>
