@@ -1,0 +1,12 @@
+.DS_Store
+~/docker-secrets
+~/run/secrets
+/run/secrets
+transactionDetails
+refund.sh
+backend/secrets
+backend/target
+vm/storage/*
+.env
+docker-compose.dev.yml
+docker-compose.yml
