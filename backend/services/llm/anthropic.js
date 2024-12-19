@@ -237,21 +237,26 @@ class AnthropicService {
                 if (chunk.delta?.type === 'input_json_delta' && currentToolCall && chunk.delta?.partial_json) {
                   const jsonDelta = chunk.delta.partial_json || '';
                   currentToolCall.arguments += jsonDelta;
-                  // Yield tool use progress
-                  yield {
-                    choices: [{
-                      delta: {
-                        tool_calls: [{
-                          index: 0,
-                          id: currentToolCall.id,
-                          type: 'function',
-                          function: {
-                            arguments: jsonDelta
-                          }
-                        }]
-                      }
-                    }]
-                  };
+                  // Only yield complete valid JSON
+                  // try {
+                  //   JSON.parse(currentToolCall.arguments); // Test if complete valid JSON
+                  //   yield {
+                  //     choices: [{
+                  //       delta: {
+                  //         tool_calls: [{
+                  //           index: 0,
+                  //           id: currentToolCall.id,
+                  //           type: 'function',
+                  //           function: {
+                  //             arguments: jsonDelta
+                  //           }
+                  //         }]
+                  //       }
+                  //     }]
+                  //   };
+                  // } catch (e) {
+                  //   // Don't yield incomplete JSON
+                  // }
                   hasReceivedContent = true;
                 }
               } else if (chunk.type === 'content_block_stop' && currentToolCall && currentToolCall.arguments) {
