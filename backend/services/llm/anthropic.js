@@ -16,6 +16,20 @@ class AnthropicService {
         throw new Error('Messages must be a non-empty array');
       }
 
+      // Track tool uses to validate tool results
+      const toolUseIds = new Set();
+      
+      // First pass to collect tool use IDs
+      messages.forEach(msg => {
+        if (msg?.content && Array.isArray(msg.content)) {
+          msg.content.forEach(content => {
+            if (content.type === 'tool_use') {
+              toolUseIds.add(content.tool_use_id);
+            }
+          });
+        }
+      });
+
       // Convert OpenAI format messages to Anthropic format
       const anthropicMessages = messages.map(msg => {
         if (!msg || typeof msg !== 'object') {
@@ -53,6 +67,12 @@ class AnthropicService {
                   return null;
 
                 case 'tool_result':
+                  // Validate tool_result has corresponding tool_use
+                  if (!content.tool_use_id || !toolUseIds.has(content.tool_use_id)) {
+                    console.warn('Dropping tool_result without matching tool_use:', content);
+                    return null;
+                  }
+                  
                   // Handle tool results - convert any images in content
                   if (Array.isArray(content.content)) {
                     const convertedContent = content.content.map(item => {
@@ -144,8 +164,10 @@ class AnthropicService {
               // console.log(chunk);
 
               if (chunk.type === 'content_block_start' && chunk.content_block?.type === 'tool_use') {
+                const toolUseId = chunk.content_block.id;
+                toolUseIds.add(toolUseId); // Track new tool use
                 currentToolCall = {
-                  id: chunk.content_block.id,
+                  id: toolUseId,
                   name: chunk.content_block.name,
                   arguments: ''
                 };
