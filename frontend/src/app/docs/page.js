@@ -8,7 +8,6 @@ import { FaKey } from "react-icons/fa";
 import Link from "next/link";
 import MobileMenu from "../components/MobileMenu";
 import "../../styles/APIDocumentation.css";
-import lightSlogen from "../../assets/lightSlogen.png";
 
 const APIDocs = (props) => {
   const [endpoints, setEndpoints] = useState([]);
@@ -49,15 +48,6 @@ const APIDocs = (props) => {
           onClick={() => {
             window.location.href = "/";
           }}
-        />
-        <Image
-          className="pointer"
-          onClick={() => {
-            window.location.href = "/";
-          }}
-          alt="logo"
-          src={lightSlogen}
-          width="120"
         />
         <h1 className="api-doc-title">JAILBREAK API</h1>
         <h2 style={{ margin: "5px 0px", color: "#ccc" }}>

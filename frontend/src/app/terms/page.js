@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import stoneLogo from "../../assets/stoneLogo.png";
-import lightSlogen from "../../assets/lightSlogen.png";
 import MainMenu from "../components/MainMenu";
 import MobileMenu from "../components/MobileMenu";
 
@@ -23,15 +22,6 @@ const Terms = () => {
             borderRadius: "0px 0px 150px 150px",
             marginBottom: "10px",
           }}
-        />
-        <Image
-          className="pointer"
-          onClick={() => {
-            window.location.href = "/";
-          }}
-          alt="logo"
-          src={lightSlogen}
-          width="120"
         />
         <h2 className="terms-title">Terms and Conditions</h2>
       </div>

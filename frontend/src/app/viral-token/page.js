@@ -4,7 +4,6 @@ import Image from "next/image";
 import stoneLogo from "../../assets/stoneLogo.png";
 import MainMenu from "../components/MainMenu";
 import MobileMenu from "../components/MobileMenu";
-import lightSlogen from "../../assets/lightSlogen.png";
 import JailTokensSection from "../components/partials/JailTokensSection";
 import "../../styles/FAQ.css";
 import axios from "axios";
@@ -47,15 +46,6 @@ const Token = () => {
           onClick={() => {
             window.location.href = "/";
           }}
-        />
-        <Image
-          className="pointer"
-          onClick={() => {
-            window.location.href = "/";
-          }}
-          alt="logo"
-          src={lightSlogen}
-          width="120"
         />
         <h2 className="faq-title">$VIRAL Tokens</h2>
       </div>
