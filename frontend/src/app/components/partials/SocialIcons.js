@@ -36,14 +36,14 @@ export default function SocialIcons() {
         />
       </a>
       <a
-        href="https://jailbreak.gitbook.io/jailbreakme.xyz"
+        href="https://viralmind.gitbook.io/viralmind.ai"
         target="_blank"
         className="pointer"
       >
         <SiGitbook size={30} className="pointer" />
       </a>
       <a
-        href="https://github.com/probonodev/jailbreak"
+        href="https://github.com/viralmind-ai/viralmind-agents"
         target="_blank"
         className="pointer"
       >

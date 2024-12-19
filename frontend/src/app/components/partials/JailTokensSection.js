@@ -22,9 +22,9 @@ const JailTokensSection = ({ data, loading }) => {
         >
           <div style={{ display: "block" }}>
             <div className="page-loader" style={{ textAlign: "center" }}>
-              <BarLoader color="black" size={150} cssOverride={override} />
+              <BarLoader color="#ccc" size={150} cssOverride={override} />
               <br />
-              <span style={{ color: "black" }}>Loading...</span>
+              <span style={{ color: "#ccc" }}>Loading...</span>
             </div>
           </div>
         </div>
@@ -34,7 +34,6 @@ const JailTokensSection = ({ data, loading }) => {
             $VIRAL Tokens: The Future of the Viralmind Ecosystem
           </h1>
           <span style={styles.address}>Token Address: {data?.address}</span>
-          <hr />
           {/* Overview Section */}
           <section style={styles.section}>
             <h2 style={styles.subtitle}>🔍 Overview</h2>
@@ -143,43 +142,89 @@ const JailTokensSection = ({ data, loading }) => {
 // Styles
 const styles = {
   container: {
-    fontFamily: "'Arial', sans-serif",
-    lineHeight: "1.6",
-    color: "#333",
-    width: "70%",
-    margin: "0",
-    padding: "0px 20px 20px 20px",
-    backgroundColor: "#f9f9f9",
-    borderRadius: "10px",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+    width: "100%",
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "20px",
+    color: "#fff",
   },
   title: {
-    fontSize: "28px",
+    fontSize: "32px",
     fontWeight: "bold",
-    color: "#007BFF",
-    textAlign: "left",
-    marginBottom: "0px",
+    color: "#09bf99",
+    marginBottom: "24px",
+    textAlign: "center",
   },
   subtitle: {
-    fontSize: "22px",
+    fontSize: "24px",
     fontWeight: "bold",
-    color: "#444",
-    marginBottom: "10px",
+    color: "#09bf99",
+    marginBottom: "20px",
+    padding: "16px",
+    borderRadius: "8px",
+    background: "linear-gradient(to right, rgba(9,191,153,0.2), rgba(0,0,0,0.5))",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
   },
   section: {
-    marginBottom: "20px",
+    marginBottom: "40px",
+    background: "linear-gradient(145deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%)",
+    padding: "24px",
+    borderRadius: "12px",
+    border: "1px solid rgba(9,191,153,0.1)",
+    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+    transition: "transform 0.2s ease",
+    "&:hover": {
+      transform: "translateY(-2px)",
+    }
   },
   list: {
     listStyleType: "none",
     padding: "0",
+    color: "#ccc",
+    "& li": {
+      marginBottom: "12px",
+      paddingLeft: "20px",
+      position: "relative",
+      "&:before": {
+        content: "•",
+        color: "#09bf99",
+        position: "absolute",
+        left: "0",
+      }
+    },
+    "& strong": {
+      color: "#fff",
+      fontWeight: "600",
+    }
   },
   sublist: {
-    listStyleType: "circle",
+    listStyleType: "none",
     marginLeft: "20px",
+    marginTop: "8px",
+    color: "#ccc",
+    "& li": {
+      marginBottom: "8px",
+      paddingLeft: "16px",
+      position: "relative",
+      "&:before": {
+        content: "○",
+        color: "#09bf99",
+        position: "absolute",
+        left: "0",
+      }
+    }
   },
   address: {
     fontSize: "16px",
-    color: "#666",
+    color: "#ccc",
+    background: "linear-gradient(to right, rgba(9,191,153,0.2), rgba(0,0,0,0.5))",
+    padding: "12px 20px",
+    borderRadius: "8px",
+    display: "inline-block",
+    marginBottom: "32px",
+    border: "1px solid rgba(9,191,153,0.1)",
   },
 };
 
