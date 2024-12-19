@@ -30,17 +30,16 @@ class AnthropicService {
         }
       });
 
-      // Convert OpenAI format messages to Anthropic format
+      // Convert OpenAI format messages to Anthropic format and filter empty messages
       const anthropicMessages = messages.map(msg => {
         if (!msg || typeof msg !== 'object') {
           throw new Error('Invalid message format');
         }
 
-        // Handle messages with image content
+        // Handle messages with array content
         if (Array.isArray(msg.content)) {
-          return {
-            role: msg.role === 'assistant' ? 'assistant' : 'user',
-            content: msg.content.map(content => {
+          // Convert and filter content items
+          const convertedContent = msg.content.map(content => {
               if (!content || typeof content !== 'object') {
                 throw new Error('Invalid content format');
               }
@@ -101,17 +100,42 @@ class AnthropicService {
                   console.warn('Unknown content type:', content.type);
                   return null;
               }
-            }).filter(Boolean) // Remove any null values from conversion
+            }).filter(Boolean); // Remove any null values from conversion
+
+          // Only create message if there's valid content after filtering
+          if (convertedContent.length === 0) {
+            console.warn('Message content array became empty after filtering invalid items');
+            return null;
+          }
+
+          return {
+            role: msg.role === 'assistant' ? 'assistant' : 'user',
+            content: convertedContent
           };
         }
         
-        
         // Handle text-only messages
+        if (!msg.content || (typeof msg.content === 'string' && msg.content.trim() === '')) {
+          console.warn('Dropping message with empty text content');
+          return null;
+        }
+        
         return {
           role: msg.role === 'assistant' ? 'assistant' : 'user',
           content: msg.content
         };
+      }).filter(msg => {
+        // Filter out messages with empty content
+        if (Array.isArray(msg.content)) {
+          return msg.content.length > 0;
+        }
+        return msg.content && msg.content.trim() !== '';
       });
+
+      // Ensure we have valid messages
+      if (anthropicMessages.length === 0) {
+        throw new Error('No valid messages after filtering empty content');
+      }
 
       // Track if we've received any content
       let hasReceivedContent = false;
