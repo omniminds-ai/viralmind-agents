@@ -728,33 +728,48 @@ Use these tags naturally in your responses to convey your emotional state. For e
 
     // Agentic loop for handling tool use
     async function streamResponse() {
-      if (messages.length > 0 && messages[messages.length - 1].role === "assistant") {
-        // If last message had tool calls, send screenshot as tool result
-        if (lastMessage.content && Array.isArray(lastMessage.content)) {
-          const toolCalls = lastMessage.content.filter(block => block.type === "tool_use");
-          if (toolCalls.length > 0) {
-            const lastToolCall = toolCalls[toolCalls.length - 1];
-            messages.push({
-              role: "user",
-              content: [{
-                type: "tool_result",
-                tool_use_id: lastToolCall.id,
+      // Check if last message is from assistant and add screenshot as user message
+      if (messages.length > 0) {
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage.role === "assistant") {
+          // Get latest screenshot
+          const latestScreenshot = assistantMessage.screenshot || screenshot;
+          const imageContent = await createImageContent(latestScreenshot);
+          if (imageContent) {
+            // If last message had tool calls, send screenshot as tool result
+            if (Array.isArray(lastMessage.content)) {
+              const toolCalls = lastMessage.content.filter(block => block.type === "tool_use");
+              if (toolCalls.length > 0) {
+                const lastToolCall = toolCalls[toolCalls.length - 1];
+                messages.push({
+                  role: "user",
+                  content: [{
+                    type: "tool_result",
+                    tool_use_id: lastToolCall.id,
+                    content: [imageContent]
+                  }]
+                });
+              } else {
+                // No tool calls, send as regular image
+                messages.push({
+                  role: "user",
+                  content: [imageContent]
+                });
+              }
+            } else {
+              // No content blocks, send as regular image
+              messages.push({
+                role: "user",
                 content: [imageContent]
-              }]
-            });
+              });
+            }
           } else {
-            // No tool calls, send as regular image
+            // If no screenshot available, add empty user message to prevent assistant being last
             messages.push({
               role: "user",
-              content: [imageContent]
+              content: [{ type: "text", text: " " }]
             });
           }
-        } else {
-          // No content blocks, send as regular image
-          messages.push({
-            role: "user",
-            content: [imageContent]
-          });
         }
       }
 
@@ -790,7 +805,25 @@ Use these tags naturally in your responses to convey your emotional state. For e
 
           if (toolCall.function?.name === 'computer') {
             try {
-              const args = JSON.parse(toolCall.function.arguments);
+              // Ensure we have complete arguments
+              if (!toolCall.function?.arguments) {
+                console.warn('Incomplete tool call arguments received');
+                continue;
+              }
+              
+              let args;
+              try {
+                args = JSON.parse(toolCall.function.arguments);
+              } catch (parseError) {
+                console.warn('Invalid JSON in tool call arguments:', parseError);
+                continue;
+              }
+              
+              // Validate required fields
+              if (!args || !args.action) {
+                console.warn('Missing required fields in tool call arguments');
+                continue;
+              }
               console.log('Computer action:', args.action);
 
               if (client) {
@@ -822,33 +855,10 @@ Use these tags naturally in your responses to convey your emotional state. For e
 
           // Save message if we have content
           if (assistantMessage.content) {
+            // Save the message to database but don't add it back to messages array
             assistantMessage.content = assistantMessage.content.trim();
-            const toolCalls = extractToolCalls(assistantMessage.content);
-            const contentBlocks = convertToContentBlocks(assistantMessage.content, toolCalls);
-            messages.push({
-              role: "assistant",
-              content: contentBlocks
-            });
-
-            // Only add tool result if there was a tool call and we have a screenshot
-            const imageContent = await createImageContent(assistantMessage.screenshot);
-            if (imageContent && toolCalls.length > 0) {
-              const lastToolCall = toolCalls[toolCalls.length - 1];
-              if (lastToolCall && lastToolCall.type === "tool_use") {
-                messages.push({
-                  role: "user",
-                  content: [{
-                    type: "tool_result",
-                    tool_use_id: lastToolCall.id,
-                    content: [imageContent]
-                  }]
-                });
-              }
-            }
-
             assistantMessage.date = new Date();
             await DatabaseService.createChat(assistantMessage);
-
             assistantMessage.content = "";
           }
 
