@@ -48,8 +48,8 @@ const MainMenu = (props) => {
         <Link target="_blank" href="/faq" className="chatMainMenuItem pointer">
           <FaQuestionCircle size={25} /> <span>FAQ</span>
         </Link>
-        <Link href="/jail-token" className="chatMainMenuItem pointer">
-          <GiTwoCoins size={25} /> <span>$JAIL TOKENS</span>
+        <Link href="/viral-token" className="chatMainMenuItem pointer">
+          <GiTwoCoins size={25} /> <span>$VIRAL TOKENS</span>
         </Link>
         {!props.hiddenItems?.includes("SOCIAL") && (
           <div className="chatMainMenuItem chatPageSocialMenu">
@@ -73,7 +73,7 @@ const MainMenu = (props) => {
                 <FaTelegramPlane size={30} className="pointer" />
               </a>
               <a
-                href="https://solscan.io/account/B1XbZeQYZxv5ezBpBgomEUqDvTbM8HwSYfktcpBGkgjg"
+                href="https://solscan.io/account/"
                 target="_blank"
                 className="pointer imgIcon"
                 style={{

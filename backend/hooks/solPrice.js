@@ -6,7 +6,7 @@ async function getSolPriceInUSDT() {
   let defaultSolPrice = staticSolPrice;
 
   try {
-    const tokenPage = await DatabaseService.getPages({ name: "jail-token" });
+    const tokenPage = await DatabaseService.getPages({ name: "viral-token" });
     if (tokenPage?.[0]?.content?.sol_price) {
       defaultSolPrice = tokenPage[0].content.sol_price;
     }

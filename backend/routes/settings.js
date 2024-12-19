@@ -10,7 +10,7 @@ router.get("/", async (req, res) => {
     const endpoints = pages.find((page) => page.name === "api-endpoints")
       ?.content?.endpoints;
     const faq = pages.find((page) => page.name === "faq")?.content?.faq;
-    const jailToken = pages.find((page) => page.name === "jail-token")?.content;
+    const jailToken = pages.find((page) => page.name === "viral-token")?.content;
 
     const display_conditions = ["active", "upcoming"];
     const activeChallenge = challenges.find((challenge) =>

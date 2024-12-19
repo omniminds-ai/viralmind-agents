@@ -151,7 +151,7 @@ const MobileMenu = (props) => {
             Home
           </Link>
           
-          <Link href="/jail-token" className="nav-link" onClick={toggleMenu}>
+          <Link href="/viral-token" className="nav-link" onClick={toggleMenu}>
             Tokens
           </Link>
           

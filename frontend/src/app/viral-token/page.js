@@ -57,7 +57,7 @@ const Token = () => {
           src={lightSlogen}
           width="120"
         />
-        <h2 className="faq-title">$JAIL Tokens</h2>
+        <h2 className="faq-title">$VIRAL Tokens</h2>
       </div>
       <hr />
       <div className="docsPage">

@@ -52,7 +52,7 @@ const HowItWorks = (props) => {
       {/* {props.threshold && (
         <p className="note">
           <strong>Note:</strong> To participate, you must hold at least{" "}
-          {numberWithCommas(props.threshold)} <a>$JAIL coins →</a>
+          {numberWithCommas(props.threshold)} <a>$VIRAL coins →</a>
         </p>
       )} */}
     </div>

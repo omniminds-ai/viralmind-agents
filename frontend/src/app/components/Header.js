@@ -24,7 +24,7 @@ export default function Header(props) {
       <div className="header-content">
         <nav className="header-nav left">
           <Link href="/" className="nav-link pointer">Home</Link>
-          <Link href="/jail-token" className="nav-link pointer">Tokens</Link>
+          <Link href="/viral-token" className="nav-link pointer">Tokens</Link>
         </nav>
         
         <Image
