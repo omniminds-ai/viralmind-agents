@@ -43,17 +43,23 @@ export default function Header(props) {
 
         <nav className="header-nav right">
           <Link href="/faq" className="nav-link pointer">FAQ</Link>
-          <Link href={`/break/${props.activeChallenge?.name}`} className="nav-link pointer">
-            Play {props.activeChallenge && (<span className="live-pool">🔴LIVE: <CountUp
-                    start={0}
-                    end={props.usdPrize || 0}
-                    duration={2.75}
-                    decimals={0}
-                    decimal="."
-                    prefix="$"
-                    preserveValue={true}
-                  /> POOL
-                </span>)}
+          <Link 
+            href={`/break/${props.activeChallenge?.name || props.latestConcludedChallenge?.name}`} 
+            className="nav-link pointer"
+          >
+            Play {props.activeChallenge ? (
+              <span className="live-pool">🔴LIVE: <CountUp
+                start={0}
+                end={props.usdPrize || 0}
+                duration={2.75}
+                decimals={0}
+                decimal="."
+                prefix="$"
+                preserveValue={true}
+              /> POOL</span>
+            ) : props.latestConcludedChallenge && (
+              <span className="concluded-pool">📼 REPLAY: ${props.latestConcludedChallenge.usdPrize?.toFixed(2)}</span>
+            )}
           </Link>
         </nav>
       </div>

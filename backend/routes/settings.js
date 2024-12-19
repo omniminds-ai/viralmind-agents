@@ -12,12 +12,40 @@ router.get("/", async (req, res) => {
     const faq = pages.find((page) => page.name === "faq")?.content?.faq;
     const jailToken = pages.find((page) => page.name === "viral-token")?.content;
 
+    const solPrice = await getSolPriceInUSDT();
+
+    // Get active/upcoming challenge
     const display_conditions = ["active", "upcoming"];
-    const activeChallenge = challenges.find((challenge) =>
+    let activeChallenge = challenges.find((challenge) =>
       display_conditions.includes(challenge.status)
     );
 
-    const solPrice = await getSolPriceInUSDT();
+    // Add prize calculation to active challenge if it exists
+    if (activeChallenge) {
+      const prize = activeChallenge.winning_prize || (activeChallenge.entryFee * 100);
+      const usdPrize = prize * solPrice;
+      activeChallenge = {
+        ...activeChallenge,
+        prize,
+        usdPrize
+      };
+    }
+
+    // Get concluded challenges, sorted by most recent first
+    const concludedChallenges = challenges
+      .filter(challenge => challenge.status === "concluded")
+      .sort((a, b) => new Date(b.expiry) - new Date(a.expiry))
+      .map(challenge => {
+        // Try to convert to plain object if it's a Mongoose document
+        const plainChallenge = challenge.toObject ? challenge.toObject() : challenge;
+        const prize = plainChallenge.winning_prize || (plainChallenge.entryFee * 100);
+        const usdPrize = prize * solPrice;
+        return {
+          ...plainChallenge,
+          prize,
+          usdPrize
+        };
+      });
 
     const totalWinningPrize = challenges
       .filter((challenge) => challenge.winning_prize)
@@ -48,6 +76,7 @@ router.get("/", async (req, res) => {
       challenges: challenges,
       jailToken: jailToken,
       activeChallenge: activeChallenge,
+      concludedChallenges: concludedChallenges,
       treasury: totalTreasury,
       total_payout: totalPayout,
       breakAttempts: breakAttempts,

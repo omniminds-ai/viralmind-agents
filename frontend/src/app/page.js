@@ -19,6 +19,8 @@ import "./page.css";
 export default function Home() {
   const [data, setData] = useState(null);
   const [activeChallenge, setActiveChallenge] = useState(null);
+  const [concludedChallenges, setConcludedChallenges] = useState([]);
+  const [latestConcludedChallenge, setLatestConcludedChallenge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [latestScreenshot, setLatestScreenshot] = useState(null);
 
@@ -50,7 +52,14 @@ export default function Home() {
         const response = await axios.get(`/api/settings`);
         const fetchedData = response.data;
         
+        // Set active and concluded challenges
         setActiveChallenge(fetchedData.activeChallenge);
+        setConcludedChallenges(fetchedData.concludedChallenges || []);
+        
+        // Set latest concluded challenge
+        if (fetchedData.concludedChallenges?.length > 0) {
+          setLatestConcludedChallenge(fetchedData.concludedChallenges[0]);
+        }
         
         if (fetchedData.activeChallenge) {
           // Initial screenshot fetch
@@ -93,8 +102,9 @@ export default function Home() {
       {/* Header */}
       <Header 
         activeChallenge={activeChallenge} 
+        latestConcludedChallenge={latestConcludedChallenge}
         usdPrize={activeChallenge?.usdPrize}
-        />
+      />
       
       {/* Hero Section */}
       <div className="hero">
@@ -105,13 +115,13 @@ export default function Home() {
             The first decentralized effort to train and test upcoming computer-use and game-playing AI agents.
           </h1>          
           {/* Start Playing Button */}
-          {activeChallenge && (
+          {(activeChallenge || latestConcludedChallenge) && (
             <Link
-              href={`/break/${activeChallenge?.name}`}
+              href={`/break/${activeChallenge?.name || latestConcludedChallenge?.name}`}
               className="start-playing-link"
             >
               <button className="styledBtn">
-                START PLAYING <FaChevronCircleRight />
+                {activeChallenge ? 'START PLAYING' : 'VIEW LATEST TOURNAMENT'} <FaChevronCircleRight />
               </button>
             </Link>
           )}
@@ -186,10 +196,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Live Tournament View */}
+          {/* Tournament Views */}
+          {/* Active Tournament */}
           {activeChallenge && (
             <div className="live-tournament">
-              {/* Live Tournament Header */}
+              {/* Active Tournament Header */}
               {activeChallenge.status === 'active' && (
                 <div className="live-tournament-header" style={{
                   display: 'flex',
@@ -259,6 +270,79 @@ export default function Home() {
               />
             </div>
           )}
+
+          {/* Concluded Tournaments */}
+          {concludedChallenges.length > 0 && (
+            <div className="concluded-tournaments">
+              <h3 style={{ 
+                color: '#6441a5', 
+                marginTop: '32px',
+                marginBottom: '16px',
+                borderBottom: '1px solid rgba(100, 65, 165, 0.3)',
+                paddingBottom: '8px'
+              }}>
+                📼 Past Tournaments
+              </h3>
+              <div className="tournament-grid">
+                {concludedChallenges.map((challenge, index) => (
+                  <Link 
+                    key={challenge.name} 
+                    href={`/break/${challenge.name}`}
+                    className="concluded-tournament-card"
+                    style={{
+                      backgroundColor: '#18181b',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      transition: 'transform 0.2s',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      textDecoration: 'none',
+                      color: 'inherit'
+                    }}
+                  >
+                    {challenge.image && (
+                      <div style={{
+                        width: '100%',
+                        paddingTop: '56.25%', // 16:9 aspect ratio
+                        position: 'relative',
+                        backgroundColor: '#0e0e10'
+                      }}>
+                        <img 
+                          src={challenge.image}
+                          alt={challenge.title}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div style={{ padding: '12px' }}>
+                      <div style={{ 
+                        fontSize: '16px', 
+                        fontWeight: 'bold',
+                        marginBottom: '4px',
+                        color: '#efeff1'
+                      }}>
+                        {challenge.title}
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px',
+                        color: '#adadb8'
+                      }}>
+                        Prize Pool: ${challenge.usdPrize?.toFixed(2)}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Training & API Section */}
@@ -286,6 +370,31 @@ export default function Home() {
           0% { opacity: 1; }
           50% { opacity: 0.5; }
           100% { opacity: 1; }
+        }
+
+        .tournament-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 20px;
+          margin-top: 16px;
+        }
+
+        .concluded-tournament-card {
+          background-color: #18181b;
+          border-radius: 8px;
+          overflow: hidden;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .concluded-tournament-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 4px 12px rgba(100, 65, 165, 0.2);
+        }
+
+        @media (max-width: 768px) {
+          .tournament-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </main>
