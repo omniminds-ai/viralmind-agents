@@ -96,18 +96,33 @@ class AnthropicService {
                   }
                   return content;
 
+                case 'tool_use':
+                  // Track tool use and pass through
+                  toolUseIds.add(content.tool_use_id);
+                  return content;
+
                 default:
                   console.warn('Unknown content type:', content.type);
                   return null;
               }
             }).filter(Boolean); // Remove any null values from conversion
 
-          // Only create message if there's valid content after filtering
-          if (convertedContent.length === 0) {
+          // Validate converted content
+          if (!convertedContent || convertedContent.length === 0) {
             console.warn('Message content array became empty after filtering invalid items');
             return null;
           }
 
+          // Special handling for messages containing tool_use
+          const hasToolUse = convertedContent.some(item => item.type === 'tool_use');
+          if (hasToolUse) {
+            return {
+              role: 'assistant', // tool_use only comes from assistant
+              content: convertedContent
+            };
+          }
+
+          // Regular message handling
           return {
             role: msg.role === 'assistant' ? 'assistant' : 'user',
             content: convertedContent
@@ -124,12 +139,16 @@ class AnthropicService {
           role: msg.role === 'assistant' ? 'assistant' : 'user',
           content: msg.content
         };
-      }).filter(msg => {
-        // Filter out messages with empty content
+      })
+      .filter(Boolean) // Remove null messages first
+      .filter(msg => {
+        // Then filter out messages with empty content
+        if (!msg || !msg.content) return false;
+        
         if (Array.isArray(msg.content)) {
           return msg.content.length > 0;
         }
-        return msg.content && msg.content.trim() !== '';
+        return typeof msg.content === 'string' && msg.content.trim() !== '';
       });
 
       // Ensure we have valid messages
@@ -187,19 +206,55 @@ class AnthropicService {
               // console.log('Processing chunk type:', chunk.type);
               // console.log(chunk);
 
-              if (chunk.type === 'content_block_start' && chunk.content_block?.type === 'tool_use') {
-                const toolUseId = chunk.content_block.id;
-                toolUseIds.add(toolUseId); // Track new tool use
-                currentToolCall = {
-                  id: toolUseId,
-                  name: chunk.content_block.name,
-                  arguments: ''
-                };
-              } else if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'input_json_delta') {
-                if (currentToolCall) {
-                  currentToolCall.arguments += chunk.delta.partial_json || '';
+              if (chunk.type === 'content_block_start') {
+                if (chunk.content_block?.type === 'tool_use' && chunk.content_block?.id && chunk.content_block?.name) {
+                  const toolUseId = chunk.content_block.id;
+                  toolUseIds.add(toolUseId); // Track new tool use
+                  currentToolCall = {
+                    id: toolUseId,
+                    name: chunk.content_block.name,
+                    arguments: ''
+                  };
+                  // Yield tool use start
+                  yield {
+                    choices: [{
+                      delta: {
+                        tool_calls: [{
+                          index: 0,
+                          id: toolUseId,
+                          type: 'function',
+                          function: {
+                            name: chunk.content_block.name,
+                            arguments: ''
+                          }
+                        }]
+                      }
+                    }]
+                  };
+                  hasReceivedContent = true;
                 }
-              } else if (chunk.type === 'content_block_stop' && currentToolCall) {
+              } else if (chunk.type === 'content_block_delta') {
+                if (chunk.delta?.type === 'input_json_delta' && currentToolCall && chunk.delta?.partial_json) {
+                  const jsonDelta = chunk.delta.partial_json || '';
+                  currentToolCall.arguments += jsonDelta;
+                  // Yield tool use progress
+                  yield {
+                    choices: [{
+                      delta: {
+                        tool_calls: [{
+                          index: 0,
+                          id: currentToolCall.id,
+                          type: 'function',
+                          function: {
+                            arguments: jsonDelta
+                          }
+                        }]
+                      }
+                    }]
+                  };
+                  hasReceivedContent = true;
+                }
+              } else if (chunk.type === 'content_block_stop' && currentToolCall && currentToolCall.arguments) {
                 // When tool call is complete, yield it with accumulated content
                 try {
                   JSON.parse(currentToolCall.arguments); // Validate JSON
