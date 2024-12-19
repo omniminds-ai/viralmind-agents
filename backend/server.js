@@ -31,7 +31,7 @@ app.use(function (req, res, next) {
     "http://localhost:3000",
     "http://localhost:8001",
     "http://18.157.122.205",
-    "https://jailbreakme.xyz",
+    "https://viralmind.ai",
   ];
 
   const origin = req.headers.origin;

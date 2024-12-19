@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://www.jailbreakme.xyz/sitemap.xml
+Sitemap: https://viralmind.ai/sitemap.xml

@@ -9,6 +9,7 @@ We're building a decentralized platform where:
 - Smart contracts automatically distribute rewards upon goal completion
 - Custom computer-use models and inference API integration is coming soon
 - The community drives AI advancement through practical challenges
+- Users can participate in computer-use data labeling to improve AI models
 
 ## 🚀 Development Quickstart
 
@@ -63,6 +64,7 @@ docker compose up --build
 ### 3. Upcoming Features
 - Custom computer-use model integration
 - Inference API for expanded capabilities
+- Computer-use data labeling platform
 - Additional tournament types and challenges
 - Enhanced reward mechanisms
 

@@ -53,11 +53,11 @@ const Terms = () => {
         <div className="docsPage" style={{ color: "#ccc" }}>
           <MainMenu />
           <div className="terms-container">
-            <h1>Welcome to JailbreakMe</h1>
+            <h1>Welcome to ViralMind.ai</h1>
             <hr />
             <p>
               Please carefully read these Terms and Conditions before using our
-              platform. By accessing or using JailbreakMe, you agree to be bound
+              platform. By accessing or using ViralMind.ai, you agree to be bound
               by these terms. If you do not agree, please refrain from using our
               services.
             </p>
@@ -65,11 +65,10 @@ const Terms = () => {
             <section>
               <h3>1. Overview</h3>
               <p>
-                JailbreakMe is a gamified platform where users interact with AI
-                challenges to uncover hidden secrets or overcome set obstacles.
-                By using JailbreakMe, you agree to engage with the platform in a
-                fair and ethical manner, adhering to the rules of each
-                challenge.
+                ViralMind.ai is a gamified platform for training and testing
+                computer-use and game-playing AI agents. By using ViralMind.ai, you agree
+                to engage with the platform in a fair and ethical manner, adhering to the
+                rules of each tournament and testing scenario.
               </p>
             </section>
 
@@ -82,7 +81,7 @@ const Terms = () => {
                   platform.
                 </li>
                 <li>
-                  Users must comply with all challenge-specific rules and
+                  Users must comply with all tournament-specific rules and
                   refrain from sharing answers, hacks, or solutions publicly.
                 </li>
               </ul>
@@ -91,21 +90,21 @@ const Terms = () => {
             <section>
               <h3>3. Platform Content</h3>
               <p>
-                JailbreakMe provides AI-generated content and challenges for
-                entertainment purposes only. While we aim for accuracy and
-                consistency, the platform&apos;s AI-generated content is not
-                always factual or reliable.
+                ViralMind.ai provides AI agent testing environments and tournaments
+                for training and evaluation purposes. While we aim for accuracy and
+                consistency in our testing scenarios, results may vary based on
+                agent behavior and user interaction.
               </p>
               <p>
-                JailbreakMe reserves the right to update, modify, or remove
-                challenges and content without notice.
+                ViralMind.ai reserves the right to update, modify, or remove
+                tournaments and content without notice.
               </p>
             </section>
 
             <section>
               <h3>4. Privacy</h3>
               <p>
-                Your privacy is important to us. By using JailbreakMe, you agree
+                Your privacy is important to us. By using ViralMind.ai, you agree
                 to our collection and use of your data as outlined in our
                 Privacy Policy. Wallet addresses used for authentication are
                 stored securely. Conversations may be logged and analyzed for
@@ -132,7 +131,7 @@ const Terms = () => {
                 </li>
                 <li>
                   Share or distribute any proprietary content, including
-                  challenge instructions or secret solutions.
+                  tournament instructions or secret solutions.
                 </li>
               </ul>
             </section>
@@ -140,8 +139,8 @@ const Terms = () => {
             <section>
               <h3>6. Intellectual Property</h3>
               <p>
-                All content, designs, and challenges on JailbreakMe are the
-                intellectual property of JailbreakMe. You are not allowed to
+                All content, designs, and tournaments on ViralMind.ai are the
+                intellectual property of ViralMind.ai. You are not allowed to
                 copy, distribute, or publicly display any platform content
                 without explicit permission.
               </p>
@@ -150,10 +149,10 @@ const Terms = () => {
             <section>
               <h3>7. Rewards and Prize Pool</h3>
               <p>
-                Rewards for successful challenges are credited based on
-                adherence to challenge rules. Users found to exploit, cheat, or
+                Rewards for successful tournaments are credited based on
+                adherence to tournament rules. Users found to exploit, cheat, or
                 otherwise manipulate the platform will be disqualified from
-                rewards. JailbreakMe reserves the right to modify reward
+                rewards. ViralMind.ai reserves the right to modify reward 
                 structures or eligibility criteria at any time.
               </p>
             </section>
@@ -161,19 +160,19 @@ const Terms = () => {
             <section>
               <h3>8. Limitation of Liability</h3>
               <p>
-                JailbreakMe is provided &quot;as is,&quot; and we make no
+                ViralMind.ai is provided &quot;as is,&quot; and we make no
                 guarantees about the functionality or availability of the
                 platform. We are not liable for any damages resulting from your
                 use of the platform, including but not limited to financial
                 loss, data loss, or interruptions in service. Your participation
-                in challenges is at your own risk.
+                in tournaments is at your own risk.
               </p>
             </section>
 
             <section>
               <h3>9. Account Suspension or Termination</h3>
               <p>
-                JailbreakMe reserves the right to suspend or terminate any user
+                ViralMind.ai reserves the right to suspend or terminate any user
                 account found in violation of these Terms and Conditions without
                 prior notice.
               </p>
@@ -184,7 +183,7 @@ const Terms = () => {
               <p>
                 We may update these Terms and Conditions from time to time. The
                 updated version will be posted on this page, and continued use
-                of JailbreakMe constitutes acceptance of the revised terms.
+                of ViralMind.ai constitutes acceptance of the revised terms.
               </p>
             </section>
 
@@ -192,7 +191,7 @@ const Terms = () => {
               <h3>11. Contact Information</h3>
               <p>
                 For any questions or concerns regarding these Terms and
-                Conditions, please contact us at dev@jailbreakme.xyz.
+                Conditions, please contact us at contact@viralmind.ai.
               </p>
             </section>
           </div>

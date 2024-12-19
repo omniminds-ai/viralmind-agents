@@ -7,16 +7,16 @@ import ClientWalletProvider from "./providers/WalletProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "JailbreakMe",
+  title: "ViralMind.ai",
   description:
-    "JailbreakMe is the first open-source decentralized app where organizations test their AI models and agents while users earn rewards for jailbreaking them.",
+    "ViralMind.ai is the first decentralized platform for training and testing computer-use and game-playing AI agents. Users earn rewards by helping AI agents achieve specified goals.",
   openGraph: {
-    title: "JailbreakMe",
+    title: "ViralMind.ai",
     description:
-      "JailbreakMe is the first open-source decentralized app where organizations test their AI models and agents while users earn rewards for jailbreaking them.",
+      "ViralMind.ai is the first decentralized platform for training and testing computer-use and game-playing AI agents. Users earn rewards by helping AI agents achieve specified goals.",
     images: [
       {
-        url: "https://jailbreakme.xyz/images/stoneLogo.png",
+        url: "https://viralmind.ai/images/stoneLogo.png",
         width: 800,
         height: 800,
         alt: "Jailbreak Logo",
@@ -25,10 +25,10 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "JailbreakMe",
+    title: "ViralMind.ai",
     description:
-      "JailbreakMe is the first open-source decentralized app where organizations test their AI models and agents while users earn rewards for jailbreaking them.",
-    images: ["https://jailbreakme.xyz/images/x_og.jpg"],
+      "ViralMind.ai is the first decentralized platform for training and testing computer-use and game-playing AI agents. Users earn rewards by helping AI agents achieve specified goals.",
+    images: ["https://viralmind.ai/images/x_og.jpg"],
   },
 };
 
@@ -38,11 +38,11 @@ export default function RootLayout({ children }) {
       <head>
         <meta
           property="og:image"
-          content="https://jailbreakme.xyz/images/stoneLogo.png"
+          content="https://viralmind.ai/images/stoneLogo.png"
         />
         <meta
           name="twitter:image"
-          content="https://jailbreakme.xyz/images/x_og.jpg"
+          content="https://viralmind.ai/images/x_og.jpg"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="theme-color" content="#ffffff" />

@@ -31,22 +31,60 @@ class AnthropicService {
                 throw new Error('Invalid content format');
               }
 
-              if (content.type === 'text') {
-                return { type: 'text', text: content.text };
-              } else if (content.type === 'image_url') {
-                return {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: 'image/jpeg',
-                    data: content.image_url.url.split(',')[1] // Remove data URI prefix
+              // Convert content based on type
+              switch (content.type) {
+                case 'text':
+                  return { type: 'text', text: content.text };
+                
+                case 'image_url':
+                  // Convert OpenAI image_url format to Anthropic image format
+                  if (content.image_url?.url) {
+                    const base64Data = content.image_url.url.split(',')[1]; // Remove data URI prefix
+                    return {
+                      type: 'image',
+                      source: {
+                        type: 'base64',
+                        media_type: 'image/jpeg',
+                        data: base64Data
+                      }
+                    };
                   }
-                };
+                  console.warn('Invalid image_url format:', content);
+                  return null;
+
+                case 'tool_result':
+                  // Handle tool results - convert any images in content
+                  if (Array.isArray(content.content)) {
+                    const convertedContent = content.content.map(item => {
+                      if (item.type === 'image_url') {
+                        const base64Data = item.image_url.url.split(',')[1];
+                        return {
+                          type: 'image',
+                          source: {
+                            type: 'base64',
+                            media_type: 'image/jpeg',
+                            data: base64Data
+                          }
+                        };
+                      }
+                      return item;
+                    });
+                    return {
+                      type: 'tool_result',
+                      tool_use_id: content.tool_use_id,
+                      content: convertedContent.filter(Boolean)
+                    };
+                  }
+                  return content;
+
+                default:
+                  console.warn('Unknown content type:', content.type);
+                  return null;
               }
-              return content;
-            })
+            }).filter(Boolean) // Remove any null values from conversion
           };
         }
+        
         
         // Handle text-only messages
         return {
