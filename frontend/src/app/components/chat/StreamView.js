@@ -13,7 +13,7 @@ export function StreamView({ challenge, latestScreenshot, attempts, prize, usdPr
       {/* Stream/Screenshot Display */}
       <div className="stream-view" style={{ position: 'relative' }}>
         <EmoteOverlay character={challenge?.name} />
-        {latestScreenshot ? (
+        {latestScreenshot && challenge?.status != 'concluded' ? (
           <>
             {/* Use regular img tag for API-served screenshots */}
             <img
@@ -68,7 +68,10 @@ export function StreamView({ challenge, latestScreenshot, attempts, prize, usdPr
           </>
         ) : (
           <div className="stream-placeholder">
-            No screenshots yet
+            {challenge?.status == 'concluded'
+              ? "This tournament has concluded"
+              : "No screenshots yet"
+            }
           </div>
         )}
       </div>
