@@ -56,12 +56,12 @@ export default function Challenge({ params }) {
   }, [publicKey]);
 
   useEffect(() => {
-    scrollToBottom();
+    // scrollToBottom();
   }, [pageLoading]);
 
   useEffect(() => {
     if (writing) {
-      scrollToBottom();
+      // scrollToBottom();
     }
   }, [conversation]);
 
@@ -446,7 +446,7 @@ export default function Challenge({ params }) {
                 usdPrice={usdPrice}
                 price={price}
                 expiry={expiry}
-                maxActions={challenge.max_actions}
+                maxActions={challenge?.max_actions}
               />
             </div>
             <div className="chat-container">

@@ -13,6 +13,9 @@ class VNCService {
     this.frameUpdateTimeout = 5000; // 5 seconds
     this.maxUpdateRetries = 3;
     this.connectionTimeout = 10000; // 10 seconds
+    this.reconnectDelay = 2000; // Delay between reconnection attempts
+    this.maxReconnectAttempts = 5; // Maximum number of reconnection attempts
+    this.reconnectAttempts = new Map(); // Track reconnection attempts per tournament
     
     // Ensure screenshots directory exists
     if (!fs.existsSync(this.screenshotsDir)) {
@@ -133,20 +136,41 @@ class VNCService {
 
   async ensureValidConnection(tournamentId) {
     if (!this.isConnected(tournamentId)) {
-      console.log(`VNC session not connected for tournament ${tournamentId}, connecting...`);
-      try {
-        const client = await this.connectSession(tournamentId);
-        // Wait for first frame after connection
-        const gotFrame = await this.waitForFirstFrame(tournamentId);
-        if (!gotFrame) {
-          console.log('Did not receive initial frame, requesting update...');
-          await this.requestFrameUpdate(tournamentId);
+      console.log(`VNC session not connected for tournament ${tournamentId}, attempting connection...`);
+      
+      // Get or initialize reconnect attempts counter
+      let attempts = this.reconnectAttempts.get(tournamentId) || 0;
+      
+      while (attempts < this.maxReconnectAttempts) {
+        try {
+          console.log(`Connection attempt ${attempts + 1}/${this.maxReconnectAttempts} for tournament ${tournamentId}`);
+          
+          const client = await this.connectSession(tournamentId);
+          // Wait for first frame after connection
+          const gotFrame = await this.waitForFirstFrame(tournamentId);
+          if (!gotFrame) {
+            console.log('Did not receive initial frame, requesting update...');
+            await this.requestFrameUpdate(tournamentId);
+          }
+          
+          // Reset attempts counter on successful connection
+          this.reconnectAttempts.set(tournamentId, 0);
+          return client;
+          
+        } catch (error) {
+          attempts++;
+          this.reconnectAttempts.set(tournamentId, attempts);
+          console.error(`Connection attempt ${attempts} failed: ${error.message}`);
+          
+          if (attempts < this.maxReconnectAttempts) {
+            console.log(`Waiting ${this.reconnectDelay}ms before next attempt...`);
+            await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
+          }
         }
-        return client;
-      } catch (error) {
-        console.error(`Connection failed: ${error.message}`);
-        return null;
       }
+      
+      console.error(`Failed to connect after ${attempts} attempts for tournament ${tournamentId}`);
+      return null;
     }
     return this.sessions.get(tournamentId);
   }
@@ -208,11 +232,18 @@ class VNCService {
         resolve(client);
       };
 
-      const disconnectHandler = () => {
+      const disconnectHandler = async () => {
         console.log(`VNC closed for tournament ${tournamentId}`);
         this.connectionStatus.set(tournamentId, 'disconnected');
         this.sessions.delete(tournamentId);
         this.frameBuffers.delete(tournamentId);
+        
+        // Attempt to reconnect on unexpected disconnection
+        const attempts = this.reconnectAttempts.get(tournamentId) || 0;
+        if (attempts < this.maxReconnectAttempts) {
+          console.log(`Attempting to reconnect after disconnect for tournament ${tournamentId}`);
+          await this.ensureValidConnection(tournamentId);
+        }
       };
 
       const errorHandler = (err) => {
@@ -374,6 +405,8 @@ class VNCService {
   async closeSession(tournamentId) {
     const session = this.sessions.get(tournamentId);
     if (session) {
+      // Reset reconnection attempts when explicitly closing
+      this.reconnectAttempts.set(tournamentId, 0);
       try {
         // Clean up stored event handlers
         if (session._eventHandlers) {
@@ -429,5 +462,12 @@ class VNCService {
     }
   }
 }
+
+// Cleanup VNC sessions when server shuts down
+process.on('SIGINT', async () => {
+  await VNCService.closeAllSessions();
+  process.exit(0);
+});
+
 
 export default new VNCService();

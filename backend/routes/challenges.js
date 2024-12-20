@@ -50,7 +50,9 @@ router.get("/get-challenge", async (req, res) => {
       initial_pool_size: 1,
       expiry: 1,
       developer_fee: 1,
-      win_condition: 1
+      win_condition: 1,
+      expiry_logic: 1,
+      scores: 1
     };
 
     const challengeInitialized = await DatabaseService.findOneChat({
@@ -77,6 +79,21 @@ router.get("/get-challenge", async (req, res) => {
 
     if (!allowedStatuses.includes(challenge.status)) {
       return res.status(404).send("Challenge is not active");
+    }
+
+    // For upcoming challenges, return early with basic info
+    if (challenge.status === "upcoming") {
+      return res.status(200).json({
+        challenge,
+        break_attempts: 0,
+        message_price: 0,
+        prize: 0,
+        usdMessagePrice: 0,
+        usdPrize: 0,
+        chatHistory: [],
+        expiry: challenge.expiry,
+        solPrice: await getSolPriceInUSDT()
+      });
     }
 
     const programId = challenge.idl?.address;
@@ -177,11 +194,19 @@ router.get("/get-challenge", async (req, res) => {
 
     if (chatHistory.length > 0) {
       if (expiry < now && challenge.status === "active") {
-        const lastSender = chatHistory[0].address;
+        let winner;
+        if (challenge.expiry_logic === "score") {
+          const topScoreMsg = await DatabaseService.getHighestAndLatestScore(
+            challengeName
+          );
+          winner = topScoreMsg?.[0]?.address || topScoreMsg?.[0]?.account;
+        } else {
+          winner = chatHistory[0].address;
+        }
         const blockchainService = new BlockchainService(solanaRpc, programId);
         const concluded = await blockchainService.concludeTournament(
           tournamentPDA,
-          lastSender
+          winner
         );
         const successMessage = `🥳 Tournament concluded: ${concluded}`;
         const assistantMessage = {
@@ -190,7 +215,7 @@ router.get("/get-challenge", async (req, res) => {
           role: "assistant",
           content: successMessage,
           tool_calls: {},
-          address: lastSender,
+          address: winner,
         };
 
         await DatabaseService.createChat(assistantMessage);

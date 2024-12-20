@@ -271,6 +271,31 @@ class DataBaseService {
       return false;
     }
   }
+
+  async getHighestAndLatestScore(challengeName) {
+    try {
+      const challenge = await Challenge.findOne(
+        { name: { $regex: challengeName, $options: "i" } }
+      );
+      
+      if (!challenge || !challenge.scores || challenge.scores.length === 0) {
+        return null;
+      }
+
+      // Sort by score (descending) and timestamp (descending) to get highest score and most recent
+      const sortedScores = challenge.scores.sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score; // Sort by score first
+        }
+        return b.timestamp - a.timestamp; // If scores are equal, sort by timestamp
+      });
+
+      return sortedScores;
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
 }
 
 export default new DataBaseService();

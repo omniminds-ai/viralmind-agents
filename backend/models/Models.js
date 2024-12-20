@@ -36,6 +36,12 @@ const ChallengeSchema = new mongoose.Schema(
     fail_function: String,
     tool_choice: String,
     start_date: Date,
+    expiry_logic: { type: String, enum: ['score', 'time'], default: 'time' },
+    scores: [{
+      account: String,
+      score: Number,
+      timestamp: { type: Date, default: Date.now }
+    }],
   },
   { collection: "challenges" }
 );

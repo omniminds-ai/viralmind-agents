@@ -158,8 +158,6 @@ export function StreamView({ challenge, latestScreenshot, attempts, prize, usdPr
           {challenge?.label}
         </div>
 
-        
-
         <div style={{
           backgroundColor: 'rgba(145, 71, 255, 0.1)',
           border: '1px solid rgba(145, 71, 255, 0.2)',
@@ -182,6 +180,74 @@ export function StreamView({ challenge, latestScreenshot, attempts, prize, usdPr
           </h4>
           {challenge?.win_condition}
         </div>
+
+
+        {challenge?.expiry_logic === "score" && challenge?.scores && (
+          <div className="leaderboard" style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            borderRadius: '4px',
+            padding: '12px',
+            marginTop: '12px',
+            marginBottom: '12px'
+          }}>
+            <h4 style={{ 
+              color: "var(--twitch-text-alt)", 
+              fontSize: "12px", 
+              marginBottom: "8px",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px"
+            }}>
+              🏆 Leaderboard
+            </h4>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              {[...challenge.scores]
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5)
+                .map((score, index) => (
+                  <div key={score.account} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '4px 8px',
+                    backgroundColor: index === 0 ? 'rgba(145, 71, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span style={{
+                        color: index === 0 ? '#9147ff' : 'var(--twitch-text-alt)',
+                        fontWeight: index === 0 ? '600' : '400',
+                        width: '20px'
+                      }}>
+                        #{index + 1}
+                      </span>
+                      <span style={{
+                        color: index === 0 ? '#fff' : 'var(--twitch-text-alt)',
+                        fontWeight: index === 0 ? '600' : '400'
+                      }}>
+                        {score.account.slice(0, 4)}...{score.account.slice(-4)}
+                      </span>
+                    </div>
+                    <span style={{
+                      color: index === 0 ? '#fff' : 'var(--twitch-text-alt)',
+                      fontWeight: index === 0 ? '600' : '400'
+                    }}>
+                      {score.score} pts
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
 
         <div style={{
           marginTop: '16px',
