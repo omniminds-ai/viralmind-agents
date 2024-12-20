@@ -13,4 +13,4 @@ export const calculateDiscriminator = (instructionName) => {
   return hash.slice(0, 8); // Extract first 8 bytes
 };
 
-export const SOLANA_RPC = "https://snowy-delicate-sponge.solana-mainnet.quiknode.pro/99269d0ad3e8500a9423bbeea089c8caf45a98aa";
+export const SOLANA_RPC = process.env.RPC_URL;
