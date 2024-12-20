@@ -44,6 +44,9 @@ solana-keygen new -o ./backend/secrets/solana-keypair.json
 ### Start Development Environment
 
 ```bash
+# Build anchor
+cd backend/jailbreak-pool && anchor build
+
 # Start all services
 docker compose up --build
 
