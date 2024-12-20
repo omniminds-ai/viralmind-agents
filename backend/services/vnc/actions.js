@@ -110,6 +110,8 @@ export async function executeComputerAction(action, args, client) {
           'end': VNC_KEYS.NAVIGATION.END,
           'pageup': VNC_KEYS.NAVIGATION.PAGE_UP,
           'pagedown': VNC_KEYS.NAVIGATION.PAGE_DOWN,
+          'page_up': VNC_KEYS.NAVIGATION.PAGE_UP,
+          'page_down': VNC_KEYS.NAVIGATION.PAGE_DOWN,
           'super': VNC_KEYS.MODIFIERS.LEFT_SUPER,
           'super_l': VNC_KEYS.MODIFIERS.LEFT_SUPER,
           'meta': VNC_KEYS.MODIFIERS.LEFT_SUPER,
