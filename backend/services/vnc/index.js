@@ -286,7 +286,7 @@ class VNCService {
       try {
         client.connect({
           host: process.env.VNC_HOST || "localhost",
-          port: parseInt(process.env.VNC_PORT || "5901"),
+          port: parseInt(process.env.VNC_PORT || "5900"),
           password: process.env.VNC_PASSWORD || "",
         });
       } catch (error) {
