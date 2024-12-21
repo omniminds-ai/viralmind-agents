@@ -8,8 +8,9 @@ COPY jailbreak-pool/target ./target
 
 RUN apt update \
     && apt install --assume-yes --no-install-recommends \
-        build-essential \
-        python3
+    build-essential \
+    python3
+RUN npm install -g nodemon
 RUN npm install --legacy-peer-deps --include=dev
 
 COPY . .

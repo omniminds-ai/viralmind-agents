@@ -17,7 +17,7 @@ jailbreak_pool = "ERj3jW3GAY26GR8KU5cfmSB8yzDwCer9X3q8n9sZ3iqW"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "mainnet"
+cluster = "devnet"
 wallet = "../secrets/solana-keypair.json"
 
 [scripts]
