@@ -8,6 +8,4 @@ backend/secrets
 backend/target
 vm/storage/*
 .env
-docker-compose.dev.yml
-docker-compose.yml
 secrets/

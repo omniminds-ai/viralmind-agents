@@ -1,4 +1,4 @@
-# Production
+# Development
 services:
   windows:
     image: dockurr/windows
@@ -36,7 +36,10 @@ services:
     tty: true
     ports:
       - "8001:8001"
-    command: npm start
+    command: npm run dev
+    volumes:
+      - ./backend:/usr/src/app/backend
+      - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
     environment:
       - DB_URI=${DB_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -47,7 +50,7 @@ services:
       # Docker Specific Paths
       - ANCHOR_WALLET=/usr/src/app/backend/secrets/solana-keypair.json
       - ANCHOR_WORKSPACE=/usr/src/app/backend/jailbreak-pool
-      # VNC Configuration
+      # VNC Configuration (replaced RDP config)
       - VNC_HOST=windows
       - VNC_PORT=5900
       - VNC_PASSWORD=admin
@@ -79,10 +82,16 @@ services:
     tty: true
     ports:
       - "3000:3000"
-    command: npm start
+    command: npm run dev
+    volumes:
+      - ./frontend:/usr/src/app/frontend
+      - /usr/src/app/frontend/node_modules
     environment:
-      # - NODE_ENV=production
+      - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - PATH=/usr/src/app/frontend/node_modules/.bin:$PATH
 
   nginx:
     build:

@@ -13,6 +13,7 @@ docker exec back-end npm run init-tournament -- -n "test1" -t "title test" -d "d
 
 - Start a tournament:
 ```bash
+docker exec back-end npm run tournament -- init-account
 docker exec back-end npm run start-tournament -- -n <name> 
 ```
 

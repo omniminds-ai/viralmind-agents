@@ -44,8 +44,14 @@ solana-keygen new -o ./backend/secrets/solana-keypair.json
 ### Start Development Environment
 
 ```bash
-# Build anchor
-cd backend/jailbreak-pool && anchor build
+# Make sure solana is on devnet
+solana config set --url https://api.devnet.solana.com/
+
+# Build and Deploy Contract
+cd backend/jailbreak-pool 
+anchor build
+# To deploy make sure that your previously created keypair has a SOL balance.
+anchor deploy
 
 # Start all services
 docker compose up --build
