@@ -2,6 +2,12 @@
 
 [viralmind.ai](https://www.viralmind.ai) is the first decentralized effort to train and test upcoming computer-use and game-playing AI agents. Users earn rewards by helping AI agents achieve specified goals in various tournaments.
 
+## 🔗 Useful Links
+
+- **Community**: [https://t.me/viralmind](https://t.me/viralmind)
+- **Documentation**: [https://viralmind.gitbook.io/viralmind.ai](https://viralmind.gitbook.io/viralmind.ai)
+- **Smart Contract**: HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump
+
 ## 🎯 Our Vision
 
 We're building a decentralized platform where:
@@ -91,13 +97,6 @@ docker compose up --build
 - Automatic reward distribution through smart contracts
 - Transparent verification of goal completion
 - Community-driven challenge creation (coming soon)
-
-## 🔗 Useful Links
-
-- **Community**: [https://t.me/viralmind](https://t.me/viralmind)
-- **Documentation**: [https://docs.viralmind.ai](https://docs.viralmind.ai)
-- **Github**: [https://github.com/viralmind/platform](https://github.com/viralmind/platform)
-- **Smart Contract**: [Contract address to be added]
 
 ## 📞 Contact & Support
 
