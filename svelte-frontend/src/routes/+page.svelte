@@ -10,10 +10,24 @@
     HelpCircle,
     MessageCircle,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Users, 
+    Clock
   } from 'lucide-svelte';
   import solIcon from '$lib/assets/solIcon.png';
   import demoVideo from '$lib/assets/demo.mp4';
+
+  const SOL_TO_USD = 182.01;
+  const recentTournament = {
+    id: 'viral_lua',
+    title: 'Lets go $VIRAL! | Just Chatting',
+    description: '$VIRAL Reading Stream 🌙 | Scrolling Through Your Posts w/ Chat',
+    prizePool: 20.3368,
+    participants: 234, // derived from chat query 
+    completedDate: '2024-12-21',
+    winner: '9SnqMx5h1Su8To27v6ZFd9zhSbicXx9b4hvHwbnRGYDP',
+    winningTxn: 'h4AfJoscC1bETdy6xs1WDzzUJxXpnYg4KxVwMzQK2mTMrtsfe3a5KEHFQ8A5oBWQRtzi1QkKWKewn6oFMCcVGR9'
+  };
 
   const faqs = [
     {
@@ -109,7 +123,7 @@
         
         <!-- Developer CTAs -->
         <div class="relative mt-16 z-20">
-          <p class="text-gray-400 mb-4 drop-shadow-lg">Ready to Build Something Insane?</p>
+          <p class="text-gray-400 mb-2 drop-shadow-lg opacity-50">Ready to Build Something Insane?</p>
           <div class="flex justify-center">
             <a 
               href="https://t.me/viralmind" 
@@ -151,10 +165,12 @@
           </div>
 
           <div class="text-center">
-            <button class="px-8 py-3 bg-purple-600 rounded-full font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 mx-auto">
-              <Dumbbell class="w-5 h-5" />
-              Enter Training Gym →
-            </button>
+            <a href="/gym">
+              <button class="block px-8 py-3 bg-purple-600 rounded-full font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 mx-auto">
+                <Dumbbell class="w-5 h-5" />
+                Enter Training Gym →
+              </button>
+            </a>
           </div>
         </div>
 
@@ -178,8 +194,8 @@
               <div class="flex justify-center mb-2">
                 <Trophy class="w-6 h-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">129</div>
-              <div class="text-sm text-gray-400">trainers</div>
+              <div class="text-2xl font-bold">$2,333</div>
+              <div class="text-sm text-gray-400">treasury</div>
             </div>
             
             <div class="space-y-2">
@@ -191,15 +207,49 @@
             </div>
           </div>
 
+          <!-- Latest Tournament Section -->
+          <div class="bg-black/30 rounded-xl p-6 mb-8">
+            <h4 class="font-semibold text-lg">Latest Tournament: {recentTournament.title}</h4>
+            <p class="text-gray-400 text-sm mb-4">{recentTournament.description}</p>
+            
+            <div class="flex flex-col gap-2 mb-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-sm text-gray-400">
+                  <Trophy class="w-4 h-4 text-purple-400" />
+                  <span>Winner: {recentTournament.winner.slice(0, 4)}...{recentTournament.winner.slice(-4)}</span>
+                </div>
+                <div class="flex items-center gap-2 text-sm">
+                  <img src={solIcon} alt="SOL" class="w-4 h-4" />
+                  <span class="text-gray-400">{recentTournament.prizePool.toFixed(2)} SOL</span>
+                  <Coins class="w-4 h-4 text-purple-400" />
+                  <span class="text-gray-400">${(recentTournament.prizePool * SOL_TO_USD).toFixed(2)}</span>
+                </div>
+              </div>
+              <div class="flex justify-center text-sm text-gray-400/70">
+                <span class="font-mono">txn: {recentTournament.winningTxn}</span>
+              </div>
+            </div>
+            
+            <div class="text-xs text-gray-500">
+              Completed {new Date(recentTournament.completedDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </div>
+          </div>
+
           <div class="text-center space-y-4">
-            <button class="px-8 py-3 bg-purple-600 rounded-full font-semibold hover:bg-purple-700 transition-colors">
+            <!-- <button class="px-8 py-3 bg-purple-600 rounded-full font-semibold hover:bg-purple-700 transition-colors">
               Join Tournament →
-            </button>
+            </button> -->
             <div>
-              <button class="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mx-auto">
-                <History class="w-4 h-4" />
-                See Past Tournaments
-              </button>
+              <a href="/tournaments">
+                <button class="text-gray-400 hover:text-white transition-colors flex items-center gap-2 mx-auto">
+                  <History class="w-4 h-4" />
+                  See Past Tournaments
+                </button>
+              </a>
             </div>
           </div>
         </div>
@@ -266,16 +316,16 @@
         </div>
       </div>
     </div>
-
-    <!-- Background effects -->
-    <div class="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black z-[1]"></div>
-    <div 
-      class="absolute inset-0 transition-transform duration-1000 ease-out z-[2]"
-      style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.15), transparent 40%); 
-             transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) * -0.05}px)"
-    ></div>
-    <div class="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black z-[3]"></div>
   </div>
+  
+  <!-- Background effects -->
+  <div class="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black z-[1]"></div>
+  <div 
+    class="absolute inset-0 transition-transform duration-1000 ease-out z-[2]"
+    style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.1), transparent 100%); 
+            transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) * -0.05}px)"
+  ></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black z-[3]"></div>
 </div>
 
 <style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import logo from '$lib/assets/stoneLogo.png';
+  import logo from '$lib/assets/logoTransparent.png';
   import { Dumbbell } from 'lucide-svelte';
   const currentTournament = 'viral_lua';
 </script>
