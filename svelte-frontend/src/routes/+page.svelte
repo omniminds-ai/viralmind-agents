@@ -60,23 +60,26 @@
     <div class="absolute inset-0 z-0">
       <div class="absolute inset-0 flex items-start justify-center overflow-hidden">
         <div class="relative w-full h-full">
-          <video
-            autoplay
-            loop
-            muted
-            playsinline
-            class="absolute w-[200%] md:w-[150%]"
-          >
-            <source src={demoVideo} type="video/mp4" />
-          </video>
-          <!-- Radial Gradient Mask that follows video position -->
-          <div class="absolute inset-0" 
-               style="background: radial-gradient(circle at 50% 0%, 
-                                               rgba(95,0,50,1) 0%, 
-                                               rgba(0,0,0,0.9) 25%, 
-                                               rgba(0,0,0,0.9) 45%, 
-                                               rgba(0,0,0,1) 70%);" 
-          />
+          <!-- Video container with gradient -->
+          <div class="absolute w-[100%]">
+            <video
+              autoplay
+              loop
+              muted
+              playsinline
+              class="w-full opacity-25"
+            >
+              <source src={demoVideo} type="video/mp4" />
+            </video>
+            <!-- Gradient overlay contained within video bounds -->
+            <div class="absolute inset-0" 
+                 style="background: linear-gradient(to bottom, 
+                                                 rgba(0,0,0,0) 0%, 
+                                                 rgba(0,0,0,0.5) 40%, 
+                                                 rgba(0,0,0,0.9) 70%, 
+                                                 rgba(0,0,0,1) 90%);" 
+            ></div>
+          </div>
         </div>
       </div>
     </div>
@@ -93,7 +96,7 @@
       <div class="mt-12 mb-24 relative">
         <!-- VM-1 Text with enhanced shadows -->
         <div class="relative my-24">
-          <div class="text-8xl md:text-9xl font-bold opacity-20 blur-sm bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text relative z-10 drop-shadow-xl">
+          <div class="text-8xl md:text-9xl font-bold opacity-20 blur-sm bg-gradient-to-b from-purple-400 to-purple-900 text-transparent bg-clip-text relative z-10 drop-shadow-xl">
             VM-1
           </div>
           <div class="absolute inset-0 flex items-center justify-center flex-col z-20">
