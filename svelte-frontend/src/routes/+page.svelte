@@ -12,7 +12,7 @@
     ChevronDown,
     ChevronUp,
     Users, 
-    Clock
+    ArrowRight
   } from 'lucide-svelte';
   import solIcon from '$lib/assets/solIcon.png';
   import demoVideo from '$lib/assets/demo.mp4';
@@ -208,6 +208,13 @@
           </div>
 
           <!-- Latest Tournament Section -->
+            <div class="text-xs text-gray-500">
+              Completed {new Date(recentTournament.completedDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </div>
           <div class="bg-black/30 rounded-xl p-6 mb-8">
             <h4 class="font-semibold text-lg">Latest Tournament: {recentTournament.title}</h4>
             <p class="text-gray-400 text-sm mb-4">{recentTournament.description}</p>
@@ -229,13 +236,24 @@
                 <span class="font-mono">txn: {recentTournament.winningTxn}</span>
               </div>
             </div>
-            
-            <div class="text-xs text-gray-500">
-              Completed {new Date(recentTournament.completedDate).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
+          </div>
+
+          <!-- New Next Tournament CTA -->
+          <div class="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-6 mb-8">
+            <div class="text-center space-y-4">
+              <h4 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
+                Next Tournament Loading...
+              </h4>
+              <p class="text-gray-300">Don't miss out on the next chance to win big!</p>
+              <a 
+                href="https://t.me/viralmind" 
+                target="_blank"
+                class="group inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full font-semibold hover:opacity-90 transition-all hover:scale-105 duration-200"
+              >
+                <MessageCircle class="w-5 h-5 group-hover:animate-bounce" />
+                Join Telegram for Updates
+                <span class="text-purple-300 group-hover:translate-x-1 transition-transform duration-200">→</span>
+              </a>
             </div>
           </div>
 
@@ -283,6 +301,15 @@
           <div class="mt-8 p-6 bg-black/30 rounded-xl">
             <p class="text-gray-400">Contract Address:</p>
             <code class="text-purple-400 text-sm">HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump</code>
+          </div>
+          
+          <div class="text-center mt-4">
+            <a href="/viral-token">
+              <button class="text-purple-400 hover:text-purple-300 group transition-colors flex items-center mx-auto">
+                <span class="mr-2">Learn more</span>
+                <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </a>
           </div>
         </div>
 
