@@ -59,6 +59,13 @@
   <div class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden">
     <div class="w-full max-w-4xl mx-auto text-center px-4 relative z-10">
 
+      <h2 class="text-lg my-2">Pure Computer Control × Crypto Intelligence</h2>
+      <h1 class="text-5xl md:text-6xl font-bold mb-4">
+        The Next Meta<br />
+        in Agentic AI<br />
+        <span class="text-gray-400 text-3xl mt-2">is coming</span>
+      </h1>
+
       <!-- VM-1 Logo -->
       <div class="my-12 relative min-h-[600px]">
         <!-- Video Background -->
@@ -74,13 +81,6 @@
           </video>
         </div>
 
-        <h2 class="text-lg mb-2">Pure Computer Control × Crypto Intelligence</h2>
-        <h1 class="text-5xl md:text-6xl font-bold mb-4">
-          The Next Meta<br />
-          in Agentic AI<br />
-          <span class="text-gray-400 text-3xl mt-2">is coming</span>
-        </h1>
-
         <!-- VM-1 Text (keep existing) -->
         <div class="relative my-24">
           <div class="text-8xl md:text-9xl font-bold opacity-20 blur-sm bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text relative z-10">
@@ -93,20 +93,20 @@
             <div class="text-gray-400 mt-4 text-xl">Our First Computer-Use Model</div>
           </div>
         </div>
-      </div>
-
-      <!-- Developer CTAs -->
-      <div class="mt-16">
-        <p class="text-gray-400 mb-4">Ready to Build Something Insane?</p>
-        <div class="flex justify-center">
-          <a 
-            href="https://t.me/viralmind" 
-            target="_blank"
-            class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
-          >
-            <MessageCircle class="w-5 h-5" />
-            Join Our Telegram for Updates
-          </a>
+        
+        <!-- Developer CTAs -->
+        <div class="relative mt-16 z-20">
+          <p class="text-gray-400 mb-4">Ready to Build Something Insane?</p>
+          <div class="flex justify-center">
+            <a 
+              href="https://t.me/viralmind" 
+              target="_blank"
+              class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+            >
+              <MessageCircle class="w-5 h-5" />
+              Join Our Telegram for Updates
+            </a>
+          </div>
         </div>
       </div>
 
