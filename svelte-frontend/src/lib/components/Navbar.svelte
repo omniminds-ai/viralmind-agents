@@ -34,7 +34,7 @@
             Docs
           </a>
           <a 
-            href={`/tournament/${currentTournament}`}
+            href={`/tournaments`}
             class="text-sm text-gray-300 hover:text-white transition-colors"
           >
             Tournaments

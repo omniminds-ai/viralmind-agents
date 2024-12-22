@@ -77,7 +77,7 @@
         <h2 class="text-lg mb-2">Pure Computer Control × Crypto Intelligence</h2>
         <h1 class="text-5xl md:text-6xl font-bold mb-4">
           The Next Meta<br />
-          for AI Agents<br />
+          in Agentic AI<br />
           <span class="text-gray-400 text-3xl mt-2">is coming</span>
         </h1>
 
