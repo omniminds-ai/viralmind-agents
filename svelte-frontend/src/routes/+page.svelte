@@ -8,10 +8,12 @@
     History,
     Dumbbell,
     HelpCircle,
+    MessageCircle,
     ChevronDown,
     ChevronUp
   } from 'lucide-svelte';
   import solIcon from '$lib/assets/solIcon.png';
+  import demoVideo from '$lib/assets/demo.mp4';
 
   const faqs = [
     {
@@ -53,43 +55,58 @@
 </script>
 
 <!-- Main Hero Section -->
-<div class="min-h-screen bg-black text-white">
-  <!-- Keep your existing social links section -->
-  <div class="flex items-center justify-center space-x-4 py-4">
-    <!-- Your existing social links -->
-  </div>
-
+<div class="min-h-screen bg-black text-white pb-24">
   <div class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden">
     <div class="w-full max-w-4xl mx-auto text-center px-4 relative z-10">
-      <h2 class="text-lg mb-2">Pure Computer Control × Crypto Intelligence</h2>
-      <h1 class="text-5xl md:text-6xl font-bold mb-4">
-        The Next Meta<br />
-        for AI Agents
-      </h1>
 
       <!-- VM-1 Logo -->
-      <div class="my-12 relative">
-        <div class="text-8xl md:text-9xl font-bold opacity-20 blur-sm bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text">
-          VM-1
+      <div class="my-12 relative min-h-[600px]">
+        <!-- Video Background -->
+        <div class="absolute inset-0 flex items-center justify-center overflow-hidden">
+          <video
+            autoplay
+            loop
+            muted
+            playsinline
+            class="absolute w-[200%] md:w-[150%] opacity-5"
+          >
+            <source src={demoVideo} type="video/mp4" />
+          </video>
         </div>
-        <div class="absolute inset-0 flex items-center justify-center flex-col">
-          <div class="text-8xl md:text-9xl font-bold bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text">
+
+        <h2 class="text-lg mb-2">Pure Computer Control × Crypto Intelligence</h2>
+        <h1 class="text-5xl md:text-6xl font-bold mb-4">
+          The Next Meta<br />
+          for AI Agents<br />
+          <span class="text-gray-400 text-3xl mt-2">is coming</span>
+        </h1>
+
+        <!-- VM-1 Text (keep existing) -->
+        <div class="relative my-24">
+          <div class="text-8xl md:text-9xl font-bold opacity-20 blur-sm bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text relative z-10">
             VM-1
           </div>
-          <div class="text-gray-400 mt-4 text-xl">Our First Computer-Use Model</div>
+          <div class="absolute inset-0 flex items-center justify-center flex-col z-20">
+            <div class="text-8xl md:text-9xl font-bold bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text">
+              VM-1
+            </div>
+            <div class="text-gray-400 mt-4 text-xl">Our First Computer-Use Model</div>
+          </div>
         </div>
       </div>
 
       <!-- Developer CTAs -->
       <div class="mt-16">
-        <p class="text-gray-400 mb-4">Hey AI Developers, Ready to Build Something Insane?</p>
-        <div class="flex flex-wrap justify-center gap-4">
-          <button class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full font-semibold hover:opacity-90 transition-opacity">
-            Get Started
-          </button>
-          <button class="px-8 py-3 border border-gray-700 rounded-full font-semibold hover:bg-white/5 transition-colors">
-            Documentation
-          </button>
+        <p class="text-gray-400 mb-4">Ready to Build Something Insane?</p>
+        <div class="flex justify-center">
+          <a 
+            href="https://t.me/viralmind" 
+            target="_blank"
+            class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            <MessageCircle class="w-5 h-5" />
+            Join Our Telegram for Updates
+          </a>
         </div>
       </div>
 
