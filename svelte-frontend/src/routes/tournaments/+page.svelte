@@ -11,7 +11,7 @@
     }
   };
 
-  const activeTournament = false; /* {
+  const activeTournament = null; /* {
     id: 'viral_lua',
     title: 'Learn Lua Tournament',
     description: 'Command VM-1 to learn and practice Lua programming basics',

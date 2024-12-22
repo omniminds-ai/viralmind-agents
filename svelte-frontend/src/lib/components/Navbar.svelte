@@ -15,16 +15,16 @@
         
         <nav class="hidden md:flex items-center space-x-6">
           <a 
+            href={`/tournaments`}
+            class="text-sm text-gray-300 hover:text-white transition-colors"
+          >
+            Tournaments
+          </a>
+          <a 
             href="/#faq" 
             class="text-sm text-gray-300 hover:text-white transition-colors"
           >
             FAQ
-          </a>
-          <a 
-            href="/viral-token" 
-            class="text-sm text-gray-300 hover:text-white transition-colors"
-          >
-            $VIRAL
           </a>
           <a 
             href="https://viralmind.gitbook.io/viralmind.ai" 
@@ -34,10 +34,10 @@
             Docs
           </a>
           <a 
-            href={`/tournaments`}
+            href="/viral-token" 
             class="text-sm text-gray-300 hover:text-white transition-colors"
           >
-            Tournaments
+            $VIRAL
           </a>
         </nav>
       </div>

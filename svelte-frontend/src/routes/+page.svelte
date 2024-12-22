@@ -223,7 +223,7 @@
         </div>
 
         <!-- FAQ Section -->
-        <div class="bg-stone-900 rounded-3xl p-12 shadow-xl">
+        <div class="bg-stone-900 rounded-3xl p-12 shadow-xl" id="faq">
           <h3 class="text-2xl md:text-3xl font-semibold mb-8 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
             Frequently Asked Questions
           </h3>
