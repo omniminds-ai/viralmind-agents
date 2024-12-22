@@ -45,7 +45,7 @@
       <!-- Right side CTA -->
       <div class="flex items-center">
         <a
-          href="/training-gym"
+          href="/gym"
           class="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white/80 rounded-full text-sm font-medium transition-colors"
         >
           <Dumbbell class="w-4 h-4" />
