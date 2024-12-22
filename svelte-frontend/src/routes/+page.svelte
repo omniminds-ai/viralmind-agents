@@ -51,57 +51,67 @@
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   });
-
 </script>
 
 <!-- Main Hero Section -->
 <div class="min-h-screen bg-black text-white pb-24">
   <div class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden">
-    <div class="w-full max-w-4xl mx-auto text-center px-4 relative z-10">
+    <!-- Video Background with Mask -->
+    <div class="absolute inset-0 z-0">
+      <div class="absolute inset-0 flex items-start justify-center overflow-hidden">
+        <div class="relative w-full h-full">
+          <video
+            autoplay
+            loop
+            muted
+            playsinline
+            class="absolute w-[200%] md:w-[150%]"
+          >
+            <source src={demoVideo} type="video/mp4" />
+          </video>
+          <!-- Radial Gradient Mask that follows video position -->
+          <div class="absolute inset-0" 
+               style="background: radial-gradient(circle at 50% 0%, 
+                                               rgba(95,0,50,1) 0%, 
+                                               rgba(0,0,0,0.9) 25%, 
+                                               rgba(0,0,0,0.9) 45%, 
+                                               rgba(0,0,0,1) 70%);" 
+          />
+        </div>
+      </div>
+    </div>
 
-      <h2 class="text-lg my-2">Pure Computer Control × Crypto Intelligence</h2>
-      <h1 class="text-5xl md:text-6xl font-bold mb-4">
+    <div class="w-full max-w-4xl mx-auto text-center px-4 relative z-10">
+      <h2 class="text-lg mt-8 my-2 drop-shadow-lg">Pure Computer Control × Crypto Intelligence</h2>
+      <h1 class="text-5xl md:text-6xl font-bold mb-4 drop-shadow-lg">
         The Next Meta<br />
         in Agentic AI<br />
         <span class="text-gray-400 text-3xl mt-2">is coming</span>
       </h1>
 
       <!-- VM-1 Logo -->
-      <div class="my-12 relative min-h-[600px]">
-        <!-- Video Background -->
-        <div class="absolute inset-0 flex items-center justify-center overflow-hidden">
-          <video
-            autoplay
-            loop
-            muted
-            playsinline
-            class="absolute w-[200%] md:w-[150%] opacity-5"
-          >
-            <source src={demoVideo} type="video/mp4" />
-          </video>
-        </div>
-
-        <!-- VM-1 Text (keep existing) -->
+      <div class="mt-12 mb-24 relative">
+        <!-- VM-1 Text with enhanced shadows -->
         <div class="relative my-24">
-          <div class="text-8xl md:text-9xl font-bold opacity-20 blur-sm bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text relative z-10">
+          <div class="text-8xl md:text-9xl font-bold opacity-20 blur-sm bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text relative z-10 drop-shadow-xl">
             VM-1
           </div>
           <div class="absolute inset-0 flex items-center justify-center flex-col z-20">
-            <div class="text-8xl md:text-9xl font-bold bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text">
+            <div class="text-8xl md:text-9xl font-bold bg-gradient-to-b from-purple-500 to-purple-900 text-transparent bg-clip-text drop-shadow-xl">
               VM-1
             </div>
-            <div class="text-gray-400 mt-4 text-xl">Our First Computer-Use Model</div>
+            <div class="text-gray-400 mt-4 text-xl drop-shadow-lg">Our First Computer-Use Model</div>
           </div>
         </div>
         
         <!-- Developer CTAs -->
         <div class="relative mt-16 z-20">
-          <p class="text-gray-400 mb-4">Ready to Build Something Insane?</p>
+          <p class="text-gray-400 mb-4 drop-shadow-lg">Ready to Build Something Insane?</p>
           <div class="flex justify-center">
             <a 
               href="https://t.me/viralmind" 
               target="_blank"
-              class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+              class="shadow-lg px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
             >
               <MessageCircle class="w-5 h-5" />
               Join Our Telegram for Updates
@@ -110,10 +120,11 @@
         </div>
       </div>
 
-      <!-- Training Gym Card -->
-      <div class="mt-24 space-y-8">
-        <div class="bg-stone-900 rounded-3xl p-12 shadow-xl">
-          <h3 class="text-2xl md:text-3xl font-semibold mb-2 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
+      <!-- Card Sections -->
+      <div class="mt-12 space-y-8">
+        <!-- Training Gym Card -->
+        <div class="bg-stone-900/25 rounded-3xl p-12 shadow-2xl backdrop-blur-md">
+          <h3 class="text-2xl md:text-3xl font-semibold mb-2 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text drop-shadow-lg">
             Earn $VIRAL. Shape The Future.
           </h3>
           <p class="text-gray-400 mb-8">Train Agents through Demonstration</p>
@@ -145,8 +156,8 @@
         </div>
 
         <!-- Tournament Card -->
-        <div class="bg-stone-900 rounded-3xl p-12 shadow-xl">
-          <h3 class="text-2xl md:text-3xl font-semibold mb-2 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
+        <div class="bg-stone-900/25 rounded-3xl p-12 shadow-2xl backdrop-blur-md">
+          <h3 class="text-2xl md:text-3xl font-semibold mb-2 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text drop-shadow-lg">
             Command & Conquer
           </h3>
           <p class="text-gray-400 mb-8">Direct the AI Agent, Win the Entire Pot</p>
@@ -191,8 +202,8 @@
         </div>
 
         <!-- Token Section -->
-        <div class="bg-stone-900 rounded-3xl p-12 shadow-xl">
-          <h3 class="text-2xl md:text-3xl font-semibold mb-8 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
+        <div class="bg-stone-900/25 rounded-3xl p-12 shadow-2xl backdrop-blur-md">
+          <h3 class="text-2xl md:text-3xl font-semibold mb-8 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text drop-shadow-lg">
             $VIRAL Token
           </h3>
           
@@ -223,8 +234,8 @@
         </div>
 
         <!-- FAQ Section -->
-        <div class="bg-stone-900 rounded-3xl p-12 shadow-xl" id="faq">
-          <h3 class="text-2xl md:text-3xl font-semibold mb-8 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text">
+        <div class="bg-stone-900/25 rounded-3xl p-12 shadow-2xl backdrop-blur-md" id="faq">
+          <h3 class="text-2xl md:text-3xl font-semibold mb-8 bg-gradient-to-r from-purple-500 to-blue-500 text-transparent bg-clip-text drop-shadow-lg">
             Frequently Asked Questions
           </h3>
 
@@ -254,18 +265,25 @@
     </div>
 
     <!-- Background effects -->
-    <div class="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black" />
+    <div class="absolute inset-0 bg-gradient-to-b from-purple-900/20 to-black z-[1]"></div>
     <div 
-      class="absolute inset-0 transition-transform duration-1000 ease-out"
+      class="absolute inset-0 transition-transform duration-1000 ease-out z-[2]"
       style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.15), transparent 40%); 
              transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) * -0.05}px)"
-    />
-    <div class="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+    ></div>
+    <div class="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black z-[3]"></div>
   </div>
 </div>
 
 <style>
   :global(body) {
     background-color: black;
+  }
+  
+  /* Add a subtle text shadow to all text elements */
+  :global(.text-white),
+  :global(.text-gray-400),
+  :global(.text-purple-400) {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 </style>
