@@ -109,7 +109,30 @@
       >View Latest Tournament</a
     >
   </div>
-  <div class="bg-zinc-900 p-4">
-    <div class="rounded-md bg-zinc-800 p-4"></div>
+  <div class="bg-black p-4">
+    <div class="rounded-md bg-zinc-900 p-4 text-white">
+      <h1 class="my-4 w-full text-center text-2xl font-semibold uppercase text-purple-500">
+        Tournaments
+      </h1>
+      <div class="my-2 flex justify-between space-x-10 px-6">
+        <div
+          class="flex shrink grow flex-col items-center justify-center rounded-lg border border-zinc-700 border-opacity-50 bg-zinc-800"
+        >
+          <span class="text-purple-600">p</span>
+          <h2 class="text-lg font-semibold text-white">1. Choose a tournament.</h2>
+          <p class="text-gray-400">Select from active AI challenges.</p>
+        </div>
+        <div
+          class="flex shrink grow flex-col items-center justify-center rounded-lg border border-zinc-700 border-opacity-50 bg-zinc-800"
+        >
+          Step 1
+        </div>
+        <div
+          class="flex shrink grow flex-col items-center justify-center rounded-lg border border-zinc-700 border-opacity-50 bg-zinc-800"
+        >
+          Step 1
+        </div>
+      </div>
+    </div>
   </div>
 </section>
