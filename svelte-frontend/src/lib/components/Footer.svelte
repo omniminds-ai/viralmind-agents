@@ -2,6 +2,9 @@
   import { Twitter, MessageCircle, BarChart } from 'lucide-svelte';
 </script>
 
+<!-- Spacer to prevent content from going under fixed navbar -->
+<div class="h-16"></div>
+
 <footer class="fixed bottom-0 left-0 right-0 z-40">
   <!-- Gradient shadow above footer -->
   <div

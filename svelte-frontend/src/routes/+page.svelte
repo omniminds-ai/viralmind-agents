@@ -68,7 +68,7 @@
 </script>
 
 <!-- Main Hero Section -->
-<div class="min-h-screen bg-black text-white pb-24">
+<div class="min-h-screen bg-black text-white pb-8">
   <div class="min-h-screen flex flex-col justify-center items-center relative overflow-hidden">
     <!-- Video Background with Mask -->
     <div class="absolute inset-0 z-0">
@@ -208,14 +208,7 @@
           </div>
 
           <!-- Latest Tournament Section -->
-            <div class="text-xs text-gray-500">
-              Completed {new Date(recentTournament.completedDate).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </div>
-          <div class="bg-black/30 rounded-xl p-6 mb-8">
+          <div class="bg-black/30 rounded-xl p-6 mb-1 border border-stone-800/25">
             <h4 class="font-semibold text-lg">Latest Tournament: {recentTournament.title}</h4>
             <p class="text-gray-400 text-sm mb-4">{recentTournament.description}</p>
             
@@ -237,9 +230,16 @@
               </div>
             </div>
           </div>
+          <div class="text-xs text-gray-500">
+            Completed {new Date(recentTournament.completedDate).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </div>
 
           <!-- New Next Tournament CTA -->
-          <div class="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-6 mb-8">
+          <div class="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-6 my-8">
             <div class="text-center space-y-4">
               <h4 class="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 text-transparent bg-clip-text">
                 Next Tournament Loading...
@@ -304,7 +304,7 @@
           </div>
           
           <div class="text-center mt-4">
-            <a href="/viral-token">
+            <a href="/viral">
               <button class="text-purple-400 hover:text-purple-300 group transition-colors flex items-center mx-auto">
                 <span class="mr-2">Learn more</span>
                 <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
