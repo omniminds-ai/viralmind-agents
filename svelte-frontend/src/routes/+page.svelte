@@ -39,7 +39,8 @@
       .then(response => response.json())
       .then(data => {
         settings = data;
-        console.log(settings);
+        console.log('Settings data:', settings);
+        console.log('Latest tournament:', settings.concludedChallenges?.[0]);
         faqOpen = Array(settings.faq.length).fill(false);
       })
       .catch(error => {
@@ -170,7 +171,7 @@
                 <MousePointerClick class="w-6 h-6 text-purple-500" />
               </div>
               <div class="text-2xl font-bold">{settings?.breakAttempts || 0}</div>
-              <div class="text-sm text-gray-400">demonstrations</div>
+              <div class="text-sm text-gray-400">prompts</div>
             </div>
             
             <div class="space-y-2">
@@ -201,7 +202,7 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2 text-sm text-gray-400">
                     <Trophy class="w-4 h-4 text-purple-400" />
-                    <span>Prize Pool</span>
+                    <span>Winner: {settings.concludedChallenges[0].winning_address?.slice(0, 4)}...{settings.concludedChallenges[0].winning_address?.slice(-4)}</span>
                   </div>
                   <div class="flex items-center gap-2 text-sm">
                     <img src={solIcon} alt="SOL" class="w-4 h-4" />
@@ -210,15 +211,26 @@
                     <span class="text-gray-400">${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'}</span>
                   </div>
                 </div>
+                <div class="flex justify-center text-sm text-gray-400/70">
+                  <span class="font-mono">txn: {settings.concludedChallenges[0].winning_txn}</span>
+                </div>
               </div>
             </div>
           </a>
-          <div class="text-xs text-gray-500">
+          <div class="text-xs text-gray-500 flex items-center justify-center gap-2">
             Concluded {new Date(settings.concludedChallenges[0].expiry).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
             })}
+            •
+            <a 
+              href={`https://solscan.io/tx/${settings.concludedChallenges[0].winning_txn}`}
+              target="_blank"
+              class="text-purple-500 hover:text-purple-400 transition-colors"
+            >
+              View on Solscan
+            </a>
           </div>
           {/if}
 

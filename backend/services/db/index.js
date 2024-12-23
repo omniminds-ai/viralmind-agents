@@ -146,6 +146,8 @@ class DataBaseService {
           winning_prize: 1,
           developer_fee: 1,
           start_date: 1,
+          winning_address: 1,
+          winning_txn: 1,
         }
       );
 
