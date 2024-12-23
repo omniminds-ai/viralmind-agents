@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  let settings: any = null;
   import { 
     MousePointerClick,
     Trophy,
@@ -17,38 +18,7 @@
   import solIcon from '$lib/assets/solIcon.png';
   import demoVideo from '$lib/assets/demo.mp4';
 
-  const SOL_TO_USD = 182.01;
-  const recentTournament = {
-    id: 'viral_lua',
-    title: 'Lets go $VIRAL! | Just Chatting',
-    description: '$VIRAL Reading Stream 🌙 | Scrolling Through Your Posts w/ Chat',
-    prizePool: 20.3368,
-    participants: 234, // derived from chat query 
-    completedDate: '2024-12-21',
-    winner: '9SnqMx5h1Su8To27v6ZFd9zhSbicXx9b4hvHwbnRGYDP',
-    winningTxn: 'h4AfJoscC1bETdy6xs1WDzzUJxXpnYg4KxVwMzQK2mTMrtsfe3a5KEHFQ8A5oBWQRtzi1QkKWKewn6oFMCcVGR9'
-  };
-
-  const faqs = [
-    {
-      q: "What is VM-1?",
-      a: "VM-1 is our first computer-use model that can control computers just like humans do, without requiring APIs or special integrations."
-    },
-    {
-      q: "How do I earn $VIRAL?",
-      a: "You can earn $VIRAL by participating in training races, providing quality demonstrations, and winning tournaments."
-    },
-    {
-      q: "What's the difference between Tournaments and Training?",
-      a: "In tournaments, you command the AI agent step-by-step for the entire pot. In training, you demonstrate actions and earn rewards based on quality."
-    },
-    {
-      q: "Do I need to stake tokens?",
-      a: "Not always! Free races only require holding $VIRAL. Staked races offer higher rewards but require token staking."
-    }
-  ];
-
-  let faqOpen = Array(faqs.length).fill(false);
+  let faqOpen: boolean[] = [];
   let mousePosition = { x: 0, y: 0 };
 
   function handleMouseMove(event: MouseEvent) {
@@ -63,6 +33,19 @@
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
+    
+    // Fetch settings
+    fetch('/api/settings')
+      .then(response => response.json())
+      .then(data => {
+        settings = data;
+        console.log(settings);
+        faqOpen = Array(settings.faq.length).fill(false);
+      })
+      .catch(error => {
+        console.error('Failed to fetch settings:', error);
+      });
+
     return () => window.removeEventListener('mousemove', handleMouseMove);
   });
 </script>
@@ -186,7 +169,7 @@
               <div class="flex justify-center mb-2">
                 <MousePointerClick class="w-6 h-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">500</div>
+              <div class="text-2xl font-bold">{settings?.breakAttempts || 0}</div>
               <div class="text-sm text-gray-400">demonstrations</div>
             </div>
             
@@ -194,7 +177,7 @@
               <div class="flex justify-center mb-2">
                 <Trophy class="w-6 h-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">$2,333</div>
+              <div class="text-2xl font-bold">${settings?.treasury?.toFixed(2) || '0.00'}</div>
               <div class="text-sm text-gray-400">treasury</div>
             </div>
             
@@ -202,41 +185,42 @@
               <div class="flex justify-center mb-2">
                 <Coins class="w-6 h-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">$5,435</div>
+              <div class="text-2xl font-bold">${settings?.total_payout?.toFixed(2) || '0.00'}</div>
               <div class="text-sm text-gray-400">paid out</div>
             </div>
           </div>
 
           <!-- Latest Tournament Section -->
-          <div class="bg-black/30 rounded-xl p-6 mb-1 border border-stone-800/25">
-            <h4 class="font-semibold text-lg">Latest Tournament: {recentTournament.title}</h4>
-            <p class="text-gray-400 text-sm mb-4">{recentTournament.description}</p>
-            
-            <div class="flex flex-col gap-2 mb-4">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2 text-sm text-gray-400">
-                  <Trophy class="w-4 h-4 text-purple-400" />
-                  <span>Winner: {recentTournament.winner.slice(0, 4)}...{recentTournament.winner.slice(-4)}</span>
+          {#if settings?.concludedChallenges?.[0]}
+          <a href="/tournaments/{settings.concludedChallenges[0].name}" class="block">
+            <div class="bg-black/30 rounded-xl p-6 mb-1 border border-stone-800/25 hover:bg-stone-950/30 transition-colors">
+              <h4 class="font-semibold text-lg">Latest Tournament: {settings.concludedChallenges[0].title}</h4>
+              <p class="text-gray-400 text-sm mb-4">{settings.concludedChallenges[0].label}</p>
+              
+              <div class="flex flex-col gap-2 mb-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <Trophy class="w-4 h-4 text-purple-400" />
+                    <span>Prize Pool</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-sm">
+                    <img src={solIcon} alt="SOL" class="w-4 h-4" />
+                    <span class="text-gray-400">{settings.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span>
+                    <Coins class="w-4 h-4 text-purple-400" />
+                    <span class="text-gray-400">${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'}</span>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2 text-sm">
-                  <img src={solIcon} alt="SOL" class="w-4 h-4" />
-                  <span class="text-gray-400">{recentTournament.prizePool.toFixed(2)} SOL</span>
-                  <Coins class="w-4 h-4 text-purple-400" />
-                  <span class="text-gray-400">${(recentTournament.prizePool * SOL_TO_USD).toFixed(2)}</span>
-                </div>
-              </div>
-              <div class="flex justify-center text-sm text-gray-400/70">
-                <span class="font-mono">txn: {recentTournament.winningTxn}</span>
               </div>
             </div>
-          </div>
+          </a>
           <div class="text-xs text-gray-500">
-            Completed {new Date(recentTournament.completedDate).toLocaleDateString('en-US', {
+            Concluded {new Date(settings.concludedChallenges[0].expiry).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
             })}
           </div>
+          {/if}
 
           <!-- New Next Tournament CTA -->
           <div class="bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-6 my-8">
@@ -300,7 +284,7 @@
 
           <div class="mt-8 p-6 bg-black/30 rounded-xl">
             <p class="text-gray-400">Contract Address:</p>
-            <code class="text-purple-400 text-sm">HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump</code>
+            <code class="text-purple-400 text-sm">{settings?.jailToken?.address || ''}</code>
           </div>
           
           <div class="text-center mt-4">
@@ -319,13 +303,14 @@
             Frequently Asked Questions
           </h3>
 
-          {#each faqs as faq, i}
+          {#if settings?.faq}
+          {#each settings.faq as faq, i}
             <div class="mb-4">
               <button
                 class="w-full flex items-center justify-between p-4 bg-black/30 rounded-xl hover:bg-black/40 transition-colors"
                 on:click={() => toggleFaq(i)}
               >
-                <span class="font-semibold">{faq.q}</span>
+                <span class="font-semibold">{faq.question}</span>
                 {#if faqOpen[i]}
                   <ChevronUp class="w-5 h-5" />
                 {:else}
@@ -335,11 +320,12 @@
               
               {#if faqOpen[i]}
                 <div class="p-4 text-gray-400">
-                  {faq.a}
+                  {faq.answer}
                 </div>
               {/if}
             </div>
           {/each}
+          {/if}
         </div>
       </div>
     </div>
