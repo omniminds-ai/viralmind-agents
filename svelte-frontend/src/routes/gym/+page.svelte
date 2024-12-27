@@ -115,7 +115,7 @@
 
       <!-- Notification Sign Up -->
       <div class="mx-auto max-w-2xl rounded-3xl bg-stone-900/25 p-8 backdrop-blur-sm md:p-12">
-        <div class="mb-6 flex items-center justify-center gap-3">
+        <div class="mb-6 flex flex-col items-center justify-center gap-3 md:flex-row">
           <BellRing class="h-6 w-6 text-purple-400" />
           <h3 class="text-xl font-semibold">Get Notified When We Launch</h3>
         </div>
@@ -153,4 +153,3 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 </style>
-

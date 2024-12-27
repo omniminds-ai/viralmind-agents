@@ -2,9 +2,9 @@
   import { Send, AlertCircle, MessageSquare, X } from 'lucide-svelte';
   import ChatMessage from './ChatMessage.svelte';
 
-  const groupConsecutiveMessages = (messages: any[]) => {
-    const groups: any[][] = [];
-    let currentGroup: any[] = [];
+  const groupConsecutiveMessages = (messages: TournamentMessage[]) => {
+    const groups: TournamentMessage[][] = [];
+    let currentGroup: TournamentMessage[] = [];
 
     messages.forEach((message, index) => {
       const nextMessage = messages[index + 1];
@@ -29,17 +29,28 @@
     return groups;
   };
 
-  export let messages: any[] = [];
-  export let messagePrice: number;
-  export let usdMessagePrice: number;
-  export let timeLeft: string;
-  export let actionsPerMessage: number;
-  export let onSendMessage: (message: string) => void;
-  export let agentPfp: string;
+  let {
+    messages,
+    messagePrice,
+    usdMessagePrice,
+    timeLeft,
+    actionsPerMessage,
+    onSendMessage,
+    agentPfp
+  }: {
+    messages: TournamentMessage[];
+    messagePrice: number;
+    usdMessagePrice: number;
+    timeLeft: string;
+    actionsPerMessage: string;
+    onSendMessage: (message: string) => void;
+    agentPfp: string;
+  } = $props();
+  const groupedMessages = $derived(groupConsecutiveMessages(messages));
 
-  let messageInput = '';
+  let messageInput = $state('');
   let chatContainer: HTMLDivElement;
-  let isMobileOpen = false;
+  let isMobileOpen = $state(false);
 
   const formatSOL = (amount: number) => amount.toFixed(3);
   const formatUSD = (amount: number) => {
@@ -69,7 +80,7 @@
 <!-- Mobile Toggle Button -->
 <button
   class="fixed bottom-6 right-6 z-50 rounded-full bg-purple-500 p-4 text-white shadow-lg transition-all hover:bg-purple-600 lg:hidden"
-  on:click={toggleMobileChat}
+  onclick={toggleMobileChat}
 >
   {#if isMobileOpen}
     <X class="h-6 w-6" />
@@ -108,8 +119,8 @@
 
   <!-- Messages -->
   <div bind:this={chatContainer} class="chat-container flex-1 space-y-4 overflow-y-auto p-4">
-    {#each groupConsecutiveMessages(messages) as groupedMessages}
-      <ChatMessage messages={groupedMessages} {agentPfp} />
+    {#each groupedMessages as grouped, i}
+      <ChatMessage messages={grouped} {agentPfp} last={i === groupedMessages.length - 1} />
     {/each}
   </div>
 
@@ -123,10 +134,10 @@
         bind:value={messageInput}
         placeholder="Type a message..."
         class="min-w-0 flex-1 bg-transparent text-sm outline-none"
-        on:keydown={(e) => e.key === 'Enter' && handleSend()}
+        onkeydown={(e) => e.key === 'Enter' && handleSend()}
       />
       <button
-        on:click={handleSend}
+        onclick={handleSend}
         class="p-1 text-purple-400 transition-colors hover:text-purple-300"
       >
         <Send class="h-5 w-5" />
