@@ -17,9 +17,6 @@ export const load = (async ({ params, url }) => {
     }
 
     const data = await response.json();
-    console.log(data.challenge.idl);
-    console.log('scores');
-    console.log(data.challenge.scores);
     return {
       challenge: data.challenge,
       break_attempts: data.break_attempts,
@@ -37,4 +34,3 @@ export const load = (async ({ params, url }) => {
     throw error(500, 'Error loading tournament data');
   }
 }) satisfies PageServerLoad;
-
