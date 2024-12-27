@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Send, AlertCircle, MessageSquare, X } from 'lucide-svelte';
   import ChatMessage from './ChatMessage.svelte';
-  import type { TournamentMessage } from '$lib/types';
+  import type { Tournament, TournamentMessage } from '$lib/types';
+  import { onMount } from 'svelte';
 
   const groupConsecutiveMessages = (messages: TournamentMessage[]) => {
     const groups: TournamentMessage[][] = [];
@@ -37,21 +38,28 @@
     timeLeft,
     actionsPerMessage,
     onSendMessage,
-    agentPfp
+    agentPfp,
+    status
   }: {
     messages: TournamentMessage[];
     messagePrice: number;
     usdMessagePrice: number;
     timeLeft: string;
-    actionsPerMessage: string;
+    actionsPerMessage: number;
     onSendMessage: (message: string) => void;
     agentPfp: string;
+    status: Tournament['challenge']['status'];
   } = $props();
   const groupedMessages = $derived(groupConsecutiveMessages(messages));
 
   let messageInput = $state('');
   let chatContainer: HTMLDivElement;
   let isMobileOpen = $state(false);
+
+  onMount(() => {
+    if (status === 'concluded')
+      chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+  });
 
   const formatSOL = (amount: number) => amount.toFixed(3);
   const formatUSD = (amount: number) => {
@@ -130,23 +138,32 @@
     <div
       class="flex items-center gap-2 rounded-2xl bg-black/30 px-4 py-3 transition-all focus-within:ring-2 focus-within:ring-purple-400/50"
     >
-      <input
-        type="text"
-        bind:value={messageInput}
-        placeholder="Type a message..."
-        class="min-w-0 flex-1 bg-transparent text-sm outline-none"
-        onkeydown={(e) => e.key === 'Enter' && handleSend()}
-      />
-      <button
-        onclick={handleSend}
-        class="p-1 text-purple-400 transition-colors hover:text-purple-300"
-      >
-        <Send class="h-5 w-5" />
-      </button>
+      {#if status === 'active'}
+        <input
+          type="text"
+          bind:value={messageInput}
+          placeholder="Type a message..."
+          class="min-w-0 flex-1 bg-transparent text-sm outline-none"
+          onkeydown={(e) => e.key === 'Enter' && handleSend()}
+        />
+        <button
+          onclick={handleSend}
+          class="p-1 text-purple-400 transition-colors hover:text-purple-300"
+        >
+          <Send class="h-5 w-5" />
+        </button>
+      {:else}
+        <div class="flex flex-col">
+          <p>Tournament Concluded! 🎉</p>
+          <p class="text-sm text-white/50">Stay tuned for more in the future.</p>
+        </div>
+      {/if}
     </div>
     <div class="mt-2 flex items-center gap-1 px-1 text-xs text-gray-500">
-      <AlertCircle class="h-3 w-3" />
-      Messages cost {formatSOL(messagePrice)} SOL
+      {#if status === 'active' || status === 'upcoming'}
+        <AlertCircle class="h-3 w-3" />
+        Messages cost {formatSOL(messagePrice)} SOL
+      {/if}
     </div>
   </div>
 </div>
