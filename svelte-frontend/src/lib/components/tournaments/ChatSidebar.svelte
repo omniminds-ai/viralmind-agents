@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Send, AlertCircle, MessageSquare, X } from 'lucide-svelte';
   import ChatMessage from './ChatMessage.svelte';
+  import type { TournamentMessage } from '$lib/types';
 
   const groupConsecutiveMessages = (messages: TournamentMessage[]) => {
     const groups: TournamentMessage[][] = [];

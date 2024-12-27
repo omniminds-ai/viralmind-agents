@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { TournamentMessage } from '$lib/types';
   import { renderToolAction } from '$lib/utils/toolActions';
 
   let {
