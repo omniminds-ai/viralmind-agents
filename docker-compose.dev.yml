@@ -74,24 +74,20 @@ services:
 
   front-end:
     build:
-      context: frontend
+      context: svelte-frontend
     container_name: front-end
-    working_dir: /usr/src/app/frontend
+    working_dir: /usr/src/app/svelte-frontend
     networks:
       - node-network
     tty: true
     ports:
-      - "3000:3000"
+      - "5173:5173"
     command: npm run dev
     volumes:
-      - ./frontend:/usr/src/app/frontend
-      - /usr/src/app/frontend/node_modules
+      - ./svelte-frontend:/usr/src/app/svelte-frontend
+      - /usr/src/app/svelte-frontend/node_modules
     environment:
       - NODE_ENV=development
-      - NEXT_TELEMETRY_DISABLED=1
-      - WATCHPACK_POLLING=true
-      - CHOKIDAR_USEPOLLING=true
-      - PATH=/usr/src/app/frontend/node_modules/.bin:$PATH
 
   nginx:
     build:

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  let settings: any = null;
   import {
     MousePointerClick,
     Trophy,
@@ -10,7 +11,9 @@
     HelpCircle,
     MessageCircle,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Users,
+    ArrowRight
   } from 'lucide-svelte';
   import demoVideo from '$lib/assets/demo.mp4';
 
@@ -48,12 +51,26 @@
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
+
+    // Fetch settings
+    fetch('/api/settings')
+      .then((response) => response.json())
+      .then((data) => {
+        settings = data;
+        console.log('Settings data:', settings);
+        console.log('Latest tournament:', settings.concludedChallenges?.[0]);
+        faqOpen = Array(settings.faq.length).fill(false);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch settings:', error);
+      });
+
     return () => window.removeEventListener('mousemove', handleMouseMove);
   });
 </script>
 
 <!-- Main Hero Section -->
-<div class="min-h-screen bg-black pb-24 text-white">
+<div class="min-h-screen bg-black pb-8 text-white">
   <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
     <!-- Video Background with Mask -->
     <div class="absolute inset-0 z-0">
@@ -109,7 +126,9 @@
 
         <!-- Developer CTAs -->
         <div class="relative z-20 mt-16">
-          <p class="mb-4 text-gray-400 drop-shadow-lg">Ready to Build Something Insane?</p>
+          <p class="mb-2 text-gray-400 opacity-50 drop-shadow-lg">
+            Ready to Build Something Insane?
+          </p>
           <div class="flex justify-center">
             <a
               href="https://t.me/viralmind"
@@ -157,12 +176,14 @@
           </div>
 
           <div class="text-center">
-            <button
-              class="mx-auto flex items-center justify-center gap-2 rounded-full bg-purple-600 px-8 py-3 font-semibold transition-colors hover:bg-purple-700"
-            >
-              <Dumbbell class="h-5 w-5" />
-              Enter Training Gym →
-            </button>
+            <a href="/gym">
+              <button
+                class="mx-auto block flex items-center justify-center gap-2 rounded-full bg-purple-600 px-8 py-3 font-semibold transition-colors hover:bg-purple-700"
+              >
+                <Dumbbell class="h-5 w-5" />
+                Enter Training Gym →
+              </button>
+            </a>
           </div>
         </div>
 
@@ -180,40 +201,124 @@
               <div class="mb-2 flex justify-center">
                 <MousePointerClick class="h-6 w-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">500</div>
-              <div class="text-sm text-gray-400">demonstrations</div>
+              <div class="text-2xl font-bold">{settings?.breakAttempts || 0}</div>
+              <div class="text-sm text-gray-400">prompts</div>
             </div>
 
             <div class="space-y-2">
               <div class="mb-2 flex justify-center">
                 <Trophy class="h-6 w-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">129</div>
-              <div class="text-sm text-gray-400">trainers</div>
+              <div class="text-2xl font-bold">${settings?.treasury?.toFixed(2) || '0.00'}</div>
+              <div class="text-sm text-gray-400">treasury</div>
             </div>
 
             <div class="space-y-2">
               <div class="mb-2 flex justify-center">
                 <Coins class="h-6 w-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">$5,435</div>
+              <div class="text-2xl font-bold">${settings?.total_payout?.toFixed(2) || '0.00'}</div>
               <div class="text-sm text-gray-400">paid out</div>
             </div>
           </div>
 
-          <div class="space-y-4 text-center">
-            <button
-              class="rounded-full bg-purple-600 px-8 py-3 font-semibold transition-colors hover:bg-purple-700"
-            >
-              Join Tournament →
-            </button>
-            <div>
-              <button
-                class="mx-auto flex items-center gap-2 text-gray-400 transition-colors hover:text-white"
+          <!-- Latest Tournament Section -->
+          {#if settings?.concludedChallenges?.[0]}
+            <a href="/tournaments/{settings.concludedChallenges[0].name}" class="block">
+              <div
+                class="mb-1 rounded-xl border border-stone-800/25 bg-black/30 p-6 transition-colors hover:bg-stone-950/30"
               >
-                <History class="h-4 w-4" />
-                See Past Tournaments
-              </button>
+                <h4 class="text-lg font-semibold">
+                  Latest Tournament: {settings.concludedChallenges[0].title}
+                </h4>
+                <p class="mb-4 text-sm text-gray-400">{settings.concludedChallenges[0].label}</p>
+
+                <div class="mb-4 flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-sm text-gray-400">
+                      <Trophy class="h-4 w-4 text-purple-400" />
+                      <span
+                        >Winner: {settings.concludedChallenges[0].winning_address?.slice(
+                          0,
+                          4
+                        )}...{settings.concludedChallenges[0].winning_address?.slice(-4)}</span
+                      >
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                      <img src={solIcon} alt="SOL" class="h-4 w-4" />
+                      <span class="text-gray-400"
+                        >{settings.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span
+                      >
+                      <Coins class="h-4 w-4 text-purple-400" />
+                      <span class="text-gray-400"
+                        >${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'}</span
+                      >
+                    </div>
+                  </div>
+                  <div class="flex justify-center text-sm text-gray-400/70">
+                    <span class="font-mono">txn: {settings.concludedChallenges[0].winning_txn}</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </a>
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
+              Concluded {new Date(settings.concludedChallenges[0].expiry).toLocaleDateString(
+                'en-US',
+                {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }
+              )}
+              •
+              <a
+                href={`https://solscan.io/tx/${settings.concludedChallenges[0].winning_txn}`}
+                target="_blank"
+                class="text-purple-500 transition-colors hover:text-purple-400"
+              >
+                View on Solscan
+              </a>
+            </div>
+          {/if}
+
+          <!-- New Next Tournament CTA -->
+          <div class="my-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
+            <div class="space-y-4 text-center">
+              <h4
+                class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent"
+              >
+                Next Tournament Loading...
+              </h4>
+              <p class="text-gray-300">Don't miss out on the next chance to win big!</p>
+              <a
+                href="https://t.me/viralmind"
+                target="_blank"
+                class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold transition-all duration-200 hover:scale-105 hover:opacity-90"
+              >
+                <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
+                Join Telegram for Updates
+                <span
+                  class="text-purple-300 transition-transform duration-200 group-hover:translate-x-1"
+                  >→</span
+                >
+              </a>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-center">
+            <!-- <button class="px-8 py-3 bg-purple-600 rounded-full font-semibold hover:bg-purple-700 transition-colors">
+              Join Tournament →
+            </button> -->
+            <div>
+              <a href="/tournaments">
+                <button
+                  class="mx-auto flex items-center gap-2 text-gray-400 transition-colors hover:text-white"
+                >
+                  <History class="h-4 w-4" />
+                  See Past Tournaments
+                </button>
+              </a>
             </div>
           </div>
         </div>
@@ -248,8 +353,18 @@
 
           <div class="mt-8 rounded-xl bg-black/30 p-6">
             <p class="text-gray-400">Contract Address:</p>
-            <code class="text-sm text-purple-400">HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump</code
-            >
+            <code class="text-sm text-purple-400">{settings?.jailToken?.address || ''}</code>
+          </div>
+
+          <div class="mt-4 text-center">
+            <a href="/viral">
+              <button
+                class="group mx-auto flex items-center text-purple-400 transition-colors hover:text-purple-300"
+              >
+                <span class="mr-2">Learn more</span>
+                <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </button>
+            </a>
           </div>
         </div>
 
@@ -261,41 +376,43 @@
             Frequently Asked Questions
           </h3>
 
-          {#each faqs as faq, i}
-            <div class="mb-4">
-              <button
-                class="flex w-full items-center justify-between rounded-xl bg-black/30 p-4 transition-colors hover:bg-black/40"
-                on:click={() => toggleFaq(i)}
-              >
-                <span class="font-semibold">{faq.q}</span>
-                {#if faqOpen[i]}
-                  <ChevronUp class="h-5 w-5" />
-                {:else}
-                  <ChevronDown class="h-5 w-5" />
-                {/if}
-              </button>
+          {#if settings?.faq}
+            {#each settings.faq as faq, i}
+              <div class="mb-4">
+                <button
+                  class="flex w-full items-center justify-between rounded-xl bg-black/30 p-4 transition-colors hover:bg-black/40"
+                  on:click={() => toggleFaq(i)}
+                >
+                  <span class="font-semibold">{faq.question}</span>
+                  {#if faqOpen[i]}
+                    <ChevronUp class="h-5 w-5" />
+                  {:else}
+                    <ChevronDown class="h-5 w-5" />
+                  {/if}
+                </button>
 
-              {#if faqOpen[i]}
-                <div class="p-4 text-gray-400">
-                  {faq.a}
-                </div>
-              {/if}
-            </div>
-          {/each}
+                {#if faqOpen[i]}
+                  <div class="p-4 text-gray-400">
+                    {faq.answer}
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          {/if}
         </div>
       </div>
     </div>
-
-    <!-- Background effects -->
-    <div class="absolute inset-0 z-[1] bg-gradient-to-b from-purple-900/20 to-black"></div>
-    <div
-      class="absolute inset-0 z-[2] transition-transform duration-1000 ease-out"
-      style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.15), transparent 40%); 
-             transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) *
-        -0.05}px)"
-    ></div>
-    <div class="absolute inset-0 z-[3] bg-gradient-to-b from-black via-transparent to-black"></div>
   </div>
+
+  <!-- Background effects -->
+  <div class="absolute inset-0 z-[1] bg-gradient-to-b from-purple-900/20 to-black"></div>
+  <div
+    class="absolute inset-0 z-[2] transition-transform duration-1000 ease-out"
+    style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.1), transparent 100%); 
+            transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) *
+      -0.05}px)"
+  ></div>
+  <div class="absolute inset-0 z-[3] bg-gradient-to-b from-black via-transparent to-black"></div>
 </div>
 
 <style>
