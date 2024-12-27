@@ -1,17 +1,9 @@
 <!-- Navbar.svelte -->
 <script lang="ts">
   import logo from '$lib/assets/logoTransparent.png';
-  import { 
-    Dumbbell,
-    Trophy,
-    HelpCircle,
-    Book,
-    Coins,
-    Menu,
-    X
-  } from 'lucide-svelte';
+  import { Dumbbell, Trophy, HelpCircle, Book, Coins, Menu, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  
+
   let isScrolled = false;
   let isMobileMenuOpen = false;
 
@@ -19,7 +11,7 @@
     const handleScroll = () => {
       isScrolled = window.scrollY > 20;
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -27,57 +19,55 @@
   });
 </script>
 
-<div 
-  class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
->
+<div class="fixed left-0 right-0 top-0 z-50 transition-all duration-300">
   <!-- Blurred background that shows on scroll -->
-  <div 
-    class="absolute inset-0 backdrop-blur-lg bg-black/50 border-b border-white/10 transition-opacity duration-300"
+  <div
+    class="absolute inset-0 border-b border-white/10 bg-black/50 backdrop-blur-lg transition-opacity duration-300"
     class:opacity-0={!isScrolled}
     class:opacity-100={isScrolled}
   ></div>
 
-  <div class="max-w-7xl mx-auto px-6 relative z-10">
-    <div class="flex items-center justify-between h-16">
+  <div class="relative z-10 mx-auto max-w-7xl px-6">
+    <div class="flex h-16 items-center justify-between">
       <!-- Left side with logo -->
       <div class="flex items-center space-x-8">
-        <a href="/" class="flex items-center group">
-          <img 
-            src={logo} 
-            alt="ViralMind" 
-            class="h-8 w-8 group-hover:scale-105 transition-transform"
+        <a href="/" class="group flex items-center">
+          <img
+            src={logo}
+            alt="ViralMind"
+            class="h-8 w-8 transition-transform group-hover:scale-105"
           />
         </a>
 
         <!-- Desktop Navigation -->
-        <nav class="hidden md:flex items-center space-x-8">
-          <a 
+        <nav class="hidden items-center space-x-8 md:flex">
+          <a
             href="/tournaments"
-            class="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2 group"
+            class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
-            <Trophy class="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <Trophy class="h-4 w-4 transition-transform group-hover:scale-110" />
             Tournaments
           </a>
-          <a 
-            href="/#faq" 
-            class="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2 group"
+          <a
+            href="/#faq"
+            class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
-            <HelpCircle class="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <HelpCircle class="h-4 w-4 transition-transform group-hover:scale-110" />
             FAQ
           </a>
-          <a 
-            href="https://viralmind.gitbook.io/viralmind.ai" 
+          <a
+            href="https://viralmind.gitbook.io/viralmind.ai"
             target="_blank"
-            class="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2 group"
+            class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
-            <Book class="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <Book class="h-4 w-4 transition-transform group-hover:scale-110" />
             Docs
           </a>
-          <a 
-            href="/viral" 
-            class="text-sm text-gray-300 hover:text-white transition-colors flex items-center gap-2 group"
+          <a
+            href="/viral"
+            class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
-            <Coins class="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <Coins class="h-4 w-4 transition-transform group-hover:scale-110" />
             $VIRAL
           </a>
         </nav>
@@ -88,27 +78,27 @@
         <!-- Training Gym CTA -->
         <a
           href="/gym"
-          class="hidden md:flex items-center gap-3 py-1 pl-4 pr-5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black rounded-full text-sm font-medium transition-all group shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-[1.02]"
+          class="group hidden items-center gap-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 py-1 pl-4 pr-5 text-sm font-medium text-black shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:from-amber-400 hover:to-yellow-400 hover:shadow-amber-500/30 md:flex"
         >
-          <div class="p-1 bg-black/10 rounded-full">
-            <Dumbbell class="w-4 h-4 group-hover:scale-110 transition-transform" />
+          <div class="rounded-full bg-black/10 p-1">
+            <Dumbbell class="h-4 w-4 transition-transform group-hover:scale-110" />
           </div>
           <div class="flex items-center gap-1">
             <span>Earn</span>
             <span class="font-bold">$VIRAL</span>
-            <span class="opacity-80 font-medium">by Training →</span>
+            <span class="font-medium opacity-80">by Training →</span>
           </div>
         </a>
 
         <!-- Mobile menu button -->
-        <button 
-          class="md:hidden p-2 text-gray-300 hover:text-white transition-colors rounded-full hover:bg-white/5"
-          on:click={() => isMobileMenuOpen = !isMobileMenuOpen}
+        <button
+          class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white md:hidden"
+          onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
         >
           {#if isMobileMenuOpen}
-            <X class="w-6 h-6" />
+            <X class="h-6 w-6" />
           {:else}
-            <Menu class="w-6 h-6" />
+            <Menu class="h-6 w-6" />
           {/if}
         </button>
       </div>
@@ -116,42 +106,47 @@
 
     <!-- Mobile Navigation Menu -->
     {#if isMobileMenuOpen}
-      <div class="md:hidden absolute top-16 left-0 right-0 bg-black/95 backdrop-blur-lg border-b border-white/10">
-        <nav class="px-6 py-4 space-y-4">
-          <a 
+      <div
+        class="absolute left-0 right-0 top-16 border-b border-white/10 bg-black/95 backdrop-blur-lg md:hidden"
+      >
+        <nav class="space-y-4 px-6 py-4">
+          <a
             href="/tournaments"
-            class="flex items-center gap-3 text-gray-300 hover:text-white py-2 transition-colors"
+            onclick={() => (isMobileMenuOpen = false)}
+            class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
-            <Trophy class="w-5 h-5" />
+            <Trophy class="h-5 w-5" />
             Tournaments
           </a>
-          <a 
+          <a
             href="/#faq"
-            class="flex items-center gap-3 text-gray-300 hover:text-white py-2 transition-colors"
+            onclick={() => (isMobileMenuOpen = false)}
+            class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
-            <HelpCircle class="w-5 h-5" />
+            <HelpCircle class="h-5 w-5" />
             FAQ
           </a>
-          <a 
+          <a
             href="https://viralmind.gitbook.io/viralmind.ai"
             target="_blank"
-            class="flex items-center gap-3 text-gray-300 hover:text-white py-2 transition-colors"
+            class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
-            <Book class="w-5 h-5" />
+            <Book class="h-5 w-5" />
             Docs
           </a>
-          <a 
-            href="/viral-token"
-            class="flex items-center gap-3 text-gray-300 hover:text-white py-2 transition-colors"
+          <a
+            href="/viral"
+            onclick={() => (isMobileMenuOpen = false)}
+            class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
-            <Coins class="w-5 h-5" />
+            <Coins class="h-5 w-5" />
             $VIRAL
           </a>
-          <a 
+          <a
             href="/gym"
-            class="flex items-center gap-3 text-gray-300 hover:text-white py-2 transition-colors"
+            class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
-            <Dumbbell class="w-5 h-5" />
+            <Dumbbell class="h-5 w-5" />
             Training Gym
           </a>
         </nav>

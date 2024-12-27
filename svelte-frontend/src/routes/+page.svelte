@@ -5,17 +5,18 @@
     MousePointerClick,
     Trophy,
     Coins,
-    Command,
     History,
     Dumbbell,
-    HelpCircle,
     MessageCircle,
     ChevronDown,
     ChevronUp,
-    Users,
     ArrowRight
   } from 'lucide-svelte';
+  import solIcon from '$lib/assets/solIcon.png';
   import demoVideo from '$lib/assets/demo.mp4';
+  import ContractInfo from '$lib/components/ContractInfo.svelte';
+  import Card from '$lib/components/Card.svelte';
+  import ButtonCTA from '$lib/components/ButtonCTA.svelte';
 
   const faqs = [
     {
@@ -53,7 +54,7 @@
     window.addEventListener('mousemove', handleMouseMove);
 
     // Fetch settings
-    fetch('/api/settings')
+    fetch('https://viralmind.ai/api/settings')
       .then((response) => response.json())
       .then((data) => {
         settings = data;
@@ -130,14 +131,10 @@
             Ready to Build Something Insane?
           </p>
           <div class="flex justify-center">
-            <a
-              href="https://t.me/viralmind"
-              target="_blank"
-              class="flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold shadow-lg transition-opacity hover:opacity-90"
-            >
+            <ButtonCTA href="https://t.me/viralmind" target="_blank">
               <MessageCircle class="h-5 w-5" />
               Join Our Telegram for Updates
-            </a>
+            </ButtonCTA>
           </div>
         </div>
       </div>
@@ -145,7 +142,7 @@
       <!-- Card Sections -->
       <div class="mt-12 space-y-8">
         <!-- Training Gym Card -->
-        <div class="rounded-3xl bg-stone-900/25 p-12 shadow-2xl backdrop-blur-md">
+        <Card bordered={false}>
           <h3
             class="mb-2 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-2xl font-semibold text-transparent drop-shadow-lg md:text-3xl"
           >
@@ -175,20 +172,19 @@
             </div>
           </div>
 
-          <div class="text-center">
-            <a href="/gym">
-              <button
-                class="mx-auto block flex items-center justify-center gap-2 rounded-full bg-purple-600 px-8 py-3 font-semibold transition-colors hover:bg-purple-700"
+          <div class="flex justify-center">
+            <ButtonCTA href="/gym">
+              <Dumbbell class="h-5 w-5" />
+              Enter Training Gym
+              <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
+                >→</span
               >
-                <Dumbbell class="h-5 w-5" />
-                Enter Training Gym →
-              </button>
-            </a>
+            </ButtonCTA>
           </div>
-        </div>
+        </Card>
 
         <!-- Tournament Card -->
-        <div class="rounded-3xl bg-stone-900/25 p-12 shadow-2xl backdrop-blur-md">
+        <div class="rounded-3xl py-12 shadow-2xl backdrop-blur-md">
           <h3
             class="mb-2 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-2xl font-semibold text-transparent drop-shadow-lg md:text-3xl"
           >
@@ -201,7 +197,7 @@
               <div class="mb-2 flex justify-center">
                 <MousePointerClick class="h-6 w-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">{settings?.breakAttempts || 0}</div>
+              <div class="text-lg font-bold md:text-2xl">{settings?.breakAttempts || 0}</div>
               <div class="text-sm text-gray-400">prompts</div>
             </div>
 
@@ -209,7 +205,9 @@
               <div class="mb-2 flex justify-center">
                 <Trophy class="h-6 w-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">${settings?.treasury?.toFixed(2) || '0.00'}</div>
+              <div class="text-lg font-bold md:text-2xl">
+                ${settings?.treasury?.toFixed(2) || '0.00'}
+              </div>
               <div class="text-sm text-gray-400">treasury</div>
             </div>
 
@@ -217,51 +215,65 @@
               <div class="mb-2 flex justify-center">
                 <Coins class="h-6 w-6 text-purple-500" />
               </div>
-              <div class="text-2xl font-bold">${settings?.total_payout?.toFixed(2) || '0.00'}</div>
+              <div class="text-lg font-bold md:text-2xl">
+                ${settings?.total_payout?.toFixed(2) || '0.00'}
+              </div>
               <div class="text-sm text-gray-400">paid out</div>
             </div>
           </div>
 
           <!-- Latest Tournament Section -->
           {#if settings?.concludedChallenges?.[0]}
-            <a href="/tournaments/{settings.concludedChallenges[0].name}" class="block">
-              <div
-                class="mb-1 rounded-xl border border-stone-800/25 bg-black/30 p-6 transition-colors hover:bg-stone-950/30"
-              >
-                <h4 class="text-lg font-semibold">
-                  Latest Tournament: {settings.concludedChallenges[0].title}
-                </h4>
-                <p class="mb-4 text-sm text-gray-400">{settings.concludedChallenges[0].label}</p>
+            <h3 class="py-2 text-xl font-semibold text-purple-400">Latest Tournament</h3>
+            <div class="block">
+              <Card class="mb-2 ">
+                <a
+                  href="/tournaments/{settings.concludedChallenges[0].name}"
+                  class="text-lg hover:underline"
+                >
+                  {settings.concludedChallenges[0].title}
+                </a>
+                <p class="mb-4 mt-2 text-sm text-gray-400">
+                  {settings.concludedChallenges[0].label}
+                </p>
 
                 <div class="mb-4 flex flex-col gap-2">
-                  <div class="flex items-center justify-between">
+                  <div class="flex flex-col items-center justify-between gap-y-4 md:flex-row">
                     <div class="flex items-center gap-2 text-sm text-gray-400">
                       <Trophy class="h-4 w-4 text-purple-400" />
                       <span
                         >Winner: {settings.concludedChallenges[0].winning_address?.slice(
                           0,
-                          4
+                          5
                         )}...{settings.concludedChallenges[0].winning_address?.slice(-4)}</span
                       >
                     </div>
-                    <div class="flex items-center gap-2 text-sm">
-                      <img src={solIcon} alt="SOL" class="h-4 w-4" />
-                      <span class="text-gray-400"
-                        >{settings.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span
-                      >
-                      <Coins class="h-4 w-4 text-purple-400" />
-                      <span class="text-gray-400"
-                        >${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'}</span
-                      >
+                    <div class="flex flex-col items-center gap-4 text-sm md:flex-row">
+                      <div class="flex gap-2">
+                        <img src={solIcon} alt="SOL" class="h-4 w-4" />
+                        <span class="text-gray-400"
+                          >{settings.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span
+                        >
+                      </div>
+                      <div class="flex gap-2">
+                        <Coins class="h-4 w-4 text-purple-400" />
+                        <span class="text-gray-400"
+                          >${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'}</span
+                        >
+                      </div>
                     </div>
                   </div>
-                  <div class="flex justify-center text-sm text-gray-400/70">
-                    <span class="font-mono">txn: {settings.concludedChallenges[0].winning_txn}</span
+                  <div class=" text-sm text-gray-400/70">
+                    <p
+                      class="font-xs mx-auto mb-1 w-fit border-b border-gray-400/70 font-semibold uppercase"
                     >
+                      txn
+                    </p>
+                    <p class="break-all font-mono">{settings.concludedChallenges[0].winning_txn}</p>
                   </div>
                 </div>
-              </div>
-            </a>
+              </Card>
+            </div>
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
               Concluded {new Date(settings.concludedChallenges[0].expiry).toLocaleDateString(
                 'en-US',
@@ -298,8 +310,7 @@
               >
                 <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
                 Join Telegram for Updates
-                <span
-                  class="text-purple-300 transition-transform duration-200 group-hover:translate-x-1"
+                <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
                   >→</span
                 >
               </a>
@@ -324,7 +335,7 @@
         </div>
 
         <!-- Token Section -->
-        <div class="rounded-3xl bg-stone-900/25 p-12 shadow-2xl backdrop-blur-md">
+        <Card bordered={false}>
           <h3
             class="mb-8 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-2xl font-semibold text-transparent drop-shadow-lg md:text-3xl"
           >
@@ -352,8 +363,7 @@
           </div>
 
           <div class="mt-8 rounded-xl bg-black/30 p-6">
-            <p class="text-gray-400">Contract Address:</p>
-            <code class="text-sm text-purple-400">{settings?.jailToken?.address || ''}</code>
+            <ContractInfo />
           </div>
 
           <div class="mt-4 text-center">
@@ -366,40 +376,42 @@
               </button>
             </a>
           </div>
-        </div>
+        </Card>
 
         <!-- FAQ Section -->
-        <div class="rounded-3xl bg-stone-900/25 p-12 shadow-2xl backdrop-blur-md" id="faq">
-          <h3
-            class="mb-8 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-2xl font-semibold text-transparent drop-shadow-lg md:text-3xl"
-          >
-            Frequently Asked Questions
-          </h3>
+        <Card bordered={false}>
+          <div id="faq">
+            <h3
+              class="mb-8 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-2xl font-semibold text-transparent drop-shadow-lg md:text-3xl"
+            >
+              Frequently Asked Questions
+            </h3>
 
-          {#if settings?.faq}
-            {#each settings.faq as faq, i}
-              <div class="mb-4">
-                <button
-                  class="flex w-full items-center justify-between rounded-xl bg-black/30 p-4 transition-colors hover:bg-black/40"
-                  on:click={() => toggleFaq(i)}
-                >
-                  <span class="font-semibold">{faq.question}</span>
+            {#if settings?.faq}
+              {#each settings.faq as faq, i}
+                <div class="mb-4">
+                  <button
+                    class="flex w-full items-center justify-between rounded-xl border border-purple-600/30 bg-black/30 p-4 transition-colors hover:bg-black/40"
+                    onclick={() => toggleFaq(i)}
+                  >
+                    <span class="font-semibold">{faq.question}</span>
+                    {#if faqOpen[i]}
+                      <ChevronUp class="h-5 w-5" />
+                    {:else}
+                      <ChevronDown class="h-5 w-5" />
+                    {/if}
+                  </button>
+
                   {#if faqOpen[i]}
-                    <ChevronUp class="h-5 w-5" />
-                  {:else}
-                    <ChevronDown class="h-5 w-5" />
+                    <div class="p-4 text-gray-400">
+                      {faq.answer}
+                    </div>
                   {/if}
-                </button>
-
-                {#if faqOpen[i]}
-                  <div class="p-4 text-gray-400">
-                    {faq.answer}
-                  </div>
-                {/if}
-              </div>
-            {/each}
-          {/if}
-        </div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+        </Card>
       </div>
     </div>
   </div>

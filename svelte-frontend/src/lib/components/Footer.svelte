@@ -40,8 +40,11 @@
         </a>
 
         <!-- Contract Address -->
-        <div class="flex items-center gap-2 rounded-full bg-black/20 px-4 py-1">
-          <code class="font-mono text-sm">HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump</code>
+        <div class="flex items-center justify-center gap-2 rounded-full bg-black/20 px-4 py-1">
+          <span class="text-xs font-semibold uppercase">contract: </span><code
+            class="w-1/3 truncate font-mono text-sm md:w-full"
+            >HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump</code
+          >
           <button
             class="text-xs hover:text-white"
             onclick={() =>
