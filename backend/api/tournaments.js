@@ -3,7 +3,8 @@ import verify from "./verify.js";
 import DatabaseService from "../services/db/index.js";
 const router = express.Router();
 
-router.get("/", verify, async (req, res) => {
+// Get all tournaments from the database
+router.get("/", verify, async (_req, res) => {
   try {
     const challenges = await DatabaseService.getAllTournaments();
     res.send(challenges);
@@ -13,6 +14,7 @@ router.get("/", verify, async (req, res) => {
   }
 });
 
+// Get a tournament by id
 router.get("/:id", verify, async (req, res) => {
   try {
     const challenges = await DatabaseService.getTournamentById(req.params.id);
@@ -23,52 +25,55 @@ router.get("/:id", verify, async (req, res) => {
   }
 });
 
-// router.post("/new-tournament", verify, async (req, res) => {
-//   try {
-//     const {
-//       title,
-//       name,
-//       description,
-//       image,
-//       pfp,
-//       task,
-//       label,
-//       level,
-//       model,
-//       system_message,
-//       characterLimit,
-//       contextLimit,
-//       chatLimit,
-//       tools,
-//     } = req.body;
+// Create a new tournamnent
+/*
+router.post("/new-tournament", verify, async (req, res) => {
+  try {
+    const {
+      title,
+      name,
+      description,
+      image,
+      pfp,
+      task,
+      label,
+      level,
+      model,
+      system_message,
+      characterLimit,
+      contextLimit,
+      chatLimit,
+      tools,
+    } = req.body;
 
-//     if (!title || !name || !description)
-//       return res
-//         .status(400)
-//         .send("Must include at least title, name, and description");
+    if (!title || !name || !description)
+      return res
+        .status(400)
+        .send("Must include at least title, name, and description");
 
-//     const savedChallenge = await DatabaseService.createTournament({
-//       title,
-//       name,
-//       description,
-//       image,
-//       pfp,
-//       task,
-//       label,
-//       level,
-//       model,
-//       system_message,
-//       characterLimit,
-//       contextLimit,
-//       chatLimit,
-//       tools,
-//     });
+    const savedChallenge = await DatabaseService.createTournament({
+      title,
+      name,
+      description,
+      image,
+      pfp,
+      task,
+      label,
+      level,
+      model,
+      system_message,
+      characterLimit,
+      contextLimit,
+      chatLimit,
+      tools,
+    });
 
-//     res.send(savedChallenge);
-//   } catch (err) {
-//     console.log(err);
-//     return res.status(400).send(err);
-//   }
-// });
+    res.send(savedChallenge);
+  } catch (err) {
+    console.log(err);
+    return res.status(400).send(err);
+  }
+});
+*/
 
 export { router as tournamentsAPI };
