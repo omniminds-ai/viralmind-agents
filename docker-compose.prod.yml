@@ -71,18 +71,15 @@ services:
 
   front-end:
     build:
-      context: frontend
+      context: svelte-frontend
     container_name: front-end
-    working_dir: /usr/src/app/frontend
+    working_dir: /usr/src/app/svelte-frontend
     networks:
       - node-network
     tty: true
     ports:
-      - "3000:3000"
-    command: npm start
-    environment:
-      # - NODE_ENV=production
-      - NEXT_TELEMETRY_DISABLED=1
+      - "5173:5173"
+    command: sh -c "npm run build && npm run preview -- --host 0.0.0.0 --port 5173"
 
   nginx:
     build:
