@@ -17,6 +17,7 @@
   import ContractInfo from '$lib/components/ContractInfo.svelte';
   import Card from '$lib/components/Card.svelte';
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
+  import ServerIpReveal from '$lib/components/ServerIpReveal.svelte';
 
   const faqs = [
     {
@@ -54,7 +55,7 @@
     window.addEventListener('mousemove', handleMouseMove);
 
     // Fetch settings
-    fetch('https://viralmind.ai/api/settings')
+    fetch('/api/settings')
       .then((response) => response.json())
       .then((data) => {
         settings = data;
@@ -72,7 +73,7 @@
 
 <!-- Main Hero Section -->
 <div class="min-h-screen bg-black pb-8 text-white">
-  <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
+  <div class="relative flex flex-col items-center justify-center overflow-hidden">
     <!-- Video Background with Mask -->
     <div class="absolute inset-0 z-0">
       <div class="absolute inset-0 flex items-start justify-center overflow-hidden">
@@ -138,7 +139,9 @@
           </div>
         </div>
       </div>
-
+    </div>
+    
+    <div class="relative z-10 mx-auto w-full max-w-4xl px-4 text-center">
       <!-- Card Sections -->
       <div class="mt-12 space-y-8">
         <!-- Training Gym Card -->
@@ -149,7 +152,7 @@
             Earn $VIRAL. Shape The Future.
           </h3>
           <p class="mb-8 text-gray-400">Train Agents through Demonstration</p>
-
+          
           <!-- Race Types -->
           <div class="mb-8 grid gap-6 text-left md:grid-cols-2">
             <div class="rounded-xl bg-black/30 p-6">

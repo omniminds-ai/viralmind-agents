@@ -4,8 +4,17 @@
   import GymHeader from '$lib/components/GymHeader.svelte';
   import Footer from '$lib/components/Footer.svelte';
   import { page } from '$app/state';
+  import WalletProvider from '$lib/components/solana/WalletProvider.svelte';
+  import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
+  import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 
   let { children } = $props();
+
+  const localStorageKey = "walletAdapter";
+  const walletAdapters = [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+  ];
 
   const isGymRoute = $derived(page.url.pathname.startsWith('/gym'));
   const isTournamentRoute = $derived(page.url.pathname.startsWith('/tournament'));
@@ -32,6 +41,7 @@
   <meta name="twitter:image" content="https://viralmind.ai/favicon.png" />
 </svelte:head>
 
+<WalletProvider {localStorageKey} wallets={walletAdapters} autoConnect />
 <div class="bg-black">
   {#if isGymRoute}
     <GymHeader />

@@ -3,6 +3,7 @@
   import logo from '$lib/assets/logoTransparent.png';
   import { Dumbbell, Trophy, HelpCircle, Book, Coins, Menu, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
+  import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
 
   let isScrolled = false;
   let isMobileMenuOpen = false;
@@ -75,6 +76,10 @@
 
       <!-- Right side -->
       <div class="flex items-center space-x-4">
+        <!-- Wallet Button -->
+        <div class="hidden md:block">
+          <WalletMultiButton />
+        </div>
         <!-- Training Gym CTA -->
         <a
           href="/gym"
@@ -149,6 +154,10 @@
             <Dumbbell class="h-5 w-5" />
             Training Gym
           </a>
+          <!-- Mobile Wallet Button -->
+          <div class="py-2">
+            <WalletMultiButton />
+          </div>
         </nav>
       </div>
     {/if}

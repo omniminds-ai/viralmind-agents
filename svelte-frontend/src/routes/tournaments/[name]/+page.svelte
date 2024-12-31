@@ -1,19 +1,54 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import type { PageData } from './$types';
+  import type { Tournament } from '$lib/types';
   import ChatSidebar from '$lib/components/tournaments/ChatSidebar.svelte';
   import TournamentInfo from '$lib/components/tournaments/TournamentInfo.svelte';
+  import ServerIpReveal from '$lib/components/ServerIpReveal.svelte';
+  import { page } from '$app/stores';
 
-  export let data: PageData;
-
-  let messages = data.chatHistory || [];
+  let loading = true;
+  let error: string | null = null;
+  let data: Tournament | null = null;
+  let messages: any[] = [];
   let streamContainer: HTMLDivElement;
   let timeLeft = '';
+  let challenge: any = null;
+  let has_locked_server = false;
+  let latestScreenshot: any = null;
 
-  $: challenge = data.challenge;
-  $: latestScreenshot = data.latestScreenshot;
+  async function loadTournamentData() {
+    const name = $page.params.name;
+    const initial = $page.url.searchParams.get('initial') === 'true';
+    const price = $page.url.searchParams.get('price') || '0';
+
+    try {
+      loading = true;
+      error = null;
+      const response = await fetch(
+        `/api/challenges/get-challenge?name=${encodeURIComponent(name)}&initial=${initial}&price=${price}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to load tournament');
+      }
+
+      data = await response.json();
+      messages = data?.chatHistory || [];
+      challenge = data?.challenge;
+      has_locked_server = challenge?.name === 'viral_lua';
+      latestScreenshot = data?.latestScreenshot;
+      updateTimeRemaining();
+    } catch (e) {
+      console.error('Error loading tournament:', e);
+      error = e instanceof Error ? e.message : 'Failed to load tournament';
+    } finally {
+      loading = false;
+    }
+  }
 
   const updateTimeRemaining = () => {
+    if (!challenge?.expiry) return;
+    
     const now = new Date();
     const expiry = new Date(challenge.expiry);
     const diff = expiry.getTime() - now.getTime();
@@ -40,9 +75,9 @@
     ];
   };
 
-  let interval: number;
-  onMount(() => {
-    updateTimeRemaining();
+  let interval: ReturnType<typeof setInterval>;
+  onMount(async () => {
+    await loadTournamentData();
     interval = setInterval(updateTimeRemaining, 60000);
   });
 
@@ -52,52 +87,71 @@
 </script>
 
 <div class="min-h-screen bg-black text-white">
-  <div class="lg:pr-[400px]">
-    <!-- 400px to account for sidebar -->
-    <div class="mx-auto max-w-[1280px] px-4 py-6">
-      <!-- Tournament Concluded Banner -->
-      {#if challenge.status === 'concluded'}
-        <div class="mb-6 rounded-2xl bg-stone-900/50 p-8 text-center backdrop-blur-sm">
-          <h2 class="mb-2 text-2xl font-bold">Tournament Concluded</h2>
-          <p class="text-gray-400">Stay tuned for the next tournament! 🎮</p>
-        </div>
-      {/if}
+  {#if loading}
+    <div class="flex items-center justify-center min-h-screen">
+      <div class="text-xl text-gray-400">Loading tournament...</div>
+    </div>
+  {:else if error}
+    <div class="flex items-center justify-center min-h-screen">
+      <div class="text-xl text-red-400">{error}</div>
+    </div>
+  {:else if data}
+    <div class="lg:pr-[400px]">
+      <!-- 400px to account for sidebar -->
+      <div class="mx-auto max-w-[1280px] px-4 py-6">
+        <!-- Tournament Concluded Banner -->
+        {#if challenge.status === 'concluded'}
+          <div class="mb-6 rounded-2xl bg-stone-900/50 p-8 text-center backdrop-blur-sm">
+            <h2 class="mb-2 text-2xl font-bold">Tournament Concluded</h2>
+            <p class="text-gray-400">Stay tuned for the next tournament! 🎮</p>
+          </div>
+        {/if}
 
-      <!-- Stream Window -->
-      <div
-        bind:this={streamContainer}
-        class="relative mx-auto mb-6 aspect-video w-full max-w-[1280px] overflow-hidden rounded-2xl border border-white/10 bg-stone-900"
-      >
-        {#if latestScreenshot}
-          <img
-            src={'https://viralmind.ai' + latestScreenshot.url}
-            alt="Latest Tournament Screen"
-            class="absolute left-0 top-0 h-full w-full object-cover"
-          />
-        {:else}
-          <div
-            class="absolute left-0 top-0 flex h-full w-full items-center justify-center text-gray-500"
-          >
-            Loading stream...
+        <!-- Stream Window -->
+        <div
+          bind:this={streamContainer}
+          class="relative mx-auto mb-6 aspect-video w-full max-w-[1280px] overflow-hidden rounded-2xl border border-white/10 bg-stone-900"
+        >
+          {#if latestScreenshot}
+            <img
+              src={'https://viralmind.ai' + latestScreenshot.url}
+              alt="Latest Tournament Screen"
+              class="absolute left-0 top-0 h-full w-full object-cover"
+            />
+          {:else}
+            <div
+              class="absolute left-0 top-0 flex h-full w-full items-center justify-center text-gray-500"
+            >
+              Loading stream...
+            </div>
+          {/if}
+        </div>
+
+        <!-- Tournament Info -->
+        <TournamentInfo {challenge} prize={data.prize} breakAttempts={data.break_attempts} />
+
+        {#if has_locked_server}
+          <div class="mt-8">
+            <ServerIpReveal />
           </div>
         {/if}
       </div>
-
-      <!-- Tournament Info -->
-      <TournamentInfo {challenge} prize={data.prize} breakAttempts={data.break_attempts} />
     </div>
-  </div>
 
-  <!-- Chat Sidebar -->
-  <ChatSidebar
-    {messages}
-    messagePrice={data.message_price}
-    usdMessagePrice={data.usdMessagePrice}
-    {timeLeft}
-    actionsPerMessage={challenge.chatLimit || 3}
-    onSendMessage={sendMessage}
-    agentPfp={challenge.pfp}
-    status={challenge.status}
-  />
+    <!-- Chat Sidebar -->
+    <ChatSidebar
+      {messages}
+      messagePrice={data.message_price}
+      usdMessagePrice={data.usdMessagePrice}
+      {timeLeft}
+      actionsPerMessage={challenge.chatLimit || 3}
+      onSendMessage={sendMessage}
+      agentPfp={challenge.pfp}
+      status={challenge.status}
+    />
+  {/if}
 </div>
 
+<svelte:head>
+  <title>{challenge?.name ? `${challenge.name} Tournament` : 'Tournament'} - ViralMind</title>
+</svelte:head>
