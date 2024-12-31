@@ -12,9 +12,11 @@
   let messages: any[] = [];
   let streamContainer: HTMLDivElement;
   let timeLeft = '';
+  let startTimeLeft = '';
   let challenge: any = null;
   let has_locked_server = false;
   let latestScreenshot: any = null;
+  let tournamentStarted = false;
 
   async function loadTournamentData() {
     const name = page.params.name;
@@ -35,7 +37,7 @@
       data = await response.json();
       messages = data?.chatHistory || [];
       challenge = data?.challenge;
-      has_locked_server = challenge?.name === 'viral_lua';
+      has_locked_server = challenge?.name === 'viral_steve';
       latestScreenshot = data?.latestScreenshot;
       updateTimeRemaining();
     } catch (e) {
@@ -47,20 +49,33 @@
   }
 
   const updateTimeRemaining = () => {
-    if (!challenge?.expiry) return;
+    if (!challenge?.start_date || !challenge?.expiry) return;
     
     const now = new Date();
+    const start = new Date(challenge.start_date);
     const expiry = new Date(challenge.expiry);
-    const diff = expiry.getTime() - now.getTime();
+    
+    // Check if tournament has started
+    if (now >= start) {
+      tournamentStarted = true;
+      const diff = expiry.getTime() - now.getTime();
 
-    if (diff <= 0) {
-      timeLeft = 'Expired';
-      return;
+      if (diff <= 0) {
+        timeLeft = 'Expired';
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      timeLeft = `${hours}h ${minutes}m`;
+    } else {
+      tournamentStarted = false;
+      const diff = start.getTime() - now.getTime();
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      startTimeLeft = `${days}d ${hours}h ${minutes}m`;
     }
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    timeLeft = `${hours}h ${minutes}m`;
   };
 
   const sendMessage = (message: string) => {
@@ -99,11 +114,17 @@
     <div class="lg:pr-[400px]">
       <!-- 400px to account for sidebar -->
       <div class="mx-auto max-w-[1280px] px-4 py-6">
-        <!-- Tournament Concluded Banner -->
+        <!-- Tournament Status Banners -->
         {#if challenge.status === 'concluded'}
           <div class="mb-6 rounded-2xl bg-stone-900/50 p-8 text-center backdrop-blur-sm">
             <h2 class="mb-2 text-2xl font-bold">Tournament Concluded</h2>
             <p class="text-gray-400">Stay tuned for the next tournament! 🎮</p>
+          </div>
+        {:else if !tournamentStarted}
+          <div class="mb-6 rounded-2xl bg-stone-900/50 p-8 text-center backdrop-blur-sm">
+            <h2 class="mb-2 text-2xl font-bold">Tournament Starting Soon</h2>
+            <p class="text-2xl font-bold text-purple-400 mt-4">{startTimeLeft}</p>
+            <p class="text-gray-400 mt-2">Get ready to compete! 🎮</p>
           </div>
         {/if}
 
@@ -128,11 +149,16 @@
         </div>
 
         <!-- Tournament Info -->
-        <TournamentInfo {challenge} prize={data.prize} breakAttempts={data.break_attempts} />
+        <TournamentInfo 
+          {challenge} 
+          prize={data.prize} 
+          breakAttempts={data.break_attempts}
+          startTimeLeft={!tournamentStarted ? startTimeLeft : ''}
+        />
 
         {#if has_locked_server}
           <div class="mt-8">
-            <ServerIpReveal />
+            <ServerIpReveal {tournamentStarted} startTimeLeft={!tournamentStarted ? startTimeLeft : ''} />
           </div>
         {/if}
       </div>
@@ -143,11 +169,11 @@
       {messages}
       messagePrice={data.message_price}
       usdMessagePrice={data.usdMessagePrice}
-      {timeLeft}
+      timeLeft={tournamentStarted ? timeLeft : startTimeLeft}
       actionsPerMessage={challenge.chatLimit || 3}
       onSendMessage={sendMessage}
       agentPfp={challenge.pfp}
-      status={challenge.status}
+      status={!tournamentStarted ? 'upcoming' : challenge.status}
     />
   {/if}
 </div>

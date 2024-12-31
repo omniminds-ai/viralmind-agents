@@ -2,8 +2,11 @@
   import { walletStore } from '../walletStore';
   import WalletMultiButton from './solana/WalletMultiButton.svelte';
   import { Connection, PublicKey } from "@solana/web3.js";
-  import { CheckCircle2, XCircle, Wallet, User, Server, Coins, Fish, Icon } from 'lucide-svelte';
+  import { CheckCircle2, XCircle, Wallet, User, Server, Coins, Fish, Icon, Clock } from 'lucide-svelte';
   import { whale } from '@lucide/lab';
+
+  export let tournamentStarted = false;
+  export let startTimeLeft = '';
 
   let minecraftUsername = '';
   let isRevealed = false;
@@ -59,7 +62,7 @@
 
   $: hasIpBalance = tokenBalance !== null && tokenBalance >= IP_REQUIRED_BALANCE;
   $: hasBypassBalance = tokenBalance !== null && tokenBalance >= BYPASS_REQUIRED_BALANCE;
-  $: canReveal = $walletStore.connected && minecraftUsername.length > 0 && hasIpBalance;
+  $: canReveal = tournamentStarted && $walletStore.connected && minecraftUsername.length > 0 && hasIpBalance;
 
   function handleReveal() {
     isRevealed = true;
@@ -70,6 +73,12 @@
   <div class="space-y-2">
     <h3 class="text-2xl font-bold text-white tracking-tight">Join the Server</h3>
     <p class="text-gray-400">Complete the steps below to join the Minecraft server</p>
+    {#if !tournamentStarted}
+      <div class="mt-2 flex items-center gap-2 text-purple-400">
+        <Clock class="w-4 h-4" />
+        <span>Server access available when tournament starts in {startTimeLeft}</span>
+      </div>
+    {/if}
   </div>
 
   <div class="space-y-6">
@@ -194,7 +203,11 @@
         class="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-xl hover:opacity-90 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         <Server class="w-4 h-4" />
-        Reveal Server IP
+        {#if !tournamentStarted}
+          Server IP Available When Tournament Starts
+        {:else}
+          Reveal Server IP
+        {/if}
       </button>
     {:else}
       <!-- Server Info with Tiers -->

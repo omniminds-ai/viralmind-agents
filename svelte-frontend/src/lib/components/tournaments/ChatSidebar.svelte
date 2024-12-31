@@ -107,10 +107,14 @@
   <!-- Chat Stats -->
   <div class="space-y-4 border-b border-white/10 p-4">
     <div>
-      <div class="text-sm font-medium text-gray-400">TIME REMAINING</div>
+      <div class="text-sm font-medium text-gray-400">
+        {status === 'upcoming' ? 'TOURNAMENT STARTS IN' : 'TIME REMAINING'}
+      </div>
       <div class="mt-1 flex items-baseline gap-2">
         <div class="font-mono text-2xl font-bold">{timeLeft}</div>
-        <div class="text-xs text-gray-500">MESSAGES EXTEND TIMER TO 1HR IF UNDER</div>
+        {#if status === 'active'}
+          <div class="text-xs text-gray-500">MESSAGES EXTEND TIMER TO 1HR IF UNDER</div>
+        {/if}
       </div>
     </div>
     <div>
@@ -152,6 +156,11 @@
         >
           <Send class="h-5 w-5" />
         </button>
+      {:else if status === 'upcoming'}
+        <div class="flex flex-col">
+          <p>Tournament hasn't started yet! 🎮</p>
+          <p class="text-sm text-white/50">Come back when the tournament begins.</p>
+        </div>
       {:else}
         <div class="flex flex-col">
           <p>Tournament Concluded! 🎉</p>
@@ -159,12 +168,12 @@
         </div>
       {/if}
     </div>
-    <div class="mt-2 flex items-center gap-1 px-1 text-xs text-gray-500">
-      {#if status === 'active' || status === 'upcoming'}
+    {#if status === 'active'}
+      <div class="mt-2 flex items-center gap-1 px-1 text-xs text-gray-500">
         <AlertCircle class="h-3 w-3" />
         Messages cost {formatSOL(messagePrice)} SOL
-      {/if}
-    </div>
+      </div>
+    {/if}
   </div>
 </div>
 

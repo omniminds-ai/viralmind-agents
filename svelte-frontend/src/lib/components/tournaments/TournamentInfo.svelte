@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { Trophy, Users } from 'lucide-svelte';
+  import { Trophy, Users, Clock } from 'lucide-svelte';
   import { marked } from 'marked';
 
   export let challenge: any;
   export let prize: number;
   export let breakAttempts: number;
+  export let startTimeLeft: string = '';
 
   const formatSOL = (amount: number) => amount.toFixed(3);
   
@@ -21,7 +22,7 @@
       <div class="text-gray-400 prose prose-invert prose-sm max-w-none">
         {@html parsedLabel}
       </div>
-      <div class="mt-4 flex gap-6">
+      <div class="mt-4 flex flex-wrap gap-6">
         <div class="flex items-center gap-2">
           <Trophy class="h-5 w-5 text-purple-400" />
           <span>{formatSOL(prize)} SOL</span>
@@ -30,6 +31,12 @@
           <Users class="h-5 w-5 text-purple-400" />
           <span>{breakAttempts} prompts</span>
         </div>
+        {#if startTimeLeft}
+          <div class="flex items-center gap-2">
+            <Clock class="h-5 w-5 text-purple-400" />
+            <span>Starts in {startTimeLeft}</span>
+          </div>
+        {/if}
       </div>
     </div>
   </div>

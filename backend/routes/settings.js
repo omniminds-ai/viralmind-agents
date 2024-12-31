@@ -25,7 +25,7 @@ router.get("/", async (req, res) => {
       const prize = activeChallenge.winning_prize || (activeChallenge.entryFee * 100);
       const usdPrize = prize * solPrice;
       activeChallenge = {
-        ...activeChallenge,
+        ...activeChallenge.toObject(),
         prize,
         usdPrize
       };

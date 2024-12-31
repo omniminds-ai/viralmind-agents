@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  let settings: any = null;
   import {
     MousePointerClick,
     Trophy,
@@ -10,35 +9,19 @@
     MessageCircle,
     ChevronDown,
     ChevronUp,
-    ArrowRight
+    ArrowRight,
+    Circle
   } from 'lucide-svelte';
   import solIcon from '$lib/assets/solIcon.png';
   import demoVideo from '$lib/assets/demo.mp4';
   import ContractInfo from '$lib/components/ContractInfo.svelte';
   import Card from '$lib/components/Card.svelte';
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
-  import ServerIpReveal from '$lib/components/ServerIpReveal.svelte';
+  import TournamentCountdown from '$lib/components/tournaments/TournamentCountdown.svelte';
+  import TournamentStream from '$lib/components/tournaments/TournamentStream.svelte';
 
-  const faqs = [
-    {
-      q: 'What is VM-1?',
-      a: 'VM-1 is our first computer-use model that can control computers just like humans do, without requiring APIs or special integrations.'
-    },
-    {
-      q: 'How do I earn $VIRAL?',
-      a: 'You can earn $VIRAL by participating in training races, providing quality demonstrations, and winning tournaments.'
-    },
-    {
-      q: "What's the difference between Tournaments and Training?",
-      a: 'In tournaments, you command the AI agent step-by-step for the entire pot. In training, you demonstrate actions and earn rewards based on quality.'
-    },
-    {
-      q: 'Do I need to stake tokens?',
-      a: 'Not always! Free races only require holding $VIRAL. Staked races offer higher rewards but require token staking.'
-    }
-  ];
-
-  let faqOpen = Array(faqs.length).fill(false);
+  let settings: any = null;
+  let faqOpen = Array(4).fill(false);
   let mousePosition = { x: 0, y: 0 };
 
   function handleMouseMove(event: MouseEvent) {
@@ -60,6 +43,7 @@
       .then((data) => {
         settings = data;
         console.log('Settings data:', settings);
+        console.log('Active/Upcoming tournament:', settings.activeChallenge);
         console.log('Latest tournament:', settings.concludedChallenges?.[0]);
         faqOpen = Array(settings.faq.length).fill(false);
       })
@@ -105,40 +89,61 @@
         <span class="mt-2 text-3xl text-gray-400">is coming</span>
       </h1>
 
-      <!-- VM-1 Logo -->
-      <div class="relative mb-24 mt-12">
-        <!-- VM-1 Text with enhanced shadows -->
-        <div class="relative my-24">
-          <div
-            class="relative z-10 bg-gradient-to-b from-purple-400 to-purple-900 bg-clip-text text-8xl font-bold text-transparent opacity-20 blur-sm drop-shadow-xl md:text-9xl"
-          >
-            VM-1
-          </div>
-          <div class="absolute inset-0 z-20 flex flex-col items-center justify-center">
+      {#if settings?.activeChallenge}
+        <!-- Tournament Section -->
+        <div class="relative mb-24 mt-12">
+          {#if settings.activeChallenge.status === 'upcoming'}
+            <TournamentCountdown
+              start_date={settings.activeChallenge.start_date}
+              title={settings.activeChallenge.title}
+              prize={settings.activeChallenge.prize}
+              name={settings.activeChallenge.name}
+            />
+          {:else}
+            <TournamentStream 
+              challenge={settings.activeChallenge}
+              prize={settings.activeChallenge.prize}
+              breakAttempts={settings.breakAttempts}
+              streamUrl={settings.activeChallenge.stream_url}
+            />
+          {/if}
+        </div>
+      {:else}
+        <!-- VM-1 Logo -->
+        <div class="relative mb-24 mt-12">
+          <!-- VM-1 Text with enhanced shadows -->
+          <div class="relative my-24">
             <div
-              class="bg-gradient-to-b from-purple-500 to-purple-900 bg-clip-text text-8xl font-bold text-transparent drop-shadow-xl md:text-9xl"
+              class="relative z-10 bg-gradient-to-b from-purple-400 to-purple-900 bg-clip-text text-8xl font-bold text-transparent opacity-20 blur-sm drop-shadow-xl md:text-9xl"
             >
               VM-1
             </div>
-            <div class="mt-4 text-xl text-gray-400 drop-shadow-lg">
-              Our First Computer-Use Model
+            <div class="absolute inset-0 z-20 flex flex-col items-center justify-center">
+              <div
+                class="bg-gradient-to-b from-purple-500 to-purple-900 bg-clip-text text-8xl font-bold text-transparent drop-shadow-xl md:text-9xl"
+              >
+                VM-1
+              </div>
+              <div class="mt-4 text-xl text-gray-400 drop-shadow-lg">
+                Our First Computer-Use Model
+              </div>
+            </div>
+          </div>
+
+          <!-- Developer CTAs -->
+          <div class="relative z-20 mt-16">
+            <p class="mb-2 text-gray-400 opacity-50 drop-shadow-lg">
+              Ready to Build Something Insane?
+            </p>
+            <div class="flex justify-center">
+              <ButtonCTA href="https://t.me/viralmind" target="_blank">
+                <MessageCircle class="h-5 w-5" />
+                Join Our Telegram for Updates
+              </ButtonCTA>
             </div>
           </div>
         </div>
-
-        <!-- Developer CTAs -->
-        <div class="relative z-20 mt-16">
-          <p class="mb-2 text-gray-400 opacity-50 drop-shadow-lg">
-            Ready to Build Something Insane?
-          </p>
-          <div class="flex justify-center">
-            <ButtonCTA href="https://t.me/viralmind" target="_blank">
-              <MessageCircle class="h-5 w-5" />
-              Join Our Telegram for Updates
-            </ButtonCTA>
-          </div>
-        </div>
-      </div>
+      {/if}
     </div>
     
     <div class="relative z-10 mx-auto w-full max-w-4xl px-4 text-center">
@@ -225,11 +230,48 @@
             </div>
           </div>
 
-          <!-- Latest Tournament Section -->
+          {#if settings?.activeChallenge}
+            <!-- Tournament Hype CTA -->
+            <div class="mb-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
+              <div class="space-y-4 text-center">
+                <h4
+                  class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent"
+                >
+                  Tournament {settings.activeChallenge.status === 'upcoming' ? 'Starting Soon!' : 'Live Now!'}
+                </h4>
+                <p class="text-gray-300">
+                  {settings.activeChallenge.status === 'upcoming' 
+                    ? 'Get ready for the next big tournament!' 
+                    : 'Join the action and compete for the prize pool!'}
+                </p>
+                <a
+                  href={`/tournaments/${settings.activeChallenge.name}`}
+                  target="_self"
+                  class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold transition-all duration-200 hover:scale-105 hover:opacity-90"
+                >
+                  {#if settings.activeChallenge.status === 'upcoming'}
+                    <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
+                    Get Notified
+                  {:else}
+                    <Trophy class="h-5 w-5 group-hover:animate-bounce" />
+                    Join Tournament
+                  {/if}
+                  <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
+                    >→</span
+                  >
+                </a>
+              </div>
+            </div>
+          {/if}
+
+          <!-- Latest/Previous Tournament Section -->
           {#if settings?.concludedChallenges?.[0]}
-            <h3 class="py-2 text-xl font-semibold text-purple-400">Latest Tournament</h3>
-            <div class="block">
-              <Card class="mb-2 ">
+            <h3 class="py-2 text-xl font-semibold text-purple-400">
+              {settings?.activeChallenge ? 'Previous' : 'Latest'} Tournament
+            </h3>
+            <div class="block hover:opacity-90 transition-opacity">
+              <a href={`http://localhost/tournaments/${settings.concludedChallenges[0].name}`}>
+                <Card class="mb-2">
                 <a
                   href="/tournaments/{settings.concludedChallenges[0].name}"
                   class="text-lg hover:underline"
@@ -275,7 +317,8 @@
                     <p class="break-all font-mono">{settings.concludedChallenges[0].winning_txn}</p>
                   </div>
                 </div>
-              </Card>
+                </Card>
+              </a>
             </div>
             <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
               Concluded {new Date(settings.concludedChallenges[0].expiry).toLocaleDateString(
@@ -297,33 +340,32 @@
             </div>
           {/if}
 
-          <!-- New Next Tournament CTA -->
-          <div class="my-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
-            <div class="space-y-4 text-center">
-              <h4
-                class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent"
-              >
-                Next Tournament Loading...
-              </h4>
-              <p class="text-gray-300">Don't miss out on the next chance to win big!</p>
-              <a
-                href="https://t.me/viralmind"
-                target="_blank"
-                class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold transition-all duration-200 hover:scale-105 hover:opacity-90"
-              >
-                <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
-                Join Telegram for Updates
-                <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
-                  >→</span
+          {#if !settings?.activeChallenge}
+            <!-- New Next Tournament CTA -->
+            <div class="my-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
+              <div class="space-y-4 text-center">
+                <h4
+                  class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent"
                 >
-              </a>
+                  Next Tournament Loading...
+                </h4>
+                <p class="text-gray-300">Don't miss out on the next chance to win big!</p>
+                <a
+                  href="https://t.me/viralmind"
+                  target="_blank"
+                  class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold transition-all duration-200 hover:scale-105 hover:opacity-90"
+                >
+                  <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
+                  Join Telegram for Updates
+                  <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
+                    >→</span
+                  >
+                </a>
+              </div>
             </div>
-          </div>
+          {/if}
 
           <div class="space-y-4 text-center">
-            <!-- <button class="px-8 py-3 bg-purple-600 rounded-full font-semibold hover:bg-purple-700 transition-colors">
-              Join Tournament →
-            </button> -->
             <div>
               <a href="/tournaments">
                 <button
@@ -381,6 +423,54 @@
           </div>
         </Card>
 
+        {#if settings?.activeChallenge}
+          <!-- VM-1 Section (when tournament is active) -->
+          <Card bordered={false}>
+            <div class="relative">
+              <!-- VM-1 Text with enhanced shadows -->
+              <div class="relative my-12">
+                <div
+                  class="relative z-10 bg-gradient-to-b from-purple-400 to-purple-900 bg-clip-text text-8xl font-bold text-transparent opacity-20 blur-sm drop-shadow-xl md:text-9xl"
+                >
+                  VM-1
+                </div>
+                <div class="absolute inset-0 z-20 flex flex-col items-center justify-center">
+                  <div
+                    class="bg-gradient-to-b from-purple-500 to-purple-900 bg-clip-text text-8xl font-bold text-transparent drop-shadow-xl md:text-9xl"
+                  >
+                    VM-1
+                  </div>
+                  <div class="mt-4 text-xl text-gray-400 drop-shadow-lg">
+                    Upcoming Computer-Use Model
+                  </div>
+                </div>
+              </div>
+
+              <!-- VM-1 Info -->
+              <div class="relative z-20 mt-8">
+                <div class="mx-auto max-w-lg space-y-4 text-gray-400">
+                  <p class="text-sm opacity-75">
+                    Train VM-1 in our Training Gym and earn $VIRAL rewards. Your demonstrations shape the future of computer control while building token value.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Developer CTAs -->
+              <div class="relative z-20 mt-8">
+                <p class="mb-2 text-gray-400 opacity-50 drop-shadow-lg">
+                  Ready to Build Something Insane?
+                </p>
+                <div class="flex justify-center">
+                  <ButtonCTA href="https://t.me/viralmind" target="_blank">
+                    <MessageCircle class="h-5 w-5" />
+                    Join Our Telegram for Updates
+                  </ButtonCTA>
+                </div>
+              </div>
+            </div>
+          </Card>
+        {/if}
+        
         <!-- FAQ Section -->
         <Card bordered={false}>
           <div id="faq">
