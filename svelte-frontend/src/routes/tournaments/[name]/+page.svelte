@@ -4,7 +4,7 @@
   import ChatSidebar from '$lib/components/tournaments/ChatSidebar.svelte';
   import TournamentInfo from '$lib/components/tournaments/TournamentInfo.svelte';
   import ServerIpReveal from '$lib/components/ServerIpReveal.svelte';
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
 
   let loading = true;
   let error: string | null = null;
@@ -17,9 +17,9 @@
   let latestScreenshot: any = null;
 
   async function loadTournamentData() {
-    const name = $page.params.name;
-    const initial = $page.url.searchParams.get('initial') === 'true';
-    const price = $page.url.searchParams.get('price') || '0';
+    const name = page.params.name;
+    const initial = page.url.searchParams.get('initial') === 'true';
+    const price = page.url.searchParams.get('price') || '0';
 
     try {
       loading = true;

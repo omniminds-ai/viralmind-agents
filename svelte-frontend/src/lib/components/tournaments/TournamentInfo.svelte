@@ -1,11 +1,15 @@
 <script lang="ts">
   import { Trophy, Users } from 'lucide-svelte';
+  import { marked } from 'marked';
 
   export let challenge: any;
   export let prize: number;
   export let breakAttempts: number;
 
   const formatSOL = (amount: number) => amount.toFixed(3);
+  
+  $: parsedWinCondition = challenge.win_condition ? marked(challenge.win_condition) : '';
+  $: parsedLabel = challenge.label ? marked(challenge.label) : '';
 </script>
 
 <div class="space-y-6">
@@ -14,7 +18,9 @@
     <img src={challenge.pfp} alt={challenge.name} class="h-16 w-16 rounded-full" />
     <div class="flex-1">
       <h1 class="mb-1 text-2xl font-bold">{challenge.title}</h1>
-      <p class="text-gray-400">{challenge.label}</p>
+      <div class="text-gray-400 prose prose-invert prose-sm max-w-none">
+        {@html parsedLabel}
+      </div>
       <div class="mt-4 flex gap-6">
         <div class="flex items-center gap-2">
           <Trophy class="h-5 w-5 text-purple-400" />
@@ -32,7 +38,9 @@
   {#if challenge.win_condition}
     <div class="rounded-2xl bg-stone-900/50 p-6">
       <h2 class="mb-3 text-lg font-semibold">How to Win</h2>
-      <p class="text-gray-400">{challenge.win_condition}</p>
+      <div class="text-gray-400 prose prose-invert prose-sm max-w-none">
+        {@html parsedWinCondition}
+      </div>
     </div>
   {/if}
 

@@ -2,7 +2,8 @@
   import { walletStore } from '../walletStore';
   import WalletMultiButton from './solana/WalletMultiButton.svelte';
   import { Connection, PublicKey } from "@solana/web3.js";
-  import { CheckCircle2, XCircle, Wallet, User, Server, Coins } from 'lucide-svelte';
+  import { CheckCircle2, XCircle, Wallet, User, Server, Coins, Fish, Icon } from 'lucide-svelte';
+  import { whale } from '@lucide/lab';
 
   let minecraftUsername = '';
   let isRevealed = false;
@@ -109,7 +110,7 @@
           <!-- Tier 1: IP Access -->
           <div class="p-4 bg-white/5 rounded-xl border border-white/10">
             <div class="flex items-center gap-2 mb-3">
-              <Server class="w-4 h-4 text-purple-400" />
+              <Fish class="w-4 h-4 text-purple-400" />
               <span class="text-white font-medium">Tier 1: Server IP Access</span>
             </div>
             <div class="space-y-2">
@@ -132,9 +133,7 @@
           <!-- Tier 2: Coordinate Bypass -->
           <div class="p-4 bg-white/5 rounded-xl border border-white/10">
             <div class="flex items-center gap-2 mb-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
+              <Icon iconNode={whale} class="w-4 h-4 text-purple-400" />
               <span class="text-white font-medium">Tier 2: Coordinate Bypass</span>
             </div>
             <div class="space-y-2">
@@ -210,9 +209,7 @@
         {#if hasBypassBalance}
           <div class="p-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-white/10">
             <div class="flex items-center justify-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
+              <Icon icon={whale} class="w-5 h-5 text-purple-400" />
               <p class="text-white">Coordinate Bypass <span class="font-medium text-purple-400">Unlocked!</span></p>
             </div>
           </div>
