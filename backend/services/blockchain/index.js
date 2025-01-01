@@ -14,7 +14,7 @@ import { readFileSync } from "fs";
 class BlockchainService {
   constructor(solanaRpc, programId) {
     this.connection = new Connection(solanaRpc, "confirmed");
-    this.programId = new PublicKey(programId);
+    this.programId = programId;
   }
 
   // Utility to calculate the discriminator
@@ -198,7 +198,7 @@ class BlockchainService {
       // Create the instruction
       const instruction = new TransactionInstruction({
         keys,
-        programId: this.programId,
+        programId: new PublicKey(this.programId),
         data,
       });
 

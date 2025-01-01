@@ -16,7 +16,7 @@
   let challenge: any = null;
   let has_locked_server = false;
   let latestScreenshot: any = null;
-  let tournamentStarted = false;
+  $: tournamentStarted = challenge?.status === 'active';
 
   async function loadTournamentData() {
     const name = page.params.name;
@@ -49,31 +49,41 @@
   }
 
   const updateTimeRemaining = () => {
-    if (!challenge?.start_date || !challenge?.expiry) return;
+    if (!challenge?.start_date || !challenge?.expiry) {
+      console.log('Missing dates:', { start_date: challenge?.start_date, expiry: challenge?.expiry });
+      return;
+    }
     
-    const now = new Date();
-    const start = new Date(challenge.start_date);
-    const expiry = new Date(challenge.expiry);
+    const now = Date.now();
+    const start = new Date(challenge.start_date).getTime();
+    const expiry = new Date(challenge.expiry).getTime();
     
-    // Check if tournament has started
-    if (now >= start) {
-      tournamentStarted = true;
-      const diff = expiry.getTime() - now.getTime();
+    console.log('Debug times:', {
+      now,
+      start,
+      expiry,
+      isStarted: now >= start,
+      timeToExpiry: expiry - now,
+      status: challenge.status
+    });
 
-      if (diff <= 0) {
-        timeLeft = 'Expired';
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      timeLeft = `${hours}h ${minutes}m`;
-    } else {
-      tournamentStarted = false;
-      const diff = start.getTime() - now.getTime();
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    // Calculate time until expiry for active tournaments
+    const expiryDiff = expiry - now;
+    if (expiryDiff <= 0) {
+      timeLeft = 'Expired';
+    } else if (challenge.status === 'active' && now <= expiry) {
+      const days = Math.floor(expiryDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((expiryDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((expiryDiff % (1000 * 60 * 60)) / (1000 * 60));
+      timeLeft = `${days}d ${hours}h ${minutes}m`;
+    }
+    
+    // Calculate time until start for upcoming tournaments
+    const startDiff = start - now;
+    if (startDiff > 0) {
+      const days = Math.floor(startDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((startDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((startDiff % (1000 * 60 * 60)) / (1000 * 60));
       startTimeLeft = `${days}d ${hours}h ${minutes}m`;
     }
   };
@@ -133,7 +143,16 @@
           bind:this={streamContainer}
           class="relative mx-auto mb-6 aspect-video w-full max-w-[1280px] overflow-hidden rounded-2xl border border-white/10 bg-stone-900"
         >
-          {#if latestScreenshot}
+          {#if challenge.stream_src}
+            <iframe
+              src={challenge.stream_src}
+              title="Tournament Stream"
+              class="absolute left-0 top-0 h-full w-full"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          {:else if latestScreenshot}
             <img
               src={'https://viralmind.ai' + latestScreenshot.url}
               alt="Latest Tournament Screen"
@@ -158,7 +177,7 @@
 
         {#if has_locked_server}
           <div class="mt-8">
-            <ServerIpReveal {tournamentStarted} startTimeLeft={!tournamentStarted ? startTimeLeft : ''} />
+            <ServerIpReveal {tournamentStarted} startTimeLeft={!tournamentStarted ? startTimeLeft : ''} name={challenge.name} />
           </div>
         {/if}
       </div>
@@ -170,10 +189,13 @@
       messagePrice={data.message_price}
       usdMessagePrice={data.usdMessagePrice}
       timeLeft={tournamentStarted ? timeLeft : startTimeLeft}
-      actionsPerMessage={challenge.chatLimit || 3}
+      actionsPerMessage={challenge.max_actions || 3}
       onSendMessage={sendMessage}
       agentPfp={challenge.pfp}
       status={!tournamentStarted ? 'upcoming' : challenge.status}
+      tournamentPDA={challenge.tournamentPDA}
+      programId={challenge.idl.address}
+      challengeName={challenge._id}
     />
   {/if}
 </div>

@@ -42,6 +42,15 @@ const ChallengeSchema = new mongoose.Schema(
       score: Number,
       timestamp: { type: Date, default: Date.now }
     }],
+    game: String,
+    game_ip: String,
+    stream_src: String,
+    whitelist: [{
+      username: String,
+      address: String,
+      viral_balance: Number,
+      signature: String
+    }],
   },
   { collection: "challenges" }
 );

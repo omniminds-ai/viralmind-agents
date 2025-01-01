@@ -52,7 +52,8 @@ router.get("/get-challenge", async (req, res) => {
       developer_fee: 1,
       win_condition: 1,
       expiry_logic: 1,
-      scores: 1
+      scores: 1,
+      stream_src: 1
     };
 
     const challengeInitialized = await DatabaseService.findOneChat({
@@ -92,7 +93,8 @@ router.get("/get-challenge", async (req, res) => {
         usdPrize: 0,
         chatHistory: [],
         expiry: challenge.expiry,
-        solPrice: await getSolPriceInUSDT()
+        solPrice: await getSolPriceInUSDT(),
+        stream_src: challenge.stream_src
       });
     }
 
@@ -139,44 +141,46 @@ router.get("/get-challenge", async (req, res) => {
 
     // Only attempt VNC screenshots for active tournaments
     if (challenge.status === "active") {
-      const latestImagePath = path.join(process.cwd(), 'public', 'screenshots', `${tournamentPDA}_latest.jpg`);
-      
-      // Check if we need a new screenshot
-      const needsNewScreenshot = !fs.existsSync(latestImagePath) || 
-        (fs.existsSync(latestImagePath) && now - fs.statSync(latestImagePath).mtime > SCREENSHOT_UPDATE_THRESHOLD);
+      if(!challenge.stream_src) {
+        const latestImagePath = path.join(process.cwd(), 'public', 'screenshots', `${tournamentPDA}_latest.jpg`);
+        
+        // Check if we need a new screenshot
+        const needsNewScreenshot = !fs.existsSync(latestImagePath) || 
+          (fs.existsSync(latestImagePath) && now - fs.statSync(latestImagePath).mtime > SCREENSHOT_UPDATE_THRESHOLD);
 
-      if (needsNewScreenshot) {
-        try {
-          // Initialize VNC session and get screenshot
-          const session = await VNCService.ensureValidConnection(tournamentPDA);
-          if (session) {
-            const newScreenshot = await VNCService.getScreenshot(tournamentPDA);
-            if (newScreenshot) {
-              latestScreenshot = {
-                url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${newScreenshot.timestamp}`,
-                date: new Date(newScreenshot.timestamp)
-              };
+        if (needsNewScreenshot) {
+          try {
+            // Initialize VNC session and get screenshot
+            const session = await VNCService.ensureValidConnection(tournamentPDA);
+            if (session) {
+              const newScreenshot = await VNCService.getScreenshot(tournamentPDA);
+              if (newScreenshot) {
+                latestScreenshot = {
+                  url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${newScreenshot.timestamp}`,
+                  date: new Date(newScreenshot.timestamp)
+                };
+              }
             }
+          } catch (error) {
+            console.error("Failed to update screenshot:", error);
           }
-        } catch (error) {
-          console.error("Failed to update screenshot:", error);
-        }
 
-        // If VNC failed or no new screenshot, try using existing _latest.jpg
-        if (!latestScreenshot && fs.existsSync(latestImagePath)) {
+          // If VNC failed or no new screenshot, try using existing _latest.jpg
+          if (!latestScreenshot && fs.existsSync(latestImagePath)) {
+            const stats = fs.statSync(latestImagePath);
+            latestScreenshot = {
+              url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${stats.mtimeMs}`,
+              date: stats.mtime
+            };
+          }
+        } else {
+          // Use existing _latest.jpg if it's fresh enough
           const stats = fs.statSync(latestImagePath);
           latestScreenshot = {
             url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${stats.mtimeMs}`,
             date: stats.mtime
           };
         }
-      } else {
-        // Use existing _latest.jpg if it's fresh enough
-        const stats = fs.statSync(latestImagePath);
-        latestScreenshot = {
-          url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${stats.mtimeMs}`,
-          date: stats.mtime
-        };
       }
     }
 
@@ -239,7 +243,8 @@ router.get("/get-challenge", async (req, res) => {
         expiry,
         solPrice,
         chatHistory: chatHistory.reverse(),
-        latestScreenshot
+        latestScreenshot,
+        stream_src: challenge.stream_src
       });
     }
 
@@ -277,7 +282,8 @@ router.get("/get-challenge", async (req, res) => {
       chatHistory,
       expiry,
       solPrice,
-      latestScreenshot
+      latestScreenshot,
+      stream_src: challenge.stream_src
     });
   } catch (err) {
     console.error(err);

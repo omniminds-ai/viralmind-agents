@@ -45,8 +45,9 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPEN_AI_SECRET=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - RPC_URL=#{RCP_URL}
+      - RPC_URL=${RPC_URL}
       - ANCHOR_PROVIDER_URL=${ANCHOR_PROVIDER_URL}
+      - IPC_SECRET=${IPC_SECRET}
       # Docker Specific Paths
       - ANCHOR_WALLET=/usr/src/app/backend/secrets/solana-keypair.json
       - ANCHOR_WORKSPACE=/usr/src/app/backend/jailbreak-pool
@@ -58,7 +59,7 @@ services:
       - SERVICE_PORT=6950
     depends_on:
       - mongodb
-      - windows
+      # - windows
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

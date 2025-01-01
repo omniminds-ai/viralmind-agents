@@ -75,6 +75,7 @@ app.use('/api/screenshots', express.static(path.join(__dirname, 'public', 'scree
 import { challengesRoute } from "./routes/challenges.js";
 import { conversationRoute } from "./routes/conversation.js";
 import { settingsRoute } from "./routes/settings.js";
+import { minecraftRoute } from "./routes/minecraft.js";
 
 // TEST:
 // import { testRoute } from "./test/conversation.js";
@@ -86,6 +87,7 @@ import { conversationsAPI } from "./api/conversation.js";
 app.use("/api/challenges", challengesRoute);
 app.use("/api/conversation", conversationRoute);
 app.use("/api/settings", settingsRoute);
+app.use("/api/minecraft", minecraftRoute);
 app.use("/api/json/v1/tournaments", tournamentsAPI);
 app.use("/api/json/v1/conversations", conversationsAPI);
 

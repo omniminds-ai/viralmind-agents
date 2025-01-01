@@ -7,10 +7,12 @@
 
   export let tournamentStarted = false;
   export let startTimeLeft = '';
+  export let name = '';
 
   let minecraftUsername = '';
   let isRevealed = false;
   let tokenBalance: number | null = null;
+  let serverIp = '';
   const IP_REQUIRED_BALANCE = 25_000;
   const BYPASS_REQUIRED_BALANCE = 1_000_000;
   const VIRAL_TOKEN = new PublicKey("HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump");
@@ -64,8 +66,45 @@
   $: hasBypassBalance = tokenBalance !== null && tokenBalance >= BYPASS_REQUIRED_BALANCE;
   $: canReveal = tournamentStarted && $walletStore.connected && minecraftUsername.length > 0 && hasIpBalance;
 
-  function handleReveal() {
-    isRevealed = true;
+  async function handleReveal() {
+    try {
+      if (!$walletStore.signMessage) {
+        console.error('Wallet does not support message signing');
+        return;
+      }
+
+      const message = new TextEncoder().encode(minecraftUsername);
+      const signature = await $walletStore.signMessage(message);
+      const signatureBase64 = btoa(String.fromCharCode(...signature));
+
+      const response = await fetch('/api/minecraft/reveal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          address: $walletStore.publicKey?.toBase58(),
+          username: minecraftUsername,
+          signature: signatureBase64,
+          challengeName: name
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reveal server IP');
+      }
+
+      const result = await response.json();
+      if (result.success && result.game_ip) {
+        serverIp = result.game_ip;
+        isRevealed = true;
+      } else {
+        throw new Error('Failed to get server IP');
+      }
+    } catch (error) {
+      console.error('Error revealing server IP:', error);
+      // Keep isRevealed false on error
+    }
   }
 </script>
 
@@ -127,7 +166,7 @@
                 <span class="text-gray-400">Required Balance:</span>
                 <span class="text-white font-medium">{IP_REQUIRED_BALANCE.toLocaleString(undefined, { maximumFractionDigits: 0 })} $VIRAL</span>
               </div>
-              <div class="text-sm text-gray-500">Coordinates randomly offset up to 10,000 blocks</div>
+              <div class="text-sm text-gray-500">Coordinates randomly offset up to 10,000 blocks, F3 shows obfuscated coordinates</div>
             </div>
             {#if tokenBalance !== null}
               <div class="relative h-2 mt-3 bg-white/10 rounded-full overflow-hidden">
@@ -151,7 +190,7 @@
                 <span class="text-white font-medium">{BYPASS_REQUIRED_BALANCE.toLocaleString(undefined, { maximumFractionDigits: 0 })} $VIRAL</span>
               </div>
               <div class="text-sm text-gray-500">Permission: coordinateoffset.bypass</div>
-              <div class="text-sm text-gray-500">No coordinate offset</div>
+              <div class="text-sm text-gray-500">No coordinate offset, F3 shows your true coordinates</div>
             </div>
             {#if tokenBalance !== null}
               <div class="relative h-2 mt-3 bg-white/10 rounded-full overflow-hidden">
@@ -215,7 +254,7 @@
         <div class="p-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-xl border border-white/10">
           <div class="flex items-center justify-center gap-3">
             <Server class="w-5 h-5 text-purple-400" />
-            <p class="text-white">Join <span class="font-mono font-medium text-purple-400">mc-1.viralmind.ai</span> as <span class="font-medium text-purple-400">{minecraftUsername}</span></p>
+            <p class="text-white">Join <span class="font-mono font-medium text-purple-400">{serverIp}</span> as <span class="font-medium text-purple-400">{minecraftUsername}</span></p>
           </div>
         </div>
         

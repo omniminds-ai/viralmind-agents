@@ -66,6 +66,25 @@ router.post("/submit/:id", async (req, res) => {
         });
 
 
+        // if the agent exists within a game then:
+        if (challenge.game) {
+            // invalid tx
+            if(!isValidTransaction) return res.end();
+
+            // Create and save user message
+            await DatabaseService.createChat({
+                challenge: challengeName,
+                role: "user",
+                content: prompt,
+                address: walletAddress,
+                txn: signature,
+                date: new Date()
+            });
+
+            // End response immediately
+            return res.end();
+        }
+
         // capture screenshot from VNC session
         const screenshot = await VNCService.getScreenshot(tournamentPDA, true);
 

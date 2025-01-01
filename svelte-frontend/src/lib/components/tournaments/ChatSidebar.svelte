@@ -3,6 +3,8 @@
   import ChatMessage from './ChatMessage.svelte';
   import type { Tournament, TournamentMessage } from '$lib/types';
   import { onMount } from 'svelte';
+  import { processPayment } from '$lib/solana/chatPayment';
+  import { walletStore } from '$lib/walletStore';
 
   const groupConsecutiveMessages = (messages: TournamentMessage[]) => {
     const groups: TournamentMessage[][] = [];
@@ -31,16 +33,7 @@
     return groups;
   };
 
-  let {
-    messages,
-    messagePrice,
-    usdMessagePrice,
-    timeLeft,
-    actionsPerMessage,
-    onSendMessage,
-    agentPfp,
-    status
-  }: {
+  interface ChatSidebarProps {
     messages: TournamentMessage[];
     messagePrice: number;
     usdMessagePrice: number;
@@ -49,12 +42,31 @@
     onSendMessage: (message: string) => void;
     agentPfp: string;
     status: Tournament['challenge']['status'];
-  } = $props();
+    tournamentPDA: string;
+    programId: string;
+    challengeName: string;
+  }
+
+  let {
+    messages,
+    messagePrice,
+    usdMessagePrice,
+    timeLeft,
+    actionsPerMessage,
+    onSendMessage,
+    agentPfp,
+    status,
+    tournamentPDA,
+    programId,
+    challengeName
+  }: ChatSidebarProps = $props();
   const groupedMessages = $derived(groupConsecutiveMessages(messages));
 
   let messageInput = $state('');
   let chatContainer: HTMLDivElement;
   let isMobileOpen = $state(false);
+  let paymentError = $state('');
+  let isProcessingPayment = $state(false);
 
   onMount(() => {
     if (status === 'concluded')
@@ -69,16 +81,42 @@
     }).format(amount);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!messageInput.trim()) return;
-    onSendMessage(messageInput);
-    messageInput = '';
+    if (!$walletStore.connected) {
+      paymentError = 'Please connect your wallet first';
+      return;
+    }
 
-    setTimeout(() => {
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-    }, 0);
+    const message = messageInput;
+    isProcessingPayment = true;
+    paymentError = '';
+
+    try {
+      await processPayment(message, {
+        messagePrice,
+        tournamentPDA,
+        programId,
+        challengeName,
+        onSuccess: () => {
+          onSendMessage(message);
+          messageInput = '';
+          setTimeout(() => {
+            if (chatContainer) {
+              chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+          }, 0);
+        },
+        onError: (error: string) => {
+          paymentError = error;
+        }
+      });
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      paymentError = err instanceof Error ? err.message : 'Failed to send message';
+    } finally {
+      isProcessingPayment = false;
+    }
   };
 
   const toggleMobileChat = () => {
@@ -169,9 +207,21 @@
       {/if}
     </div>
     {#if status === 'active'}
-      <div class="mt-2 flex items-center gap-1 px-1 text-xs text-gray-500">
-        <AlertCircle class="h-3 w-3" />
-        Messages cost {formatSOL(messagePrice)} SOL
+      <div class="mt-2 space-y-2">
+        <div class="flex items-center gap-1 px-1 text-xs text-gray-500">
+          <AlertCircle class="h-3 w-3" />
+          Messages cost {formatSOL(messagePrice)} SOL
+        </div>
+        {#if paymentError}
+          <div class="px-1 text-xs text-red-400">
+            {paymentError}
+          </div>
+        {/if}
+        {#if isProcessingPayment}
+          <div class="px-1 text-xs text-purple-400">
+            Processing payment...
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
