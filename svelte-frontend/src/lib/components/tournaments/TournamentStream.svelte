@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { Trophy, Users, Circle } from 'lucide-svelte';
+  import { Trophy, Users, Circle, Dumbbell } from 'lucide-svelte';
   import solIcon from '$lib/assets/solIcon.png';
+  import type { Challenge } from '$lib/types';
 
-  export let challenge: any;
+  export let challenge: Challenge;
   export let prize: number;
   export let breakAttempts: number;
   export let streamUrl: string;
@@ -14,10 +15,15 @@
   <!-- Live indicator and title -->
   <div class="mb-4 flex items-center justify-between">
     <div class="flex items-center gap-2">
+      <div class="h-12 w-12 overflow-hidden rounded-lg">
+        <img src={challenge.image} alt="Challenge" class="h-full w-full object-cover" />
+      </div>
+      <h3 class="text-xl font-bold text-white">{challenge.title}</h3>
+    </div>
+    <div class="flex items-center gap-2">
       <Circle class="h-3 w-3 animate-pulse fill-red-500 text-red-500" />
       <span class="text-sm font-semibold text-red-400">LIVE</span>
     </div>
-    <h3 class="text-xl font-bold text-white">{challenge.title}</h3>
   </div>
 
   <!-- Stream container with 16:9 aspect ratio -->
@@ -52,7 +58,7 @@
       <div class="text-sm text-gray-400">attempts</div>
     </div>
 
-    {#if challenge.scores?.length > 0}
+    {#if challenge.scores && challenge.scores.length > 0}
       <div class="space-y-2">
         <div class="mb-2 flex justify-center">
           <Trophy class="h-6 w-6 text-purple-400" />
@@ -61,6 +67,14 @@
           {Math.floor(challenge.scores[0].score).toLocaleString()}
         </div>
         <div class="text-sm text-gray-400">high score</div>
+      </div>
+    {:else}
+      <div class="space-y-2">
+        <div class="mb-2 flex justify-center">
+          <Dumbbell class="h-6 w-6 text-purple-400" />
+        </div>
+        <div class="text-lg font-bold">{challenge.level}</div>
+        <div class="text-sm text-gray-400">level</div>
       </div>
     {/if}
   </div>

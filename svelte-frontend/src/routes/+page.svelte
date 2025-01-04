@@ -9,8 +9,7 @@
     MessageCircle,
     ChevronDown,
     ChevronUp,
-    ArrowRight,
-    Circle
+    ArrowRight
   } from 'lucide-svelte';
   import solIcon from '$lib/assets/solIcon.png';
   import demoVideo from '$lib/assets/demo.mp4';
@@ -19,8 +18,19 @@
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
   import TournamentCountdown from '$lib/components/tournaments/TournamentCountdown.svelte';
   import TournamentStream from '$lib/components/tournaments/TournamentStream.svelte';
+  import type { Challenge } from '$lib/types';
 
-  let settings: any = null;
+  let settings: {
+    activeChallenge?: Challenge;
+    concludedChallenges: Challenge[];
+    challenges: Challenge[];
+    faq: { question: string; answer: string }[];
+    breakAttempts: number;
+    jailToken: { address: string };
+    solPrice: number;
+    total_payout: number;
+    treasury: number;
+  };
   let faqOpen = Array(4).fill(false);
   let mousePosition = { x: 0, y: 0 };
 
@@ -39,8 +49,9 @@
 
     // Fetch settings
     fetch('/api/settings')
-      .then((response) => response.json())
-      .then((data) => {
+      .then(async (res) => {
+        if (!res.ok) throw Error(res.status + ': ' + res.statusText);
+        const data = await res.json();
         settings = data;
         console.log('Settings data:', settings);
         console.log('Active/Upcoming tournament:', settings.activeChallenge);
@@ -100,11 +111,11 @@
               name={settings.activeChallenge.name}
             />
           {:else}
-            <TournamentStream 
+            <TournamentStream
               challenge={settings.activeChallenge}
-              prize={settings.activeChallenge.prize}
+              prize={settings.activeChallenge.prize || 0}
               breakAttempts={settings.breakAttempts}
-              streamUrl={settings.activeChallenge.stream_url}
+              streamUrl={settings.activeChallenge.stream_url || ''}
             />
           {/if}
         </div>
@@ -145,7 +156,7 @@
         </div>
       {/if}
     </div>
-    
+
     <div class="relative z-10 mx-auto w-full max-w-4xl px-4 text-center">
       <!-- Card Sections -->
       <div class="mt-12 space-y-8">
@@ -157,7 +168,7 @@
             Earn $VIRAL. Shape The Future.
           </h3>
           <p class="mb-8 text-gray-400">Train Agents through Demonstration</p>
-          
+
           <!-- Race Types -->
           <div class="mb-8 grid gap-6 text-left md:grid-cols-2">
             <div class="rounded-xl bg-black/30 p-6">
@@ -230,36 +241,110 @@
             </div>
           </div>
 
-          {#if settings?.activeChallenge}
-            <!-- Tournament Hype CTA -->
-            <div class="mb-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
+          {#if !settings?.activeChallenge}
+            <!-- Next Tournament CTA -->
+            <div class="my-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
               <div class="space-y-4 text-center">
                 <h4
                   class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent"
                 >
-                  Tournament {settings.activeChallenge.status === 'upcoming' ? 'Starting Soon!' : 'Live Now!'}
+                  Next Tournament Loading...
                 </h4>
-                <p class="text-gray-300">
-                  {settings.activeChallenge.status === 'upcoming' 
-                    ? 'Get ready for the next big tournament!' 
-                    : 'Join the action and compete for the prize pool!'}
-                </p>
+                <p class="text-gray-300">Don't miss out on the next chance to win big!</p>
                 <a
-                  href={`/tournaments/${settings.activeChallenge.name}`}
-                  target="_self"
+                  href="https://t.me/viralmind"
+                  target="_blank"
                   class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold transition-all duration-200 hover:scale-105 hover:opacity-90"
                 >
-                  {#if settings.activeChallenge.status === 'upcoming'}
-                    <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
-                    Get Notified
-                  {:else}
-                    <Trophy class="h-5 w-5 group-hover:animate-bounce" />
-                    Join Tournament
-                  {/if}
-                  <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
+                  <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
+                  Join Telegram for Updates
+                  <span
+                    class="text-white transition-transform duration-200 group-hover:translate-x-1"
                     >→</span
                   >
                 </a>
+              </div>
+            </div>
+          {:else if settings.activeChallenge}
+            <!-- Active Challenge Section -->
+            <div class="mb-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
+              <div class="space-y-4">
+                <h4
+                  class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-center text-xl font-bold text-transparent"
+                >
+                  Tournament {settings.activeChallenge.status === 'upcoming'
+                    ? 'Starting Soon!'
+                    : 'Live Now!'}
+                </h4>
+
+                <p class="text-gray-300">
+                  {settings.activeChallenge.status === 'upcoming'
+                    ? 'Get ready for the next big tournament!'
+                    : 'Join the action and compete for the prize pool!'}
+                </p>
+
+                <div class="flex flex-col items-center gap-4 md:flex-row">
+                  <!-- Challenge Image -->
+                  <div class="h-32 w-32 overflow-hidden rounded-lg">
+                    <img
+                      src={settings.activeChallenge.image}
+                      alt="Challenge"
+                      class="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  <!-- Challenge Info -->
+                  <div class="flex-1 space-y-3">
+                    <h5 class="text-center text-lg font-semibold text-white md:text-left">
+                      {settings.activeChallenge.title}
+                    </h5>
+
+                    <div class="grid grid-cols-2 gap-4">
+                      <div class="flex items-center gap-2">
+                        <Dumbbell class="h-4 w-4 text-purple-400" />
+                        <span class="text-gray-300">
+                          <span class="hidden md:inline">Level:</span>
+                          {settings.activeChallenge.level}
+                        </span>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <MessageCircle class="h-4 w-4 text-purple-400" />
+                        <span class="text-gray-300">
+                          <span class="hidden md:inline">Messages:</span>
+                          {settings.breakAttempts}
+                        </span>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <Coins class="h-4 w-4 text-purple-400" />
+                        <span class="text-gray-300">
+                          <span class="hidden md:inline">Entry:</span>
+                          {settings.activeChallenge.entryFee} SOL
+                        </span>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <Trophy class="h-4 w-4 text-purple-400" />
+                        <span class="text-gray-300">
+                          <span class="hidden md:inline">Prize:</span>
+                          {settings.activeChallenge.prize} SOL
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex justify-center">
+                  <ButtonCTA href={`/tournaments/${settings.activeChallenge.name}`}>
+                    <Trophy class="h-5 w-5 group-hover:animate-bounce" />
+                    Join Tournament
+                    <span
+                      class="text-white transition-transform duration-200 group-hover:translate-x-1"
+                      >→</span
+                    >
+                  </ButtonCTA>
+                </div>
               </div>
             </div>
           {/if}
@@ -269,54 +354,56 @@
             <h3 class="py-2 text-xl font-semibold text-purple-400">
               {settings?.activeChallenge ? 'Previous' : 'Latest'} Tournament
             </h3>
-            <div class="block hover:opacity-90 transition-opacity">
+            <div class="block transition-opacity hover:opacity-90">
               <a href={`http://localhost/tournaments/${settings.concludedChallenges[0].name}`}>
                 <Card class="mb-2">
-                <a
-                  href="/tournaments/{settings.concludedChallenges[0].name}"
-                  class="text-lg hover:underline"
-                >
-                  {settings.concludedChallenges[0].title}
-                </a>
-                <p class="mb-4 mt-2 text-sm text-gray-400">
-                  {settings.concludedChallenges[0].label}
-                </p>
+                  <a
+                    href="/tournaments/{settings.concludedChallenges[0].name}"
+                    class="text-lg hover:underline"
+                  >
+                    {settings.concludedChallenges[0].title}
+                  </a>
+                  <p class="mb-4 mt-2 text-sm text-gray-400">
+                    {settings.concludedChallenges[0].label}
+                  </p>
 
-                <div class="mb-4 flex flex-col gap-2">
-                  <div class="flex flex-col items-center justify-between gap-y-4 md:flex-row">
-                    <div class="flex items-center gap-2 text-sm text-gray-400">
-                      <Trophy class="h-4 w-4 text-purple-400" />
-                      <span
-                        >Winner: {settings.concludedChallenges[0].winning_address?.slice(
-                          0,
-                          5
-                        )}...{settings.concludedChallenges[0].winning_address?.slice(-4)}</span
+                  <div class="mb-4 flex flex-col gap-2">
+                    <div class="flex flex-col items-center justify-between gap-y-4 md:flex-row">
+                      <div class="flex items-center gap-2 text-sm text-gray-400">
+                        <Trophy class="h-4 w-4 text-purple-400" />
+                        <span
+                          >Winner: {settings.concludedChallenges[0].winning_address?.slice(
+                            0,
+                            5
+                          )}...{settings.concludedChallenges[0].winning_address?.slice(-4)}</span
+                        >
+                      </div>
+                      <div class="flex flex-col items-center gap-4 text-sm md:flex-row">
+                        <div class="flex gap-2">
+                          <img src={solIcon} alt="SOL" class="h-4 w-4" />
+                          <span class="text-gray-400"
+                            >{settings.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span
+                          >
+                        </div>
+                        <div class="flex gap-2">
+                          <Coins class="h-4 w-4 text-purple-400" />
+                          <span class="text-gray-400"
+                            >${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'}</span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    <div class=" text-sm text-gray-400/70">
+                      <p
+                        class="font-xs mx-auto mb-1 w-fit border-b border-gray-400/70 font-semibold uppercase"
                       >
-                    </div>
-                    <div class="flex flex-col items-center gap-4 text-sm md:flex-row">
-                      <div class="flex gap-2">
-                        <img src={solIcon} alt="SOL" class="h-4 w-4" />
-                        <span class="text-gray-400"
-                          >{settings.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span
-                        >
-                      </div>
-                      <div class="flex gap-2">
-                        <Coins class="h-4 w-4 text-purple-400" />
-                        <span class="text-gray-400"
-                          >${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'}</span
-                        >
-                      </div>
+                        txn
+                      </p>
+                      <p class="break-all font-mono">
+                        {settings.concludedChallenges[0].winning_txn}
+                      </p>
                     </div>
                   </div>
-                  <div class=" text-sm text-gray-400/70">
-                    <p
-                      class="font-xs mx-auto mb-1 w-fit border-b border-gray-400/70 font-semibold uppercase"
-                    >
-                      txn
-                    </p>
-                    <p class="break-all font-mono">{settings.concludedChallenges[0].winning_txn}</p>
-                  </div>
-                </div>
                 </Card>
               </a>
             </div>
@@ -337,31 +424,6 @@
               >
                 View on Solscan
               </a>
-            </div>
-          {/if}
-
-          {#if !settings?.activeChallenge}
-            <!-- New Next Tournament CTA -->
-            <div class="my-8 rounded-xl bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-6">
-              <div class="space-y-4 text-center">
-                <h4
-                  class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent"
-                >
-                  Next Tournament Loading...
-                </h4>
-                <p class="text-gray-300">Don't miss out on the next chance to win big!</p>
-                <a
-                  href="https://t.me/viralmind"
-                  target="_blank"
-                  class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold transition-all duration-200 hover:scale-105 hover:opacity-90"
-                >
-                  <MessageCircle class="h-5 w-5 group-hover:animate-bounce" />
-                  Join Telegram for Updates
-                  <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
-                    >→</span
-                  >
-                </a>
-              </div>
             </div>
           {/if}
 
@@ -450,7 +512,8 @@
               <div class="relative z-20 mt-8">
                 <div class="mx-auto max-w-lg space-y-4 text-gray-400">
                   <p class="text-sm opacity-75">
-                    Train VM-1 in our Training Gym and earn $VIRAL rewards. Your demonstrations shape the future of computer control while building token value.
+                    Train VM-1 in our Training Gym and earn $VIRAL rewards. Your demonstrations
+                    shape the future of computer control while building token value.
                   </p>
                 </div>
               </div>
@@ -470,7 +533,7 @@
             </div>
           </Card>
         {/if}
-        
+
         <!-- FAQ Section -->
         <Card bordered={false}>
           <div id="faq">

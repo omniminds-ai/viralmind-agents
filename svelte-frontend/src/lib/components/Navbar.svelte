@@ -91,7 +91,7 @@
           <div class="flex items-center gap-1">
             <span>Earn</span>
             <span class="font-bold">$VIRAL</span>
-            <span class="font-medium opacity-80">by Training →</span>
+            <span class="hidden font-medium opacity-80 lg:inline">by Training →</span>
           </div>
         </a>
 

@@ -10,6 +10,36 @@ export interface TournamentMessage {
   screenshot?: { url: string };
 }
 
+interface WhitelistEntry {
+  username: string;
+  address: string;
+  viral_balance: number;
+  signature: string;
+  _id: string;
+}
+
+type IDLAccountField = {
+  name: string;
+  writable?: boolean;
+  signer?: boolean;
+  address?: string;
+  pda?: {
+    seeds: Array<{
+      kind: string;
+      value: number[];
+    }>;
+  };
+};
+
+type IDLArgument = {
+  name: string;
+  type:
+    | {
+        array?: [string, number];
+      }
+    | string;
+};
+
 type IDLMetadata = {
   name: string;
   version: string;
@@ -20,29 +50,38 @@ type IDLMetadata = {
 type IDL = {
   address: string;
   metadata: IDLMetadata;
-  instructions: {
+  instructions: Array<{
     name: string;
-    discriminator: unknown[];
-    accounts: unknown[];
-    args: unknown[];
-  }[];
-  accounts: {
+    discriminator: number[];
+    accounts: IDLAccountField[];
+    args: IDLArgument[];
+  }>;
+  accounts: Array<{
     name: string;
-    discriminator: unknown[];
-  }[];
-  events: {
+    discriminator: number[];
+  }>;
+  events: Array<{
     name: string;
-    discriminator: unknown[];
-  }[];
-  errors: {
+    discriminator: number[];
+  }>;
+  errors: Array<{
     code: number;
     name: string;
     msg: string;
-  }[];
-  types: {
+  }>;
+  types: Array<{
     name: string;
-    type: Record<string, unknown>;
-  }[];
+    type: {
+      kind: string;
+      fields?: Array<{
+        name: string;
+        type: string | { array: [string, number] } | { defined: { name: string } };
+      }>;
+      variants?: Array<{
+        name: string;
+      }>;
+    };
+  }>;
 };
 
 interface Score {
@@ -52,31 +91,50 @@ interface Score {
   timestamp: Date;
 }
 
-interface Challenge {
-  _id: string;
+export interface Challenge {
+  _id?: string;
+  id?: string;
   title: string;
   name: string;
+  description?: string;
   image: string;
   pfp: string;
-  task: string;
+  task?: string;
   label: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced'; // Using union type assuming these are the possible values
-  status: 'upcoming' | 'active' | 'concluded'; // Add other possible status values if known
-  deployed: boolean;
-  idl: IDL;
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  status: 'upcoming' | 'active' | 'concluded' | 'expired';
+  system_message?: string;
+  deployed?: boolean;
+  idl?: IDL;
   entryFee: number;
-  characterLimit: number;
-  contextLimit: number;
-  chatLimit: number;
-  expiry: string; // Could also use Date if you're parsing the date
-  initial_pool_size: number;
+  characterLimit?: number;
+  contextLimit?: number;
+  chatLimit?: number;
+  expiry: string;
+  start_date: string;
+  win_condition?: string;
+  prize?: number;
+  usdPrize?: number;
+  initial_pool_size?: number;
   developer_fee: number;
-  disable: unknown[]; // Specify the type of elements if known
-  expiry_logic: string;
-  scores: Score[];
-  start_date: string; // Could also use Date if you're parsing the date
-  win_condition: string;
-  tournamentPDA: string;
+  tools?: any[];
+  winning_message?: string;
+  winning_prize?: number;
+  disable?: unknown[];
+  tool_choice?: 'auto' | 'none' | 'function';
+  expiry_logic?: 'time' | 'solved';
+  scores?: Score[];
+  __v?: number;
+  tournamentPDA?: string;
+  game?: string;
+  stream_src?: string;
+  game_ip?: string;
+  game_secret?: string;
+  max_actions?: number;
+  whitelist?: WhitelistEntry[];
+  stream_url?: string;
+  winning_address?: string;
+  winning_txn?: string;
 }
 
 export interface Tournament {
