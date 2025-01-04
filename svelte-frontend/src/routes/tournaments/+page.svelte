@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Trophy, Users, Coins, ChevronRight, MessageCircle, Dumbbell } from 'lucide-svelte';
   import type { PageData } from './$types';
-  import TournamentActiveCard from '$lib/components/tournaments/TournamentActiveCard.svelte';
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
 
   export let data: PageData;
