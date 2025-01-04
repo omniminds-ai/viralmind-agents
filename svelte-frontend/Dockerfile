@@ -6,7 +6,7 @@ WORKDIR /usr/src/app/svelte-frontend
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --include=dev
 
 # Copy the rest of the application
 COPY . .

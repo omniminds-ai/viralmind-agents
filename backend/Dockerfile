@@ -10,8 +10,7 @@ RUN apt update \
     && apt install --assume-yes --no-install-recommends \
     build-essential \
     python3
-RUN npm install -g nodemon
-RUN npm install --legacy-peer-deps --include=dev
+RUN npm ci --include=dev
 
 COPY . .
 

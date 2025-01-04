@@ -19,7 +19,7 @@ services:
       - NET_ADMIN
     ports:
       - 8006:8006
-      - 5900:5900 # VNC port 
+      - 5901:5901 # VNC port 
       - 3390:3389 # RDP port
       - 6950:6950 # service server
     stop_grace_period: 2m
@@ -53,7 +53,7 @@ services:
       - ANCHOR_WORKSPACE=/usr/src/app/backend/jailbreak-pool
       # VNC Configuration (replaced RDP config)
       - VNC_HOST=windows
-      - VNC_PORT=5900
+      - VNC_PORT=5901
       - VNC_PASSWORD=admin
       - SERVICE_HOST=windows
       - SERVICE_PORT=6950
@@ -86,7 +86,7 @@ services:
     command: npm run dev
     volumes:
       - ./svelte-frontend:/usr/src/app/svelte-frontend
-      - /usr/src/app/svelte-frontend/node_modules
+      - /usr/src/app/svelte-frontend/node_modules/  # This creates an anonymous volume for node_modules
     environment:
       - NODE_ENV=development
 
