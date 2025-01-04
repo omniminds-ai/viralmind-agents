@@ -149,3 +149,15 @@ export interface Tournament {
   chatHistory: TournamentMessage[];
   latestScreenshot: { url: string };
 }
+
+export interface SettingsRes {
+  activeChallenge?: Challenge;
+  concludedChallenges: Challenge[];
+  challenges: Challenge[];
+  faq: { question: string; answer: string }[];
+  breakAttempts: number;
+  jailToken: { address: string };
+  solPrice: number;
+  total_payout: number;
+  treasury: number;
+}
