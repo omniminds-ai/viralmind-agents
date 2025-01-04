@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { Trophy, Users, Coins, ChevronRight, MessageCircle } from 'lucide-svelte';
+  import { Trophy, Users, Coins, ChevronRight, MessageCircle, Dumbbell } from 'lucide-svelte';
   import type { PageData } from './$types';
   import TournamentActiveCard from '$lib/components/tournaments/TournamentActiveCard.svelte';
+  import ButtonCTA from '$lib/components/ButtonCTA.svelte';
 
   export let data: PageData;
 
@@ -19,14 +20,81 @@
   };
 </script>
 
-<div class="min-h-screen bg-black pb-32 pt-24 text-white">
+<div class="min-h-screen bg-black pb-32 pt-6 text-white md:pt-12">
   <div class="mx-auto max-w-5xl px-4">
     {#if data.activeChallenge}
-      <!-- We have an active tournament -->
-      <TournamentActiveCard challenge={data.activeChallenge} />
+      <div class="my-16 text-center">
+        <h1
+          class="mb-4 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-4xl font-bold text-transparent md:text-5xl"
+        >
+          Tournament {data.activeChallenge.status === 'upcoming' ? 'Starting Soon!' : 'Live Now!'}
+        </h1>
+
+        <div class="flex flex-col items-center gap-4">
+          <!-- Challenge Image -->
+          <div class="h-24 w-24 overflow-hidden rounded-lg">
+            <img
+              src={data.activeChallenge.image}
+              alt="Challenge"
+              class="h-full w-full object-cover"
+            />
+          </div>
+
+          <!-- Challenge Info -->
+          <div class="flex-1 space-y-3">
+            <h5 class="text-center text-lg font-semibold text-white md:text-left">
+              {data.activeChallenge.title}
+            </h5>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="flex items-center gap-2">
+                <Dumbbell class="h-4 w-4 text-purple-400" />
+                <span class="text-gray-300">
+                  <span class="hidden md:inline">Level:</span>
+                  {data.activeChallenge.level}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <MessageCircle class="h-4 w-4 text-purple-400" />
+                <span class="text-gray-300">
+                  <span class="hidden md:inline">Messages:</span>
+                  <!--{challenge.breakAttempts}-->
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <Coins class="h-4 w-4 text-purple-400" />
+                <span class="text-gray-300">
+                  <span class="hidden md:inline">Entry:</span>
+                  {data.activeChallenge.entryFee} SOL
+                </span>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <Trophy class="h-4 w-4 text-purple-400" />
+                <span class="text-gray-300">
+                  <span class="hidden md:inline">Prize:</span>
+                  {data.activeChallenge.prize} SOL
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-center">
+          <ButtonCTA href={`/tournaments/${data.activeChallenge.name}`}>
+            <Trophy class="h-5 w-5 group-hover:animate-bounce" />
+            Join Tournament
+            <span class="text-white transition-transform duration-200 group-hover:translate-x-1"
+              >→</span
+            >
+          </ButtonCTA>
+        </div>
+      </div>
     {:else}
       <!-- Concluded Tournament Header -->
-      <div class="my-32 text-center">
+      <div class="my-16 text-center">
         <h1 class="mb-4 text-4xl font-bold md:text-5xl">Tournament Concluded</h1>
         <p class="mb-8 text-gray-400">
           Our latest tournament has concluded. Join our Telegram for updates on the next one!
