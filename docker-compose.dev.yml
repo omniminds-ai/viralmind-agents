@@ -39,6 +39,7 @@ services:
     command: npm run dev
     volumes:
       - ./backend:/usr/src/app/backend
+      - /usr/src/app/backend/node_modules/
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
     environment:
       - DB_URI=${DB_URI}
