@@ -287,6 +287,8 @@ router.post("/chat", async (req, res) => {
       role: "assistant",
       content: content,
       address: username,
+      display_name: username,
+      pfp: `https://mc-heads.net/avatar/${username}`,
       date: new Date()
     });
 
