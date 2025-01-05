@@ -1,0 +1,14 @@
+name: 'ViralPlugin'
+version: '1.0.0'
+main: ai.viralmind.viralplugin.ViralPlugin
+api-version: '1.20'
+depend: [LuckPerms]
+commands:
+  giveprizegold:
+    description: Gives a Prize Gold item to a player
+    usage: /giveprizegold <player>
+    permission: prizegold.give
+permissions:
+  prizegold.give:
+    description: Allows giving Prize Gold items
+    default: op
