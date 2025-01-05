@@ -93,7 +93,6 @@ public class ViralPlugin extends JavaPlugin implements Listener {
         startPollingTask();
     }
 
-
     // Helper method to manage LuckPerms permissions
     private void updatePlayerPermissions(Player player, boolean shouldHaveBypass) {
         User user = luckPerms.getUserManager().getUser(player.getUniqueId());
@@ -117,46 +116,46 @@ public class ViralPlugin extends JavaPlugin implements Listener {
     private String getMockApiResponse(String playerName) {
         if (playerName.equalsIgnoreCase("throwaway_name")) {
             return """
-                {
-                    "whitelist": [{
-                        "username": "throwaway_name",
-                        "address": "rich_player_address_J31XET6BiQE2eiVgx2PF6G45rPK6VNKWKrog4u2gj5nv",
-                        "viral_balance": 2000000.0,
-                        "signature": "mock_signature",
-                        "_id": "mock_id"
-                    }]
-                }
-                """;
+                    {
+                        "whitelist": [{
+                            "username": "throwaway_name",
+                            "address": "rich_player_address_J31XET6BiQE2eiVgx2PF6G45rPK6VNKWKrog4u2gj5nv",
+                            "viral_balance": 2000000.0,
+                            "signature": "mock_signature",
+                            "_id": "mock_id"
+                        }]
+                    }
+                    """;
         } else if (playerName.equalsIgnoreCase("poor_player")) {
             return """
-                {
-                    "whitelist": [{
-                        "username": "poor_player",
-                        "address": "poor_player_address_A31XET6BiQE2eiVgx2PF6G45rPK6VNKWKrog4u2gj5nv",
-                        "viral_balance": 10000.0,
-                        "signature": "mock_signature",
-                        "_id": "mock_id"
-                    }]
-                }
-                """;
+                    {
+                        "whitelist": [{
+                            "username": "poor_player",
+                            "address": "poor_player_address_A31XET6BiQE2eiVgx2PF6G45rPK6VNKWKrog4u2gj5nv",
+                            "viral_balance": 10000.0,
+                            "signature": "mock_signature",
+                            "_id": "mock_id"
+                        }]
+                    }
+                    """;
         } else if (playerName.equalsIgnoreCase("normal_player")) {
             return """
-                {
-                    "whitelist": [{
-                        "username": "normal_player",
-                        "address": "normal_player_address_B31XET6BiQE2eiVgx2PF6G45rPK6VNKWKrog4u2gj5nv",
-                        "viral_balance": 50000.0,
-                        "signature": "mock_signature",
-                        "_id": "mock_id"
-                    }]
-                }
-                """;
+                    {
+                        "whitelist": [{
+                            "username": "normal_player",
+                            "address": "normal_player_address_B31XET6BiQE2eiVgx2PF6G45rPK6VNKWKrog4u2gj5nv",
+                            "viral_balance": 50000.0,
+                            "signature": "mock_signature",
+                            "_id": "mock_id"
+                        }]
+                    }
+                    """;
         }
         return """
-            {
-                "whitelist": []
-            }
-            """;
+                {
+                    "whitelist": []
+                }
+                """;
     }
 
     // Add this helper method near the top of the class
@@ -169,11 +168,11 @@ public class ViralPlugin extends JavaPlugin implements Listener {
         CompletableFuture.runAsync(() -> {
             try {
                 String webhookJson = String.format("""
-                {
-                    "content": "%s",
-                    "username": "%s"
-                }
-                """, content.replace("\"", "\\\""), username);
+                        {
+                            "content": "%s",
+                            "username": "%s"
+                        }
+                        """, content.replace("\"", "\\\""), username);
 
                 HttpRequest webhookRequest = HttpRequest.newBuilder()
                         .uri(URI.create(webhookUrl))
@@ -199,8 +198,6 @@ public class ViralPlugin extends JavaPlugin implements Listener {
         saveProcessedIds();
     }
 
-
-
     private void loadProcessedIds() {
         try {
             if (!getDataFolder().exists()) {
@@ -209,7 +206,8 @@ public class ViralPlugin extends JavaPlugin implements Listener {
 
             if (processedIdsFile.exists()) {
                 String json = new String(Files.readAllBytes(processedIdsFile.toPath()));
-                TypeToken<HashSet<String>> typeToken = new TypeToken<>() {};
+                TypeToken<HashSet<String>> typeToken = new TypeToken<>() {
+                };
                 Set<String> loaded = gson.fromJson(json, typeToken.getType());
                 if (loaded != null) {
                     processedMessageIds = loaded;
@@ -286,19 +284,19 @@ public class ViralPlugin extends JavaPlugin implements Listener {
         String mockId = String.valueOf(currentTime);
 
         return String.format("""
-            {
-                "chatHistory": [
-                    {
-                        "_id": "%s",
-                        "challenge": "viral_lua",
-                        "role": "user",
-                        "content": "This is a test message from the mock API at %s",
-                        "address": "mock_address",
-                        "date": "2024-12-21T15:48:53.195Z"
-                    }
-                ]
-            }
-            """, mockId, currentTime);
+                {
+                    "chatHistory": [
+                        {
+                            "_id": "%s",
+                            "challenge": "viral_lua",
+                            "role": "user",
+                            "content": "This is a test message from the mock API at %s",
+                            "address": "mock_address",
+                            "date": "2024-12-21T15:48:53.195Z"
+                        }
+                    ]
+                }
+                """, mockId, currentTime);
     }
 
     @EventHandler
@@ -362,7 +360,8 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                     if (!finalPlayerFound || finalBalance < 25000) {
                         player.kickPlayer("§cInsufficient Balance - Required: 25,000 VIRAL");
                         if (USE_MOCK_API) {
-                            getLogger().info("[Mock API] Player kicked: " + playerName + " (Balance: " + finalBalance + ")");
+                            getLogger().info(
+                                    "[Mock API] Player kicked: " + playerName + " (Balance: " + finalBalance + ")");
                         }
                         return;
                     }
@@ -371,19 +370,22 @@ public class ViralPlugin extends JavaPlugin implements Listener {
 
                     if (finalBalance > 1000000) {
                         updatePlayerPermissions(player, true);
-                        player.sendMessage("§a§lCoordinates Unlocked: §fSince you hold over 1,000,000 $VIRAL, your F3 coordinates show your true location!");
+                        player.sendMessage(
+                                "§a§lCoordinates Unlocked: §fSince you hold over 1,000,000 $VIRAL, your F3 coordinates show your true location!");
                         if (USE_MOCK_API) {
                             getLogger().info("[Mock API] VIP permissions granted to: " + playerName);
                         }
                     } else {
                         updatePlayerPermissions(player, false);
-                        player.sendMessage("§c§lCoordinates Hidden: §fYour F3 coordinates are currently hidden. To see your true location, you need to hold at least 1,000,000 $VIRAL.");
+                        player.sendMessage(
+                                "§c§lCoordinates Hidden: §fYour F3 coordinates are currently hidden. To see your true location, you need to hold at least 1,000,000 $VIRAL.");
                     }
                 });
 
             } catch (Exception e) {
                 getLogger().warning("Failed to check player balance: " + e.getMessage());
-                getServer().getScheduler().runTask(this, () -> player.kickPlayer("§cFailed to verify balance. Please try again later."));
+                getServer().getScheduler().runTask(this,
+                        () -> player.kickPlayer("§cFailed to verify balance. Please try again later."));
                 sendWebhookMessage(String.format("❌ **Error**: Failed to check balance for %s: %s",
                         playerName, e.getMessage()), "Error Logger");
             }
@@ -414,7 +416,6 @@ public class ViralPlugin extends JavaPlugin implements Listener {
         return item;
     }
 
-
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -442,11 +443,11 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                 try {
                     // First send Discord webhook
                     String webhookJson = String.format("""
-                        {
-                            "content": "Player %s has claimed their Prize Gold!",
-                            "username": "Prize Gold Bot"
-                        }
-                        """, playerName);
+                            {
+                                "content": "Player %s has claimed their Prize Gold!",
+                                "username": "Prize Gold Bot"
+                            }
+                            """, playerName);
 
                     HttpRequest webhookRequest = HttpRequest.newBuilder()
                             .uri(URI.create(webhookUrl))
@@ -458,11 +459,11 @@ public class ViralPlugin extends JavaPlugin implements Listener {
 
                     // Then send reward claim
                     String rewardJson = String.format("""
-                        {
-                            "username": "%s",
-                            "secret": "%s"
-                        }
-                        """, playerName, API_SECRET);
+                            {
+                                "username": "%s",
+                                "secret": "%s"
+                            }
+                            """, playerName, API_SECRET);
 
                     HttpRequest rewardRequest = HttpRequest.newBuilder()
                             .uri(URI.create("https://viralmind.ai/api/minecraft/reward"))
@@ -480,17 +481,20 @@ public class ViralPlugin extends JavaPlugin implements Listener {
 
                         // Broadcast tournament end messages
                         Bukkit.broadcastMessage("");
-                        Bukkit.broadcastMessage("§6§l⚔ Tournament Complete! §r§eThe prize has been claimed by " + playerName + "!");
+                        Bukkit.broadcastMessage(
+                                "§6§l⚔ Tournament Complete! §r§eThe prize has been claimed by " + playerName + "!");
                         Bukkit.broadcastMessage("§c§lServer shutting down in 10 seconds...");
                         Bukkit.broadcastMessage("");
 
                         // Schedule server shutdown
-                        getServer().getScheduler().runTaskLater(this, () -> Bukkit.shutdown(), 200L); // 10 seconds = 200 ticks
+                        getServer().getScheduler().runTaskLater(this, () -> Bukkit.shutdown(), 200L); // 10 seconds =
+                                                                                                      // 200 ticks
                     });
 
                 } catch (Exception e) {
                     getLogger().warning("Failed to send notifications: " + e.getMessage());
-                    getServer().getScheduler().runTask(this, () -> player.sendMessage("§cFailed to claim prize. Please try again later."));
+                    getServer().getScheduler().runTask(this,
+                            () -> player.sendMessage("§cFailed to claim prize. Please try again later."));
                 }
             });
         }
@@ -505,32 +509,30 @@ public class ViralPlugin extends JavaPlugin implements Listener {
         // Log all chat messages to webhook
         sendWebhookMessage(String.format("💬 **Chat**: %s: %s", playerName, message), "Chat Logger");
 
-        // Only process chat messages from viral_steve
-        if (playerName.equalsIgnoreCase("viral_steve")) {
-            // Send chat message to API
-            getServer().getScheduler().runTaskAsynchronously(this, () -> {
-                try {
-                    String chatJson = String.format("""
+        // Send chat message to API
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                String chatJson = String.format("""
                         {
-                            "username": "viral_steve",
+                            "username": %s,
                             "content": "%s",
                             "secret": "%s"
                         }
-                        """, message.replace("\"", "\\\""), API_SECRET);
+                        """, playerName, message.replace("\"", "\\\""), API_SECRET);
 
-                    HttpRequest chatRequest = HttpRequest.newBuilder()
-                            .uri(URI.create("https://viralmind.ai/api/minecraft/chat"))
-                            .header("Content-Type", "application/json")
-                            .POST(HttpRequest.BodyPublishers.ofString(chatJson))
-                            .build();
+                HttpRequest chatRequest = HttpRequest.newBuilder()
+                        .uri(URI.create("https://viralmind.ai/api/minecraft/chat"))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(chatJson))
+                        .build();
 
-                    httpClient.send(chatRequest, HttpResponse.BodyHandlers.ofString());
-                } catch (Exception e) {
-                    getLogger().warning("Failed to send chat message to API: " + e.getMessage());
-                    // Log API errors to webhook
-                    sendWebhookMessage("❌ **API Error**: Failed to send chat message to API: " + e.getMessage(), "Error Logger");
-                }
-            });
-        }
+                httpClient.send(chatRequest, HttpResponse.BodyHandlers.ofString());
+            } catch (Exception e) {
+                getLogger().warning("Failed to send chat message to API: " + e.getMessage());
+                // Log API errors to webhook
+                sendWebhookMessage("❌ **API Error**: Failed to send chat message to API: " + e.getMessage(),
+                        "Error Logger");
+            }
+        });
     }
 }
