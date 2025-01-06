@@ -3,8 +3,8 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { catchErrors } from "./hooks/errors.js";
-import path from "path";
-import { fileURLToPath } from 'url';
+import path, { join } from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 const dbURI = process.env.DB_URI;
@@ -24,6 +24,7 @@ const __dirname = path.dirname(__filename);
 app.use(bodyParser.json());
 
 app.use(express.json());
+
 // Add headers
 app.use(function (req, res, next) {
   // Origin to allow
@@ -54,6 +55,10 @@ app.use(function (req, res, next) {
   next();
 });
 
+// This is set before http headers b/c it breaks the stream
+import { streamsRoute } from "./routes/streams.js";
+app.use("/api/streams", streamsRoute);
+
 var forceSSL = function (req, res, next) {
   if (req.headers["x-forwarded-proto"] !== "https") {
     return res.redirect(["https://", req.get("Host"), req.url].join(""));
@@ -69,7 +74,10 @@ app.disable("x-powered-by");
 app.set("trust proxy", true);
 
 // Serve static files from public directory
-app.use('/api/screenshots', express.static(path.join(__dirname, 'public', 'screenshots')));
+app.use(
+  "/api/screenshots",
+  express.static(path.join(__dirname, "public", "screenshots"))
+);
 
 // UI:
 import { challengesRoute } from "./routes/challenges.js";

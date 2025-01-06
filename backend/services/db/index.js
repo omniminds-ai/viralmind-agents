@@ -1,11 +1,13 @@
+import EventEmitter from "node:events";
 import { Chat, Challenge, Pages } from "../../models/Models.js";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-class DataBaseService {
+class DataBaseService extends EventEmitter {
   constructor() {
     // Constructor remains empty as we don't need initialization logic
+    super()
   }
 
   // Challenge-related methods
@@ -73,6 +75,7 @@ class DataBaseService {
   // Chat-related methods
   async createChat(chatData) {
     try {
+      this.emit('new-chat', chatData)      
       return await Chat.create(chatData);
     } catch (error) {
       console.error("Database Service Error:", error);

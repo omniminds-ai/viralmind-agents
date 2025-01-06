@@ -71,6 +71,29 @@
   onMount(() => {
     if (status === 'concluded')
       chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+    // setup chat message listener
+    if (status === 'active') {
+      const stream = new EventSource(
+        'http://localhost:8001/api/streams/challenge-chat?name=viral_steve'
+      );
+      stream.onopen = () => {
+        console.log('Chat Stream Opened');
+      };
+      stream.onerror = (err) => {
+        console.log('Chat Stream Error:', err);
+      };
+      stream.onmessage = (event) => {
+        if (!event?.data) return;
+        const message = JSON.parse(event.data) as {
+          type: 'conection' | 'message';
+          message: any;
+        };
+        if (message.type === 'message') {
+          const chat = message.message;
+          messages = [...messages, message.message];
+        }
+      };
+    }
   });
 
   const formatSOL = (amount: number) => amount.toFixed(3);
