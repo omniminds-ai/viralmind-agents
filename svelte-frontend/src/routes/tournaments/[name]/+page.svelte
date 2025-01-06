@@ -50,14 +50,17 @@
 
   const updateTimeRemaining = () => {
     if (!challenge?.start_date || !challenge?.expiry) {
-      console.log('Missing dates:', { start_date: challenge?.start_date, expiry: challenge?.expiry });
+      console.log('Missing dates:', {
+        start_date: challenge?.start_date,
+        expiry: challenge?.expiry
+      });
       return;
     }
-    
+
     const now = Date.now();
     const start = new Date(challenge.start_date).getTime();
     const expiry = new Date(challenge.expiry).getTime();
-    
+
     console.log('Debug times:', {
       now,
       start,
@@ -77,7 +80,7 @@
       const minutes = Math.floor((expiryDiff % (1000 * 60 * 60)) / (1000 * 60));
       timeLeft = `${days}d ${hours}h ${minutes}m`;
     }
-    
+
     // Calculate time until start for upcoming tournaments
     const startDiff = start - now;
     if (startDiff > 0) {
@@ -113,11 +116,11 @@
 
 <div class="min-h-screen bg-black text-white">
   {#if loading}
-    <div class="flex items-center justify-center min-h-screen">
+    <div class="flex min-h-screen items-center justify-center">
       <div class="text-xl text-gray-400">Loading tournament...</div>
     </div>
   {:else if error}
-    <div class="flex items-center justify-center min-h-screen">
+    <div class="flex min-h-screen items-center justify-center">
       <div class="text-xl text-red-400">{error}</div>
     </div>
   {:else if data}
@@ -133,8 +136,8 @@
         {:else if !tournamentStarted}
           <div class="mb-6 rounded-2xl bg-stone-900/50 p-8 text-center backdrop-blur-sm">
             <h2 class="mb-2 text-2xl font-bold">Tournament Starting Soon</h2>
-            <p class="text-2xl font-bold text-purple-400 mt-4">{startTimeLeft}</p>
-            <p class="text-gray-400 mt-2">Get ready to compete! 🎮</p>
+            <p class="mt-4 text-2xl font-bold text-purple-400">{startTimeLeft}</p>
+            <p class="mt-2 text-gray-400">Get ready to compete! 🎮</p>
           </div>
         {/if}
 
@@ -168,16 +171,20 @@
         </div>
 
         <!-- Tournament Info -->
-        <TournamentInfo 
-          {challenge} 
-          prize={data.prize} 
+        <TournamentInfo
+          {challenge}
+          prize={data.prize}
           breakAttempts={data.break_attempts}
           startTimeLeft={!tournamentStarted ? startTimeLeft : ''}
         />
 
         {#if has_locked_server}
           <div class="mt-8">
-            <ServerIpReveal {tournamentStarted} startTimeLeft={!tournamentStarted ? startTimeLeft : ''} name={challenge.name} />
+            <ServerIpReveal
+              {tournamentStarted}
+              startTimeLeft={!tournamentStarted ? startTimeLeft : ''}
+              name={challenge.name}
+            />
           </div>
         {/if}
       </div>
@@ -192,7 +199,7 @@
       actionsPerMessage={challenge.max_actions || 3}
       onSendMessage={sendMessage}
       agentPfp={challenge.pfp}
-      status={!tournamentStarted ? 'upcoming' : challenge.status}
+      status={challenge.status}
       tournamentPDA={challenge.tournamentPDA}
       programId={challenge.idl.address}
       challengeName={challenge._id}

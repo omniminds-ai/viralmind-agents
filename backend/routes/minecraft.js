@@ -259,6 +259,9 @@ router.post("/chat", async (req, res) => {
   try {
     const { username, content, secret } = req.body;
 
+    console.log(username, content, secret)
+    console.log(process.env)
+
     if (!username || !content || !secret) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -267,9 +270,9 @@ router.post("/chat", async (req, res) => {
       return res.status(401).json({ error: 'Invalid secret' });
     }
 
-    if (username !== "viral_steve") {
-      return res.status(403).json({ error: 'Unauthorized username' });
-    }
+    // if (username !== "viral_steve") {
+    //   return res.status(403).json({ error: 'Unauthorized username' });
+    // }
 
     // Find active game challenge
     const challenge = await Challenge.findOne({ 
@@ -284,11 +287,10 @@ router.post("/chat", async (req, res) => {
     // Create chat message
     await DatabaseService.createChat({
       challenge: challenge.name,
-      role: "assistant",
+      role: username === "viral_steve" ? "assistant" : "player",
       content: content,
       address: username,
       display_name: username,
-      pfp: `https://mc-heads.net/avatar/${username}`,
       date: new Date()
     });
 

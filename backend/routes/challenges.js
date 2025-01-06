@@ -113,6 +113,7 @@ router.get("/get-challenge", async (req, res) => {
       challenge: 1,
       role: 1,
       content: 1,
+      display_name: 1,
       address: 1,
       txn: 1,
       date: 1,

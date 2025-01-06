@@ -12,6 +12,7 @@
   const firstMessage = $derived(messages[0]);
   const lastMessage = $derived(messages[messages.length - 1]);
   const isAgent = $derived(firstMessage.role === 'assistant');
+  const isPlayer = $derived(firstMessage.role === 'player');
 
   // Convert the complex reactive declaration to derived
   const allContent = $derived(
@@ -33,12 +34,18 @@
 
 <div class={`flex items-start gap-3 `}>
   <!-- Avatar -->
-  <div class="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full">
+  <div class="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full border border-white">
     {#if isAgent}
       <img
         src={isAgent
           ? 'https://viralmind.ai' + agentPfp
           : getJdenticonUrl(firstMessage.address || '')}
+        alt="Agent"
+        class="h-full w-full object-cover"
+      />
+    {:else if isPlayer}
+      <img
+        src={`https://mc-heads.net/avatar/${firstMessage.display_name}`}
         alt="Agent"
         class="h-full w-full object-cover"
       />
@@ -87,7 +94,15 @@
     </div>
     <div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
       <span>{new Date(lastMessage.date).toLocaleTimeString()}</span>
-      {#if !isAgent}
+      {#if isAgent}
+        <span class="font-mono text-purple-400/70">
+          {firstMessage.challenge}
+        </span>
+      {:else if isPlayer}
+        <span class="font-mono text-purple-400/70">
+          {firstMessage.display_name}
+        </span>
+      {:else}
         <span class="font-mono text-purple-400/70">
           {firstMessage.address?.slice(0, 4)}...{firstMessage.address?.slice(-4)}
         </span>

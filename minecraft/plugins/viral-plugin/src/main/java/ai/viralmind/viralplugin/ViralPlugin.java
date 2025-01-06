@@ -42,13 +42,14 @@ import java.util.concurrent.CompletableFuture;
 public class ViralPlugin extends JavaPlugin implements Listener {
     private final Dotenv dotenv = Dotenv.load();
     private final String API_SECRET = dotenv.get("API_SECRET");
+    private final String API_ORIGIN = dotenv.get("API_ORIGIN");
+    private final boolean USE_MOCK_API = "True".equals(dotenv.get("USE_MOCK_API"));
     private final String webhookUrl = dotenv.get("DISCORD_WEBHOOK_URL");
     private NamespacedKey prizeGoldKey;
     private final Set<String> blacklistedPlayers = new HashSet<>();
     private final Set<String> vipPlayers = new HashSet<>();
     private final Gson gson = new Gson();
     private final HttpClient httpClient = HttpClient.newHttpClient();
-    private static final boolean USE_MOCK_API = false;
     private LuckPerms luckPerms;
 
     private Set<String> processedMessageIds = new HashSet<>();
@@ -239,7 +240,8 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                     response = getMockChallengeResponse();
                 } else {
                     HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create("https://viralmind.ai/api/challenges/get-challenge?name=viral_steve"))
+                            .uri(URI.create(String.format("%s/api/challenges/get-challenge?name=viral_steve",
+                                    API_ORIGIN)))
                             .GET()
                             .build();
                     response = httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
@@ -274,6 +276,8 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                 }
             } catch (Exception e) {
                 getLogger().warning("Failed to poll challenge API: " + e.getMessage());
+                getLogger().warning(String.format("%s/api/challenges/get-challenge?name=viral_steve",
+                        API_ORIGIN));
             }
         }, 0L, 20L); // Run every second (20 ticks)
     }
@@ -321,7 +325,8 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                     getLogger().info("[Mock API] Checking balance for: " + playerName);
                 } else {
                     HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create("https://viralmind.ai/api/minecraft/whitelist?name=viral_steve"))
+                            .uri(URI.create(
+                                    String.format("%s/api/minecraft/whitelist?name=viral_steve", API_ORIGIN)))
                             .GET()
                             .build();
                     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -466,7 +471,7 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                             """, playerName, API_SECRET);
 
                     HttpRequest rewardRequest = HttpRequest.newBuilder()
-                            .uri(URI.create("https://viralmind.ai/api/minecraft/reward"))
+                            .uri(URI.create(String.format("%s/api/minecraft/reward", API_ORIGIN)))
                             .header("Content-Type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(rewardJson))
                             .build();
@@ -514,19 +519,20 @@ public class ViralPlugin extends JavaPlugin implements Listener {
             try {
                 String chatJson = String.format("""
                         {
-                            "username": %s,
+                            "username": "%s",
                             "content": "%s",
                             "secret": "%s"
                         }
                         """, playerName, message.replace("\"", "\\\""), API_SECRET);
 
                 HttpRequest chatRequest = HttpRequest.newBuilder()
-                        .uri(URI.create("https://viralmind.ai/api/minecraft/chat"))
+                        .uri(URI.create(String.format("%s/api/minecraft/chat", API_ORIGIN)))
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(chatJson))
                         .build();
 
-                httpClient.send(chatRequest, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = httpClient.send(chatRequest, HttpResponse.BodyHandlers.ofString());
+                getLogger().info("Chat API response code: " + response.statusCode());
             } catch (Exception e) {
                 getLogger().warning("Failed to send chat message to API: " + e.getMessage());
                 // Log API errors to webhook

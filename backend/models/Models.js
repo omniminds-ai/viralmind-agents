@@ -70,7 +70,6 @@ const chatSchema = new mongoose.Schema(
     tool_calls: Object,
     address: { type: String, required: true },
     display_name: { type: String, required: false},
-    pfp: { type: String, required: false},
     txn: String,
     verified: Boolean,
     date: { type: Date, default: Date.now },

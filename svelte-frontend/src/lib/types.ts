@@ -1,7 +1,8 @@
 export interface TournamentMessage {
   _id: string;
-  challenges?: string;
-  role: string;
+  challenge?: string;
+  role: 'user' | 'assistant' | 'player';
+  display_name?: string;
   content: string;
   tools_calls?: any;
   address?: string;

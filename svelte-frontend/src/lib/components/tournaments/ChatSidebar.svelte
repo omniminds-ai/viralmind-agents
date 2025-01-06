@@ -171,7 +171,11 @@
   <!-- Messages -->
   <div bind:this={chatContainer} class="chat-container flex-1 space-y-4 overflow-y-auto p-4">
     {#each groupedMessages as grouped, i}
-      <ChatMessage messages={grouped} {agentPfp} last={i === groupedMessages.length - 1} />
+      <ChatMessage
+        messages={grouped}
+        {agentPfp}
+        last={i === groupedMessages.length - 1 && status === 'concluded'}
+      />
     {/each}
   </div>
 
@@ -218,9 +222,7 @@
           </div>
         {/if}
         {#if isProcessingPayment}
-          <div class="px-1 text-xs text-purple-400">
-            Processing payment...
-          </div>
+          <div class="px-1 text-xs text-purple-400">Processing payment...</div>
         {/if}
       </div>
     {/if}
