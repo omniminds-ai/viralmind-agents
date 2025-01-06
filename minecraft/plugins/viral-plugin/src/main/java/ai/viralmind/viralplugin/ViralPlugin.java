@@ -532,7 +532,6 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                         .build();
 
                 HttpResponse<String> response = httpClient.send(chatRequest, HttpResponse.BodyHandlers.ofString());
-                getLogger().info("Chat API response code: " + response.statusCode());
             } catch (Exception e) {
                 getLogger().warning("Failed to send chat message to API: " + e.getMessage());
                 // Log API errors to webhook
