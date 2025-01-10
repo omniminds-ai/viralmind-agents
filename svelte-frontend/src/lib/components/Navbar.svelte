@@ -166,11 +166,3 @@
 
 <!-- Spacer to prevent content from going under fixed navbar -->
 <div class="h-16"></div>
-
-<style>
-  /* Add a subtle text shadow to all text elements */
-  :global(.text-white),
-  :global(.text-gray-300) {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  }
-</style>

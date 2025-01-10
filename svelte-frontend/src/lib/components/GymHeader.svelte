@@ -20,7 +20,7 @@
   });
 </script>
 
-<div class="fixed left-0 right-0 top-0 z-50 transition-all duration-300">
+<div class="fixed left-0 right-0 top-0 z-50 transition-all duration-300 border-b border-purple-500/30 shadow-[-4px_0_20px_rgba(149,117,205,0.1)]">
   <!-- Blurred background that shows on scroll -->
   <div
     class="absolute inset-0 border-b border-white/10 bg-black/50 backdrop-blur-lg transition-opacity duration-300"
@@ -97,11 +97,3 @@
 <!-- Spacer to prevent content from going under fixed navbar -->
 <div class="h-16"></div>
 
-<style>
-  /* Add a subtle text shadow to all text elements */
-  :global(.text-white),
-  :global(.text-gray-300),
-  :global(.text-purple-400) {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  }
-</style>

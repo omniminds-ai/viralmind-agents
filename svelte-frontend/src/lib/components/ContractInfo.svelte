@@ -14,7 +14,6 @@
   }
 </script>
 
-<h3 class="mb-4 font-semibold">Contract Address</h3>
 <div class="flex flex-col gap-4">
   <div class="flex items-center justify-center gap-2 rounded-lg bg-black/30 py-4">
     <code class="truncate font-mono text-purple-400">{TOKEN_DATA.contractAddress}</code>

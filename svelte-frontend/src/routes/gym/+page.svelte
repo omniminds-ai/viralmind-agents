@@ -140,16 +140,3 @@
   ></div>
   <div class="absolute inset-0 z-[3] bg-gradient-to-b from-black via-transparent to-black"></div>
 </div>
-
-<style>
-  :global(body) {
-    background-color: black;
-  }
-
-  /* Add a subtle text shadow to all text elements */
-  :global(.text-white),
-  :global(.text-gray-400),
-  :global(.text-purple-400) {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  }
-</style>
