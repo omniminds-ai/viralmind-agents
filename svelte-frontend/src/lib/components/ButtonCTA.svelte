@@ -2,18 +2,25 @@
   let {
     href,
     target = '_self',
+    variant = 'primary',
     children
   }: {
     href: string;
     target?: '_blank' | '_self' | '_parent' | '_top';
+    variant?: 'primary' | 'secondary';
     children: () => any;
   } = $props();
+
+  const styles = {
+    primary: 'bg-gradient-to-r from-purple-600 to-blue-600 text-white',
+    secondary: 'bg-black/60 backdrop-blur-sm border-2 border-purple-500/50 text-purple-300 hover:text-white hover:border-purple-400 hover:bg-purple-900/40'
+  };
 </script>
 
 <a
   {href}
   {target}
-  class="group flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold shadow-lg transition-all hover:scale-105 hover:opacity-90"
+  class="group flex items-center gap-2 rounded-full {styles[variant]} px-8 py-3 font-semibold shadow-lg transition-all hover:scale-105"
 >
   {@render children()}
 </a>

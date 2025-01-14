@@ -5,6 +5,9 @@ import mongoose from "mongoose";
 import { catchErrors } from "./hooks/errors.js";
 import path, { join } from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
+import { initializeSocketIO } from "./routes/socket.js";
+
 
 dotenv.config();
 const dbURI = process.env.DB_URI;
@@ -14,8 +17,13 @@ const clientOptions = {
 
 const app = express();
 const dev = app.get("env") !== "production";
-
 const port = 8001;
+
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize Socket.IO for VNC
+const io = initializeSocketIO(httpServer);
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +32,6 @@ const __dirname = path.dirname(__filename);
 app.use(bodyParser.json());
 
 app.use(express.json());
-
 // Add headers
 app.use(function (req, res, next) {
   // Origin to allow
@@ -116,7 +123,7 @@ async function connectToDatabase() {
   }
 }
 
-app.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`Jailbreak app listening on port ${port}`);
   connectToDatabase().catch(console.dir);
 });

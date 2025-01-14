@@ -43,6 +43,7 @@ public class ViralPlugin extends JavaPlugin implements Listener {
     private final Dotenv dotenv = Dotenv.load();
     private final String API_SECRET = dotenv.get("API_SECRET");
     private final String API_ORIGIN = dotenv.get("API_ORIGIN");
+    private final String CHALLENGE_NAME = dotenv.get("CHALLENGE_NAME");
     private final boolean USE_MOCK_API = "True".equals(dotenv.get("USE_MOCK_API"));
     private final String webhookUrl = dotenv.get("DISCORD_WEBHOOK_URL");
     private NamespacedKey prizeGoldKey;
@@ -240,7 +241,7 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                     response = getMockChallengeResponse();
                 } else {
                     HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(String.format("%s/api/challenges/get-challenge?name=viral_steve",
+                            .uri(URI.create(String.format("%s/api/challenges/get-challenge?name=" + CHALLENGE_NAME,
                                     API_ORIGIN)))
                             .GET()
                             .build();
@@ -276,7 +277,7 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                 }
             } catch (Exception e) {
                 getLogger().warning("Failed to poll challenge API: " + e.getMessage());
-                getLogger().warning(String.format("%s/api/challenges/get-challenge?name=viral_steve",
+                getLogger().warning(String.format("%s/api/challenges/get-challenge?name=" + CHALLENGE_NAME,
                         API_ORIGIN));
             }
         }, 0L, 20L); // Run every second (20 ticks)
@@ -326,7 +327,7 @@ public class ViralPlugin extends JavaPlugin implements Listener {
                 } else {
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create(
-                                    String.format("%s/api/minecraft/whitelist?name=viral_steve", API_ORIGIN)))
+                                    String.format("%s/api/minecraft/whitelist?name=" + CHALLENGE_NAME, API_ORIGIN)))
                             .GET()
                             .build();
                     HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

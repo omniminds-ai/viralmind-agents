@@ -95,6 +95,7 @@ export async function executeComputerAction(action, args, client) {
         const keyText = args.text.toLowerCase();
         const specialKeys = {
           'return': VNC_KEYS.SYSTEM.RETURN,
+          'plus': VNC_KEYS.SYMBOLS.PLUS,
           'enter': VNC_KEYS.SYSTEM.RETURN,
           'tab': VNC_KEYS.SYSTEM.TAB,
           'space': VNC_KEYS.SYSTEM.SPACE,
@@ -183,15 +184,36 @@ export async function executeComputerAction(action, args, client) {
         return `<key>${keyText}</key>`;
 
       case 'left_click_drag':
-        const [targetX, targetY] = args.coordinate;
-        await client.sendPointerEvent(client.x, client.y, true);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        await client.sendPointerEvent(targetX, targetY, true);
-        client.x = targetX;
-        client.y = targetY;
-        await new Promise(resolve => setTimeout(resolve, 100));
-        await client.sendPointerEvent(targetX, targetY, false);
-        return `<left_click_drag>${targetX},${targetY}</left_click_drag>`;
+        const trajectory = args.trajectory;
+        if (!trajectory || !trajectory.length) {
+          throw new Error('No trajectory data provided for drag action');
+        }
+
+        // Start drag at first point
+        await client.sendPointerEvent(trajectory[0].x, trajectory[0].y, true);
+        client.x = trajectory[0].x;
+        client.y = trajectory[0].y;
+
+        // Replay the trajectory with timing
+        for (let i = 1; i < trajectory.length; i++) {
+          const point = trajectory[i];
+          const prevPoint = trajectory[i - 1];
+          const delay = point.timestamp - prevPoint.timestamp;
+          
+          // Wait for the actual time difference between points
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Move to next point while keeping button pressed
+          await client.sendPointerEvent(point.x, point.y, true);
+          client.x = point.x;
+          client.y = point.y;
+        }
+
+        // Release at final point
+        const finalPoint = trajectory[trajectory.length - 1];
+        await client.sendPointerEvent(finalPoint.x, finalPoint.y, false);
+        
+        return `<left_click_drag>Replayed ${trajectory.length} points</left_click_drag>`;
 
       case 'right_click':
         await client.sendPointerEvent(client.x, client.y, false, true);
@@ -218,8 +240,76 @@ export async function executeComputerAction(action, args, client) {
       case 'cursor_position':
         return `<cursor_position>${client.x},${client.y}</cursor_position>`;
 
+      case 'scroll_up':
+        // Simulate mouse wheel scroll up
+        await client.sendPointerEvent(client.x, client.y, false, false, false, true);
+        return `<scroll_up>${client.x},${client.y}</scroll_up>`;
+
+      case 'scroll_down':
+        // Simulate mouse wheel scroll down
+        await client.sendPointerEvent(client.x, client.y, false, false, false, false, true);
+        return `<scroll_down>${client.x},${client.y}</scroll_down>`;
+
       case 'screenshot':
         return `<screenshot></screenshot>`;
+
+      case 'right_click_drag':
+        const rightDragTrajectory = args.trajectory;
+        if (!rightDragTrajectory || !rightDragTrajectory.length) {
+          throw new Error('No trajectory data provided for right drag action');
+        }
+
+        // Start right drag at first point
+        await client.sendPointerEvent(rightDragTrajectory[0].x, rightDragTrajectory[0].y, false, true);
+        client.x = rightDragTrajectory[0].x;
+        client.y = rightDragTrajectory[0].y;
+
+        // Replay the trajectory with timing
+        for (let i = 1; i < rightDragTrajectory.length; i++) {
+          const point = rightDragTrajectory[i];
+          const prevPoint = rightDragTrajectory[i - 1];
+          const delay = point.timestamp - prevPoint.timestamp;
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          await client.sendPointerEvent(point.x, point.y, false, true);
+          client.x = point.x;
+          client.y = point.y;
+        }
+
+        // Release at final point
+        const rightFinalPoint = rightDragTrajectory[rightDragTrajectory.length - 1];
+        await client.sendPointerEvent(rightFinalPoint.x, rightFinalPoint.y, false, false);
+        
+        return `<right_click_drag>Replayed ${rightDragTrajectory.length} points</right_click_drag>`;
+
+      case 'middle_click_drag':
+        const middleDragTrajectory = args.trajectory;
+        if (!middleDragTrajectory || !middleDragTrajectory.length) {
+          throw new Error('No trajectory data provided for middle drag action');
+        }
+
+        // Start middle drag at first point
+        await client.sendPointerEvent(middleDragTrajectory[0].x, middleDragTrajectory[0].y, false, false, true);
+        client.x = middleDragTrajectory[0].x;
+        client.y = middleDragTrajectory[0].y;
+
+        // Replay the trajectory with timing
+        for (let i = 1; i < middleDragTrajectory.length; i++) {
+          const point = middleDragTrajectory[i];
+          const prevPoint = middleDragTrajectory[i - 1];
+          const delay = point.timestamp - prevPoint.timestamp;
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          await client.sendPointerEvent(point.x, point.y, false, false, true);
+          client.x = point.x;
+          client.y = point.y;
+        }
+
+        // Release at final point
+        const middleFinalPoint = middleDragTrajectory[middleDragTrajectory.length - 1];
+        await client.sendPointerEvent(middleFinalPoint.x, middleFinalPoint.y, false, false, false);
+        
+        return `<middle_click_drag>Replayed ${middleDragTrajectory.length} points</middle_click_drag>`;
 
       default:
         throw new Error(`Unknown computer action: ${action}`);

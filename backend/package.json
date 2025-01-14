@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js",
+    "dev": "export NODE_OPTIONS=--openssl-legacy-provider && nodemon server.js",
     "start": "node server.js",
     "tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts",
     "init-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts init",
@@ -33,6 +33,7 @@
     "node-telegram-bot-api": "^0.66.0",
     "openai": "^4.73.1",
     "sharp": "^0.33.5",
+    "socket.io": "^4.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0",
     "url": "^0.11.4",

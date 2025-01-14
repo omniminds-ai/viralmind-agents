@@ -126,7 +126,7 @@
               Build Your Agent
               <ArrowRight class="h-5 w-5" />
             </ButtonCTA>
-            <ButtonCTA href="/tournaments">
+            <ButtonCTA href="/tournaments" variant="secondary">
               <Gamepad2 class="h-5 w-5" />
               Play Against AI
             </ButtonCTA>

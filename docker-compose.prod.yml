@@ -42,7 +42,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPEN_AI_SECRET=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - RPC_URL=#{RCP_URL}
+      - RPC_URL=${RPC_URL}
+      - IPC_SECRET=${IPC_SECRET}
       - ANCHOR_PROVIDER_URL=${ANCHOR_PROVIDER_URL}
       # Docker Specific Paths
       - ANCHOR_WALLET=/usr/src/app/backend/secrets/solana-keypair.json
