@@ -1,12 +1,14 @@
-import express from "express";
-import { Challenge, Chat } from "../models/Models.js";
+import express, { Request, Response } from "express";
 import BlockchainService from "../services/blockchain/index.js";
 import dotenv from "dotenv";
-import DatabaseService from "../services/db/index.js";
+import DatabaseService, {
+  ChallengeDocument,
+  ChatDocument,
+} from "../services/db/index.js";
 import getSolPriceInUSDT from "../hooks/solPrice.js";
 import VNCService from "../services/vnc/index.js";
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
@@ -17,14 +19,14 @@ const model = "gpt-4o-mini";
 // Time threshold for screenshot updates (5 seconds)
 const SCREENSHOT_UPDATE_THRESHOLD = 5000;
 
-router.get("/get-challenge", async (req, res) => {
+router.get("/get-challenge", async (req: Request, res: Response) => {
   try {
     const name = req.query.name;
     const initial = req.query.initial;
     let message_price = Number(req.query.price);
     let prize = message_price * 100;
 
-    const projection = {
+    const projection: { [key: string]: number } = {
       _id: 1,
       title: 1,
       label: 1,
@@ -53,7 +55,7 @@ router.get("/get-challenge", async (req, res) => {
       win_condition: 1,
       expiry_logic: 1,
       scores: 1,
-      stream_src: 1
+      stream_src: 1,
     };
 
     const challengeInitialized = await DatabaseService.findOneChat({
@@ -64,27 +66,33 @@ router.get("/get-challenge", async (req, res) => {
       projection.system_message = 1;
     }
 
-    let challenge = await DatabaseService.getChallengeByName(name, projection);
+    let challenge = await DatabaseService.getChallengeByName(
+      name as string,
+      projection
+    );
     if (!challenge) {
-      return res.status(404).send("Challenge not found");
+      res.status(404).send("Challenge not found");
+      return;
     }
-    const challengeName = challenge.name;
+    const challengeName = challenge.name!;
     const challengeId = challenge._id;
-    const chatLimit = challenge.chatLimit;
+    const chatLimit = challenge.chatLimit as number | undefined; // type coercion for future use
 
     if (!challenge) {
-      return res.status(404).send("Challenge not found");
+      res.status(404).send("Challenge not found");
+      return;
     }
 
     const allowedStatuses = ["active", "concluded", "upcoming"];
 
     if (!allowedStatuses.includes(challenge.status)) {
-      return res.status(404).send("Challenge is not active");
+      res.status(404).send("Challenge is not active");
+      return;
     }
 
     // For upcoming challenges, return early with basic info
     if (challenge.status === "upcoming") {
-      return res.status(200).json({
+      res.status(200).json({
         challenge,
         break_attempts: 0,
         message_price: 0,
@@ -94,22 +102,29 @@ router.get("/get-challenge", async (req, res) => {
         chatHistory: [],
         expiry: challenge.expiry,
         solPrice: await getSolPriceInUSDT(),
-        stream_src: challenge.stream_src
+        stream_src: challenge.stream_src,
       });
+      return;
     }
 
     const programId = challenge.idl?.address;
-    if (!programId) return res.write("Program ID not found");
+    if (!programId) {
+      res.write("Program ID not found");
+      return;
+    }
 
     const tournamentPDA = challenge.tournamentPDA;
-    if (!tournamentPDA) return res.write("Tournament PDA not found");
+    if (!tournamentPDA) {
+      res.write("Tournament PDA not found");
+      return;
+    }
 
     const break_attempts = await DatabaseService.getChatCount({
       challenge: challengeName,
       role: "user",
     });
 
-    const chatProjection = {
+    const chatProjection: { [key: string]: number } = {
       challenge: 1,
       role: 1,
       content: 1,
@@ -117,7 +132,7 @@ router.get("/get-challenge", async (req, res) => {
       address: 1,
       txn: 1,
       date: 1,
-      screenshot: 1
+      screenshot: 1,
     };
 
     if (!challenge.tools_description) {
@@ -134,6 +149,8 @@ router.get("/get-challenge", async (req, res) => {
       chatLimit
     );
 
+    if (!chatHistory) throw Error("Error getting chat history.");
+
     const now = new Date();
     const expiry = challenge.expiry;
     const solPrice = await getSolPriceInUSDT();
@@ -142,23 +159,35 @@ router.get("/get-challenge", async (req, res) => {
 
     // Only attempt VNC screenshots for active tournaments
     if (challenge.status === "active") {
-      if(!challenge.stream_src) {
-        const latestImagePath = path.join(process.cwd(), 'public', 'screenshots', `${tournamentPDA}_latest.jpg`);
-        
+      if (!challenge.stream_src) {
+        const latestImagePath = path.join(
+          process.cwd(),
+          "public",
+          "screenshots",
+          `${tournamentPDA}_latest.jpg`
+        );
+
         // Check if we need a new screenshot
-        const needsNewScreenshot = !fs.existsSync(latestImagePath) || 
-          (fs.existsSync(latestImagePath) && now - fs.statSync(latestImagePath).mtime > SCREENSHOT_UPDATE_THRESHOLD);
+        const needsNewScreenshot =
+          !fs.existsSync(latestImagePath) ||
+          (fs.existsSync(latestImagePath) &&
+            now.getTime() - fs.statSync(latestImagePath).mtime.getTime() >
+              SCREENSHOT_UPDATE_THRESHOLD);
 
         if (needsNewScreenshot) {
           try {
             // Initialize VNC session and get screenshot
-            const session = await VNCService.ensureValidConnection(tournamentPDA);
+            const session = await VNCService.ensureValidConnection(
+              tournamentPDA
+            );
             if (session) {
-              const newScreenshot = await VNCService.getScreenshot(tournamentPDA);
+              const newScreenshot = await VNCService.getScreenshot(
+                tournamentPDA
+              );
               if (newScreenshot) {
                 latestScreenshot = {
                   url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${newScreenshot.timestamp}`,
-                  date: new Date(newScreenshot.timestamp)
+                  date: new Date(newScreenshot.timestamp || ""),
                 };
               }
             }
@@ -171,7 +200,7 @@ router.get("/get-challenge", async (req, res) => {
             const stats = fs.statSync(latestImagePath);
             latestScreenshot = {
               url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${stats.mtimeMs}`,
-              date: stats.mtime
+              date: stats.mtime,
             };
           }
         } else {
@@ -179,7 +208,7 @@ router.get("/get-challenge", async (req, res) => {
           const stats = fs.statSync(latestImagePath);
           latestScreenshot = {
             url: `/api/screenshots/${tournamentPDA}_latest.jpg?t=${stats.mtimeMs}`,
-            date: stats.mtime
+            date: stats.mtime,
           };
         }
       }
@@ -187,18 +216,20 @@ router.get("/get-challenge", async (req, res) => {
 
     // Fall back to chat history screenshots if needed
     if (!latestScreenshot && chatHistory.length > 0) {
-      const screenshotMessages = chatHistory.filter(msg => msg.screenshot?.url);
+      const screenshotMessages = chatHistory.filter(
+        (msg) => msg.screenshot?.url
+      );
       if (screenshotMessages.length > 0) {
         const lastScreenshot = screenshotMessages[0]; // First since sorted by date desc
         latestScreenshot = {
-          url: lastScreenshot.screenshot.url,
-          date: lastScreenshot.date
+          url: lastScreenshot.screenshot?.url,
+          date: lastScreenshot.date,
         };
       }
     }
 
     if (chatHistory.length > 0) {
-      if (expiry < now && challenge.status === "active") {
+      if (expiry! < now && challenge.status === "active") {
         let winner;
         if (challenge.expiry_logic === "score") {
           const topScoreMsg = await DatabaseService.getHighestAndLatestScore(
@@ -214,27 +245,28 @@ router.get("/get-challenge", async (req, res) => {
           winner
         );
         const successMessage = `🥳 Tournament concluded: ${concluded}`;
-        const assistantMessage = {
+        const assistantMessage: ChatDocument = {
           challenge: challengeName,
           model: model,
           role: "assistant",
           content: successMessage,
           tool_calls: {},
-          address: winner,
+          address: winner!,
+          display_name: winner,
         };
 
         await DatabaseService.createChat(assistantMessage);
-        await DatabaseService.updateChallenge(challengeId, {
+        await DatabaseService.updateChallenge(challengeId!, {
           status: "concluded",
         });
       }
 
-      message_price = challenge.entryFee;
+      message_price = challenge.entryFee!;
       prize = message_price * 100;
 
       const usdMessagePrice = message_price * solPrice;
       const usdPrize = prize * solPrice;
-      return res.status(200).json({
+      res.status(200).json({
         challenge,
         break_attempts,
         message_price,
@@ -245,8 +277,9 @@ router.get("/get-challenge", async (req, res) => {
         solPrice,
         chatHistory: chatHistory.reverse(),
         latestScreenshot,
-        stream_src: challenge.stream_src
+        stream_src: challenge.stream_src,
       });
+      return;
     }
 
     if (!challengeInitialized) {
@@ -255,8 +288,8 @@ router.get("/get-challenge", async (req, res) => {
         challenge: challengeName,
         model: model,
         role: "system",
-        content: firstPrompt,
-        address: challenge.tournamentPDA,
+        content: firstPrompt!,
+        address: challenge.tournamentPDA!,
       });
     }
 
@@ -266,6 +299,8 @@ router.get("/get-challenge", async (req, res) => {
         tournamentPDA
       );
 
+      if (!tournamentData) throw Error("Eror getting tournament data.");
+
       message_price = tournamentData.entryFee;
       prize = message_price * 100;
     }
@@ -273,7 +308,7 @@ router.get("/get-challenge", async (req, res) => {
     const usdMessagePrice = message_price * solPrice;
     const usdPrize = prize * solPrice;
 
-    return res.status(200).json({
+    res.status(200).json({
       challenge,
       break_attempts,
       message_price,
@@ -284,11 +319,13 @@ router.get("/get-challenge", async (req, res) => {
       expiry,
       solPrice,
       latestScreenshot,
-      stream_src: challenge.stream_src
+      stream_src: challenge.stream_src,
     });
+    return;
   } catch (err) {
     console.error(err);
-    return res.status(400).send(err);
+    res.status(400).send(err);
+    return;
   }
 });
 

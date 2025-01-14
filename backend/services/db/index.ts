@@ -1,42 +1,65 @@
 import EventEmitter from "node:events";
-import { Chat, Challenge, Pages } from "../../models/Models.js";
+import {
+  Chat,
+  Challenge,
+  Pages,
+  chatSchema,
+  challengeSchema,
+} from "../../models/Models.js";
 import dotenv from "dotenv";
+import { ChatMessage, TournamentData } from "../../types.js";
+import {
+  Document,
+  InferSchemaType,
+  Query,
+  QueryOptions,
+  SortOrder,
+  SortValues,
+  UpdateWriteOpResult,
+} from "mongoose";
+
+export type ChallengeDocument = InferSchemaType<typeof challengeSchema>;
+export type ChatDocument = InferSchemaType<typeof chatSchema>;
 
 dotenv.config();
 
 class DataBaseService extends EventEmitter {
   constructor() {
     // Constructor remains empty as we don't need initialization logic
-    super()
+    super();
   }
 
   // Challenge-related methods
-  async getAllChallenges() {
+  async getAllChallenges(): Promise<
+    InferSchemaType<typeof challengeSchema>[] | false
+  > {
     try {
-      return await Challenge.find(
-        {},
-        {
-          _id: 1,
-          title: 1,
-          label: 1,
-          task: 1,
-          level: 1,
-          model: 1,
-          image: 1,
-          pfp: 1,
-          status: 1,
-          name: 1,
-          deployed: 1,
-          idl: 1,
-          tournamentPDA: 1,
-          entryFee: 1,
-          characterLimit: 1,
-          contextLimit: 1,
-          chatLimit: 1,
-          initial_pool_size: 1,
-          expiry: 1,
-          developer_fee: 1,
-        }
+      return (
+        (await Challenge.find(
+          {},
+          {
+            _id: 1,
+            title: 1,
+            label: 1,
+            task: 1,
+            level: 1,
+            model: 1,
+            image: 1,
+            pfp: 1,
+            status: 1,
+            name: 1,
+            deployed: 1,
+            idl: 1,
+            tournamentPDA: 1,
+            entryFee: 1,
+            characterLimit: 1,
+            contextLimit: 1,
+            chatLimit: 1,
+            initial_pool_size: 1,
+            expiry: 1,
+            developer_fee: 1,
+          }
+        )) || false
       );
     } catch (error) {
       console.error("Database Service Error:", error);
@@ -44,26 +67,35 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getChallengeById(id, projection = {}) {
+  async getChallengeById(
+    id: string,
+    projection = {}
+  ): Promise<ChallengeDocument | false> {
     try {
-      return await Challenge.findOne({ _id: id }, projection);
+      return (await Challenge.findOne({ _id: id }, projection)) || false;
     } catch (error) {
       console.error("Database Service Error:", error);
       return false;
     }
   }
 
-  async getChallengeByName(name, projection = {}) {
+  async getChallengeByName(
+    name: string,
+    projection = {}
+  ): Promise<ChallengeDocument | false> {
     const nameReg = { $regex: name, $options: "i" };
     try {
-      return await Challenge.findOne({ name: nameReg }, projection);
+      return (await Challenge.findOne({ name: nameReg }, projection)) || false;
     } catch (error) {
       console.error("Database Service Error:", error);
       return false;
     }
   }
 
-  async updateChallenge(id, updateData) {
+  async updateChallenge(
+    id: string,
+    updateData: object
+  ): Promise<UpdateWriteOpResult | false> {
     try {
       return await Challenge.updateOne({ _id: id }, { $set: updateData });
     } catch (error) {
@@ -73,9 +105,9 @@ class DataBaseService extends EventEmitter {
   }
 
   // Chat-related methods
-  async createChat(chatData) {
+  async createChat(chatData: ChatDocument): Promise<ChatDocument | false> {
     try {
-      this.emit('new-chat', chatData)      
+      this.emit("new-chat", chatData);
       return await Chat.create(chatData);
     } catch (error) {
       console.error("Database Service Error:", error);
@@ -83,7 +115,11 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getChatHistory(query, sort = { date: -1 }, limit = 0) {
+  async getChatHistory(
+    query: QueryOptions,
+    sort: { [key: string]: SortOrder } = { date: -1 },
+    limit = 0
+  ): Promise<ChatDocument[] | false> {
     try {
       return await Chat.find(query)
         .sort(sort)
@@ -95,7 +131,12 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getFullChatHistory(query, projection, sort = { date: -1 }, limit = 0) {
+  async getFullChatHistory(
+    query: QueryOptions,
+    projection: object,
+    sort: { [key: string]: SortOrder } = { date: -1 },
+    limit = 0
+  ): Promise<InferSchemaType<typeof chatSchema>[] | false> {
     try {
       return await Chat.find(query, projection).sort(sort).limit(limit);
     } catch (error) {
@@ -104,7 +145,7 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getChatCount(query) {
+  async getChatCount(query: QueryOptions): Promise<number | false> {
     try {
       return await Chat.countDocuments(query);
     } catch (error) {
@@ -113,15 +154,15 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async findOneChat(query) {
+  async findOneChat(query: QueryOptions): Promise<ChatDocument | false> {
     try {
-      return await Chat.findOne(query);
+      return (await Chat.findOne(query)) || false;
     } catch (error) {
       console.error("Database Service Error:", error);
       return false;
     }
   }
-  async getPages(query) {
+  async getPages(query: QueryOptions): Promise<ChatDocument[] | false> {
     try {
       return await Pages.find(query);
     } catch (error) {
@@ -130,7 +171,7 @@ class DataBaseService extends EventEmitter {
     }
   }
   // Settings-related methods
-  async getSettings() {
+  async getSettings(): Promise<ChallengeDocument[] | false> {
     try {
       const challenge = await Challenge.find(
         {},
@@ -154,7 +195,7 @@ class DataBaseService extends EventEmitter {
         }
       );
 
-      return challenge;
+      return challenge || false;
     } catch (error) {
       console.error("Database Service Error:", error);
       return false;
@@ -162,7 +203,11 @@ class DataBaseService extends EventEmitter {
   }
 
   // Add these new methods
-  async getUserConversations(address, skip = 0, limit = 20) {
+  async getUserConversations(
+    address: string,
+    skip = 0,
+    limit = 20
+  ): Promise<ChatDocument[] | false> {
     try {
       return await Chat.find(
         { address },
@@ -173,7 +218,7 @@ class DataBaseService extends EventEmitter {
           address: 1,
           challenge: 1,
           date: 1,
-          screenshot: 1
+          screenshot: 1,
         }
       )
         .skip(skip)
@@ -184,7 +229,12 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getChallengeConversations(address, challenge, skip = 0, limit = 20) {
+  async getChallengeConversations(
+    address: string,
+    challenge: string,
+    skip = 0,
+    limit = 20
+  ): Promise<ChatDocument[] | false> {
     try {
       return await Chat.find(
         { address, challenge },
@@ -195,7 +245,7 @@ class DataBaseService extends EventEmitter {
           address: 1,
           challenge: 1,
           date: 1,
-          screenshot: 1
+          screenshot: 1,
         }
       )
         .skip(skip)
@@ -206,7 +256,7 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getAllTournaments() {
+  async getAllTournaments(): Promise<ChallengeDocument[] | false> {
     try {
       return await Challenge.find(
         {},
@@ -236,29 +286,31 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getTournamentById(id) {
+  async getTournamentById(id: string): Promise<ChallengeDocument | false> {
     try {
-      return await Challenge.findOne(
-        { _id: id },
-        {
-          _id: 0,
-          id: "$_id",
-          title: 1,
-          name: 1,
-          description: 1,
-          level: 1,
-          status: 1,
-          model: 1,
-          expiry: 1,
-          characterLimit: 1,
-          contextLimit: 1,
-          chatLimit: 1,
-          initial_pool_size: 1,
-          entryFee: 1,
-          developer_fee: 1,
-          // tools: 0,
-          idl: 1,
-        }
+      return (
+        (await Challenge.findOne(
+          { _id: id },
+          {
+            _id: 0,
+            id: "$_id",
+            title: 1,
+            name: 1,
+            description: 1,
+            level: 1,
+            status: 1,
+            model: 1,
+            expiry: 1,
+            characterLimit: 1,
+            contextLimit: 1,
+            chatLimit: 1,
+            initial_pool_size: 1,
+            entryFee: 1,
+            developer_fee: 1,
+            // tools: 0,
+            idl: 1,
+          }
+        )) || false
       );
     } catch (error) {
       console.error("Database Service Error:", error);
@@ -266,7 +318,9 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async createTournament(tournamentData) {
+  async createTournament(
+    tournamentData: TournamentData
+  ): Promise<ChallengeDocument | false> {
     try {
       const savedChallenge = new Challenge(tournamentData);
       await savedChallenge.save();
@@ -277,12 +331,14 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getHighestAndLatestScore(challengeName) {
+  async getHighestAndLatestScore(
+    challengeName: string
+  ): Promise<ChallengeDocument["scores"] | null> {
     try {
-      const challenge = await Challenge.findOne(
-        { name: { $regex: challengeName, $options: "i" } }
-      );
-      
+      const challenge = await Challenge.findOne({
+        name: { $regex: challengeName, $options: "i" },
+      });
+
       if (!challenge || !challenge.scores || challenge.scores.length === 0) {
         return null;
       }
@@ -290,9 +346,9 @@ class DataBaseService extends EventEmitter {
       // Sort by score (descending) and timestamp (descending) to get highest score and most recent
       const sortedScores = challenge.scores.sort((a, b) => {
         if (b.score !== a.score) {
-          return b.score - a.score; // Sort by score first
+          return (b.score || 0) - (a.score || 0); // Sort by score first
         }
-        return b.timestamp - a.timestamp; // If scores are equal, sort by timestamp
+        return b.timestamp.getTime() - a.timestamp.getTime(); // If scores are equal, sort by timestamp
       });
 
       return sortedScores;

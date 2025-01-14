@@ -1,27 +1,27 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import verify from "./verify.js";
 import DatabaseService from "../services/db/index.js";
 const router = express.Router();
 
 // Get all tournaments from the database
-router.get("/", verify, async (_req, res) => {
+router.get("/", verify, async (_req: Request, res: Response) => {
   try {
     const challenges = await DatabaseService.getAllTournaments();
     res.send(challenges);
   } catch (err) {
     console.log(err);
-    return res.status(400).send(err);
+    res.status(400).send(err);
   }
 });
 
 // Get a tournament by id
-router.get("/:id", verify, async (req, res) => {
+router.get("/:id", verify, async (req: Request, res: Response) => {
   try {
     const challenges = await DatabaseService.getTournamentById(req.params.id);
     res.send(challenges);
   } catch (err) {
     console.log(err);
-    return res.status(400).send(err);
+    res.status(400).send(err);
   }
 });
 

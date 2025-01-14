@@ -1,17 +1,16 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
-import mongoose from "mongoose";
+import mongoose, { ConnectOptions } from "mongoose";
 import { catchErrors } from "./hooks/errors.js";
 import path, { join } from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
 import { initializeSocketIO } from "./routes/socket.js";
 
-
 dotenv.config();
 const dbURI = process.env.DB_URI;
-const clientOptions = {
+const clientOptions: ConnectOptions = {
   serverApi: { version: "1", strict: true, deprecationErrors: true },
 };
 
@@ -42,7 +41,7 @@ app.use(function (req, res, next) {
     "https://viralmind.ai",
   ];
 
-  const origin = req.headers.origin;
+  const origin = req.headers.origin || "";
   if (allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
@@ -50,11 +49,7 @@ app.use(function (req, res, next) {
   // Request methods
   res.setHeader("Access-Control-Allow-Methods", "GET, POST");
   // Request headers
-  res.setHeader(
-    "Access-Control-Expose-Headers",
-    "auth-token",
-    "x-forwarded-for"
-  );
+  res.setHeader("Access-Control-Expose-Headers", "auth-token, x-forwarded-for");
   res.setHeader(
     "Access-Control-Allow-Headers",
     "X-Requested-With,content-type,auth-token,cancelToken, responsetype, x-forwarded-for"
@@ -66,7 +61,7 @@ app.use(function (req, res, next) {
 import { streamsRoute } from "./routes/streams.js";
 app.use("/api/streams", streamsRoute);
 
-var forceSSL = function (req, res, next) {
+var forceSSL = function (req: Request, res: Response, next: NextFunction) {
   if (req.headers["x-forwarded-proto"] !== "https") {
     return res.redirect(["https://", req.get("Host"), req.url].join(""));
   }
@@ -115,8 +110,9 @@ catchErrors();
 async function connectToDatabase() {
   try {
     // Create a Mongoose client with a MongoClientOptions object to set the Stable API version
+    if (!dbURI) throw Error("No DB URI passed to connect.");
     await mongoose.connect(dbURI, clientOptions);
-    await mongoose.connection.db.admin().command({ ping: 1 });
+    await mongoose.connection.db?.admin().command({ ping: 1 });
     console.log("Database connected!");
   } catch (err) {
     console.error("Error connecting to MongoDB:", err);

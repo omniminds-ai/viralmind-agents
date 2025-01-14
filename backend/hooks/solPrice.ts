@@ -7,7 +7,7 @@ async function getSolPriceInUSDT() {
 
   try {
     const tokenPage = await DatabaseService.getPages({ name: "viral-token" });
-    if (tokenPage?.[0]?.content?.sol_price) {
+    if (tokenPage && tokenPage[0]?.content?.sol_price) {
       defaultSolPrice = tokenPage[0].content.sol_price;
     }
 

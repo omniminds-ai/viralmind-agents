@@ -1,7 +1,8 @@
 import mongoose from "mongoose";
 
-const ChallengeSchema = new mongoose.Schema(
+export const challengeSchema = new mongoose.Schema(
   {
+    _id: String,
     title: String,
     name: String,
     description: String,
@@ -36,28 +37,33 @@ const ChallengeSchema = new mongoose.Schema(
     fail_function: String,
     tool_choice: String,
     start_date: Date,
-    expiry_logic: { type: String, enum: ['score', 'time'], default: 'time' },
-    scores: [{
-      account: String,
-      score: Number,
-      timestamp: { type: Date, default: Date.now }
-    }],
+    expiry_logic: { type: String, enum: ["score", "time"], default: "time" },
+    scores: [
+      {
+        account: String,
+        address: String,
+        score: Number,
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
     game: String,
     game_ip: String,
     stream_src: String,
-    whitelist: [{
-      username: String,
-      address: String,
-      viral_balance: Number,
-      signature: String
-    }],
+    whitelist: [
+      {
+        username: String,
+        address: String,
+        viral_balance: Number,
+        signature: String,
+      },
+    ],
   },
   { collection: "challenges" }
 );
 
-export const Challenge = mongoose.model("Challenge", ChallengeSchema);
+export const Challenge = mongoose.model("Challenge", challengeSchema);
 
-const chatSchema = new mongoose.Schema(
+export const chatSchema = new mongoose.Schema(
   {
     challenge: {
       type: String,
@@ -69,15 +75,15 @@ const chatSchema = new mongoose.Schema(
     content: { type: String, required: true },
     tool_calls: Object,
     address: { type: String, required: true },
-    display_name: { type: String, required: false},
+    display_name: { type: String, required: false },
     txn: String,
     verified: Boolean,
-    date: { type: Date, default: Date.now },
+    date: { type: Date, default: Date.now, required: false },
     screenshot: {
       type: {
-        url: { type: String, required: true }
-      }
-    }
+        url: { type: String, required: true },
+      },
+    },
   },
   { collection: "chats" }
 );
