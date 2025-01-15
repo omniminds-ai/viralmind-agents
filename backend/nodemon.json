@@ -1,11 +1,6 @@
 {
   "watch": [
-    "server.js",
-    "api/**/*.js",
-    "routes/**/*.js",
-    "services/**/*.js",
-    "models/**/*.js",
-    "hooks/**/*.js"
+    "src/**/*.ts"
   ],
   "ignore": [
     "node_modules",
@@ -13,6 +8,6 @@
     ".git",
     "public/**/*"
   ],
-  "ext": "js,json",
-  "exec": "node server.js"
+  "ext": "ts,json",
+  "exec": "node server.ts"
 }

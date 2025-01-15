@@ -8,7 +8,6 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { createHash } from "crypto";
-import bs58 from "bs58";
 import { readFileSync } from "fs";
 
 class BlockchainService {

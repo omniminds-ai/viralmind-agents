@@ -6,7 +6,7 @@ import {
   chatSchema,
   challengeSchema,
   pageSchema,
-} from "../../models/Models.js";
+} from "../../models/Models.ts";
 import dotenv from "dotenv";
 import {
   Document,

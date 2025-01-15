@@ -3,9 +3,9 @@ import nacl from "tweetnacl";
 import axios from "axios";
 import dotenv from "dotenv";
 import { Connection, PublicKey } from "@solana/web3.js";
-import BlockchainService from "../services/blockchain/index.js";
-import DatabaseService from "../services/db/index.js";
-import { Challenge } from "../models/Models.js";
+import BlockchainService from "../services/blockchain/index.ts";
+import DatabaseService from "../services/db/index.ts";
+import { Challenge } from "../models/Models.ts";
 
 dotenv.config();
 

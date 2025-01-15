@@ -1,6 +1,6 @@
-import getSolPriceInUSDT from "../../hooks/solPrice.js";
-import DatabaseService, { ChallengeDocument } from "../db/index.js";
-import BlockchainService from "../blockchain/index.js";
+import getSolPriceInUSDT from "../../hooks/solPrice.ts";
+import DatabaseService, { ChallengeDocument } from "../db/index.ts";
+import BlockchainService from "../blockchain/index.ts";
 import axios from "axios";
 
 class TournamentService {

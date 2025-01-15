@@ -2,11 +2,11 @@ import express, { NextFunction, Request, Response } from "express";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import mongoose, { ConnectOptions } from "mongoose";
-import { catchErrors } from "./hooks/errors.js";
-import path, { join } from "path";
+import { catchErrors } from "./hooks/errors.ts";
+import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
-import { initializeSocketIO } from "./routes/socket.js";
+import { initializeSocketIO } from "./routes/socket.ts";
 
 dotenv.config();
 const dbURI = process.env.DB_URI;
@@ -58,7 +58,7 @@ app.use(function (req, res, next) {
 });
 
 // This is set before http headers b/c it breaks the stream
-import { streamsRoute } from "./routes/streams.js";
+import { streamsRoute } from "./routes/streams.ts";
 app.use("/api/streams", streamsRoute);
 
 var forceSSL = function (req: Request, res: Response, next: NextFunction) {
@@ -82,17 +82,17 @@ app.use(
 );
 
 // UI:
-import { challengesRoute } from "./routes/challenges.js";
-import { conversationRoute } from "./routes/conversation.js";
-import { settingsRoute } from "./routes/settings.js";
-import { minecraftRoute } from "./routes/minecraft.js";
+import { challengesRoute } from "./routes/challenges.ts";
+import { conversationRoute } from "./routes/conversation.ts";
+import { settingsRoute } from "./routes/settings.ts";
+import { minecraftRoute } from "./routes/minecraft.ts";
 
 // TEST:
-// import { testRoute } from "./test/conversation.js";
+// import { testRoute } from "./test/conversation.ts";
 
 // API:
-import { tournamentsAPI } from "./api/tournaments.js";
-import { conversationsAPI } from "./api/conversation.js";
+import { tournamentsAPI } from "./api/tournaments.ts";
+import { conversationsAPI } from "./api/conversation.ts";
 
 app.use("/api/challenges", challengesRoute);
 app.use("/api/conversation", conversationRoute);

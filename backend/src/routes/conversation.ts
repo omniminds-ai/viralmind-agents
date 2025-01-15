@@ -1,16 +1,16 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 dotenv.config();
-import { LLMService } from "../services/llm/index.js";
-import BlockchainService from "../services/blockchain/index.js";
-import DatabaseService, { ChatDocument } from "../services/db/index.js";
-import VNCService from "../services/vnc/index.js";
+import { LLMService } from "../services/llm/index.ts";
+import BlockchainService from "../services/blockchain/index.ts";
+import DatabaseService, { ChatDocument } from "../services/db/index.ts";
+import VNCService from "../services/vnc/index.ts";
 
-import { executeComputerAction } from "../services/vnc/actions.js";
-import TournamentService from "../services/tournament/index.js";
-import MessageFilters from "../services/tournament/filters.js";
-import ConversationService from "../services/conversation/index.js";
-import { GenericModelMessage } from "../types.js";
+import { executeComputerAction } from "../services/vnc/actions.ts";
+import TournamentService from "../services/tournament/index.ts";
+import MessageFilters from "../services/tournament/filters.ts";
+import ConversationService from "../services/conversation/index.ts";
+import { GenericModelMessage } from "../types.ts";
 
 const router = express.Router();
 

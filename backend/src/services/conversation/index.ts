@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import DatabaseService, { ChatDocument } from "../db/index.js";
-import { GenericModelMessage } from "../../types.js";
+import DatabaseService, { ChatDocument } from "../db/index.ts";
+import { GenericModelMessage } from "../../types.ts";
 
 class ConversationService {
   // Helper function to generate tool use ID

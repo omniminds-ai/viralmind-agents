@@ -1,12 +1,12 @@
 import express, { Request, Response } from "express";
-import BlockchainService from "../services/blockchain/index.js";
+import BlockchainService from "../services/blockchain/index.ts";
 import dotenv from "dotenv";
 import DatabaseService, {
   ChallengeDocument,
   ChatDocument,
-} from "../services/db/index.js";
-import getSolPriceInUSDT from "../hooks/solPrice.js";
-import VNCService from "../services/vnc/index.js";
+} from "../services/db/index.ts";
+import getSolPriceInUSDT from "../hooks/solPrice.ts";
+import VNCService from "../services/vnc/index.ts";
 import fs from "fs";
 import path from "path";
 

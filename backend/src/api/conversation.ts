@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
-import verify from "./verify.js";
-import DatabaseService from "../services/db/index.js";
+import verify from "./verify.ts";
+import DatabaseService from "../services/db/index.ts";
 const router = express.Router();
 
 router.get("/", verify, async (req: Request, res: Response) => {

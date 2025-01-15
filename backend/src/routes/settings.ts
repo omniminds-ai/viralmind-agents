@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
-import DatabaseService from "../services/db/index.js";
-import getSolPriceInUSDT from "../hooks/solPrice.js";
+import DatabaseService from "../services/db/index.ts";
+import getSolPriceInUSDT from "../hooks/solPrice.ts";
 const router = express.Router();
 
 router.get("/", async (_req: Request, res: Response) => {

@@ -4,7 +4,7 @@ import { Server, Socket } from "socket.io";
 import VncClient from "vnc-rfb-client";
 import { ChildProcess, spawn } from "child_process";
 import sharp from "sharp";
-import { executeComputerAction } from "../services/vnc/actions.js";
+import { executeComputerAction } from "../services/vnc/actions.ts";
 import OpenAI from "openai";
 import { Http2Server } from "http2";
 

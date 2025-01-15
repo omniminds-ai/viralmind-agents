@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
-import DatabaseService from "../services/db/index.js";
+import DatabaseService from "../services/db/index.ts";
 dotenv.config();
 
 const router = express.Router();

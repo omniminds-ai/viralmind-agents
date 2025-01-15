@@ -1,4 +1,4 @@
-import DatabaseService from "../services/db/index.js";
+import DatabaseService from "../services/db/index.ts";
 
 const staticSolPrice = 230;
 

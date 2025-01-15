@@ -1,5 +1,5 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
-import { User } from "../models/Models.js";
+import { User } from "../models/Models.ts";
 
 const verify: RequestHandler = async (
   req: Request,

@@ -1,4 +1,4 @@
-import { VNC_KEYS } from "./keys.js";
+import { VNC_KEYS } from "./keys.ts";
 // @ts-ignore
 import VncClient from "vnc-rfb-client";
 

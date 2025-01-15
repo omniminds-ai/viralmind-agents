@@ -1,6 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk";
-import { GenericModelMessage } from "../../types.js";
-import { ILLMService, LLMConfig, StreamResponse } from "./types.js";
+import { GenericModelMessage } from "../../types.ts";
+import { ILLMService, LLMConfig, StreamResponse } from "./types.ts";
 
 export class AnthropicService implements ILLMService {
   private anthropic: Anthropic;

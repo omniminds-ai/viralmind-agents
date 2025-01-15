@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { GenericModelMessage } from "../../types.js";
-import { ILLMService, LLMConfig, StreamResponse } from "./types.js";
+import { GenericModelMessage } from "../../types.ts";
+import { ILLMService, LLMConfig, StreamResponse } from "./types.ts";
 
 export class OpenAIService implements ILLMService {
   private openai: OpenAI;
@@ -21,7 +21,8 @@ export class OpenAIService implements ILLMService {
     try {
       const stream = await this.openai.chat.completions.create({
         model: this.config.model,
-        messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+        messages:
+          messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
         temperature: this.config.temperature ?? 0.9,
         max_tokens: this.config.maxTokens ?? 1024,
         top_p: 0.7,
@@ -38,7 +39,7 @@ export class OpenAIService implements ILLMService {
           try {
             for await (const chunk of stream) {
               const delta = chunk.choices[0]?.delta;
-              
+
               if (delta?.content) {
                 yield {
                   type: "text_delta",
@@ -67,7 +68,10 @@ export class OpenAIService implements ILLMService {
           } catch (error) {
             yield {
               type: "error",
-              message: error instanceof Error ? error.message : "Unknown error occurred",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Unknown error occurred",
             };
           }
         },

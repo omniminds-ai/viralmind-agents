@@ -1,7 +1,7 @@
-import { OpenAIService } from "./openai.js";
-import { AnthropicService } from "./anthropic.js";
-import { GenericModelMessage } from "../../types.js";
-import { ILLMService, LLMConfig, StreamResponse } from "./types.js";
+import { OpenAIService } from "./openai.ts";
+import { AnthropicService } from "./anthropic.ts";
+import { GenericModelMessage } from "../../types.ts";
+import { ILLMService, LLMConfig, StreamResponse } from "./types.ts";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -48,6 +48,6 @@ export class LLMService implements ILLMService {
   }
 }
 
-export { OpenAIService } from "./openai.js";
-export { AnthropicService } from "./anthropic.js";
-export * from "./types.js";
+export { OpenAIService } from "./openai.ts";
+export { AnthropicService } from "./anthropic.ts";
+export * from "./types.ts";
