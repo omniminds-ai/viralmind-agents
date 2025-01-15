@@ -70,12 +70,12 @@ class DataBaseService extends EventEmitter {
   async getChallengeById(
     id: string,
     projection = {}
-  ): Promise<ChallengeDocument | false> {
+  ): Promise<ChallengeDocument | null> {
     try {
-      return (await Challenge.findOne({ _id: id }, projection)) || false;
+      return await Challenge.findOne({ _id: id }, projection);
     } catch (error) {
       console.error("Database Service Error:", error);
-      return false;
+      return null;
     }
   }
 

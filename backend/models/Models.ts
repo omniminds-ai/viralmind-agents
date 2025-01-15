@@ -27,6 +27,7 @@ export const challengeSchema = new mongoose.Schema(
     initial_pool_size: Number,
     developer_fee: Number,
     tools: Array,
+    fee_multiplier: Number,
     winning_message: String,
     phrase: String,
     winning_prize: Number,

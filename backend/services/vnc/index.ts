@@ -1,9 +1,33 @@
+// @ts-ignore
 import VncClient from "vnc-rfb-client";
 import sharp from "sharp";
 import path from "path";
 import fs from "fs";
 
+type FrameBuffer = {
+  buffer: Buffer;
+  width: number;
+  height: number;
+  bytesPerPixel: 1 | 2 | 3 | 4;
+  lastUpdate: number;
+};
+
 class VNCService {
+  static closeAllSessions() {
+    throw new Error("Method not implemented.");
+  }
+  sessions: Map<string, VncClient>;
+  frameBuffers: Map<string, FrameBuffer>;
+  screenshotsDir: string;
+  connectionStatus: Map<any, any>;
+  lastFrameUpdate: Map<any, any>;
+  frameUpdateTimeout: number;
+  maxUpdateRetries: number;
+  connectionTimeout: number;
+  reconnectDelay: number;
+  maxReconnectAttempts: number;
+  reconnectAttempts: Map<any, any>;
+
   constructor() {
     this.sessions = new Map(); // Map to store VNC sessions by tournament ID
     this.frameBuffers = new Map(); // Map to store frame buffers by tournament ID
@@ -23,7 +47,11 @@ class VNCService {
     }
   }
 
-  initFrameBuffer(tournamentId, width = 1280, height = 720) {
+  initFrameBuffer(
+    tournamentId: string,
+    width: number = 1280,
+    height: number = 720
+  ) {
     const bytesPerPixel = 4; // 32-bit color (RGBA)
     const buffer = Buffer.alloc(width * height * bytesPerPixel, 0);
     this.frameBuffers.set(tournamentId, {
@@ -36,11 +64,11 @@ class VNCService {
     return buffer;
   }
 
-  isConnected(tournamentId) {
+  isConnected(tournamentId: string) {
     return this.connectionStatus.get(tournamentId) === "connected";
   }
 
-  isFrameEmpty(tournamentId) {
+  isFrameEmpty(tournamentId: string) {
     const frameBuffer = this.frameBuffers.get(tournamentId);
     if (!frameBuffer) return true;
 
@@ -48,7 +76,7 @@ class VNCService {
     return !frameBuffer.buffer.some((byte) => byte !== 0);
   }
 
-  async requestFrameUpdate(tournamentId, retryCount = 0) {
+  async requestFrameUpdate(tournamentId: string, retryCount: number = 0) {
     const session = this.sessions.get(tournamentId);
     if (!session) return false;
 
@@ -68,7 +96,7 @@ class VNCService {
         0,
         0,
         session.clientWidth,
-        session.clientHeight,
+        session.clientHeight
       );
 
       // Set up timeout handler
@@ -80,7 +108,7 @@ class VNCService {
         if (Date.now() !== requestTime) {
           if (retryCount < this.maxUpdateRetries) {
             console.log(
-              `Frame update timeout, retry ${retryCount + 1} (${tournamentId})`,
+              `Frame update timeout, retry ${retryCount + 1} (${tournamentId})`
             );
             this.requestFrameUpdate(tournamentId, retryCount + 1)
               .then(resolve)
@@ -101,7 +129,7 @@ class VNCService {
       };
 
       // Handle errors
-      const errorHandler = (error) => {
+      const errorHandler = (error: Error) => {
         clearTimeout(timeout);
         // Remove frame update handler since we got an error
         session.removeListener("frameUpdated", frameUpdateHandler);
@@ -115,7 +143,7 @@ class VNCService {
     });
   }
 
-  async waitForFirstFrame(tournamentId) {
+  async waitForFirstFrame(tournamentId: string) {
     const session = this.sessions.get(tournamentId);
     if (!session) return false;
 
@@ -142,10 +170,10 @@ class VNCService {
     });
   }
 
-  async ensureValidConnection(tournamentId) {
+  async ensureValidConnection(tournamentId: string) {
     if (!this.isConnected(tournamentId)) {
       console.log(
-        `VNC session not connected for tournament ${tournamentId}, attempting connection...`,
+        `VNC session not connected for tournament ${tournamentId}, attempting connection...`
       );
 
       // Get or initialize reconnect attempts counter
@@ -154,7 +182,9 @@ class VNCService {
       while (attempts < this.maxReconnectAttempts) {
         try {
           console.log(
-            `Connection attempt ${attempts + 1}/${this.maxReconnectAttempts} for tournament ${tournamentId}`,
+            `Connection attempt ${attempts + 1}/${
+              this.maxReconnectAttempts
+            } for tournament ${tournamentId}`
           );
 
           const client = await this.connectSession(tournamentId);
@@ -172,29 +202,29 @@ class VNCService {
           attempts++;
           this.reconnectAttempts.set(tournamentId, attempts);
           console.error(
-            `Connection attempt ${attempts} failed: ${error.message}`,
+            `Connection attempt ${attempts} failed: ${(error as Error).message}`
           );
 
           if (attempts < this.maxReconnectAttempts) {
             console.log(
-              `Waiting ${this.reconnectDelay}ms before next attempt...`,
+              `Waiting ${this.reconnectDelay}ms before next attempt...`
             );
             await new Promise((resolve) =>
-              setTimeout(resolve, this.reconnectDelay),
+              setTimeout(resolve, this.reconnectDelay)
             );
           }
         }
       }
 
       console.error(
-        `Failed to connect after ${attempts} attempts for tournament ${tournamentId}`,
+        `Failed to connect after ${attempts} attempts for tournament ${tournamentId}`
       );
       return null;
     }
     return this.sessions.get(tournamentId);
   }
 
-  async connectSession(tournamentId, config) {
+  async connectSession(tournamentId: string) {
     // Clean up any existing session
     await this.closeSession(tournamentId);
 
@@ -226,11 +256,11 @@ class VNCService {
         this.connectionStatus.set(tournamentId, "connected");
 
         // Initialize frame buffer on first frame update
-        const firstFrameHandler = (fb) => {
+        const firstFrameHandler = () => {
           this.initFrameBuffer(
             tournamentId,
             client.clientWidth,
-            client.clientHeight,
+            client.clientHeight
           );
           this.updateFrameBuffer(tournamentId, client.getFb());
           // Clean up first frame handler after use
@@ -238,7 +268,7 @@ class VNCService {
         };
 
         // Update frame buffer on subsequent updates
-        const frameUpdateHandler = (fb) => {
+        const frameUpdateHandler = () => {
           this.updateFrameBuffer(tournamentId, client.getFb());
         };
 
@@ -265,13 +295,13 @@ class VNCService {
         const attempts = this.reconnectAttempts.get(tournamentId) || 0;
         if (attempts < this.maxReconnectAttempts) {
           console.log(
-            `Attempting to reconnect after disconnect for tournament ${tournamentId}`,
+            `Attempting to reconnect after disconnect for tournament ${tournamentId}`
           );
           await this.ensureValidConnection(tournamentId);
         }
       };
 
-      const errorHandler = (err) => {
+      const errorHandler = (err: Error) => {
         console.error(`VNC error for tournament ${tournamentId}:`, err);
         this.connectionStatus.set(tournamentId, "error");
         reject(err);
@@ -301,7 +331,7 @@ class VNCService {
     });
   }
 
-  updateFrameBuffer(tournamentId, newBuffer) {
+  updateFrameBuffer(tournamentId: string, newBuffer: Buffer) {
     try {
       const frameBuffer = this.frameBuffers.get(tournamentId);
       if (!frameBuffer) {
@@ -320,12 +350,12 @@ class VNCService {
     }
   }
 
-  async saveLatestImage(tournamentId, frameBuffer) {
+  async saveLatestImage(tournamentId: string, frameBuffer: FrameBuffer) {
     try {
       const timestamp = Date.now();
       const latestPath = path.join(
         this.screenshotsDir,
-        `${tournamentId}_latest.jpg`,
+        `${tournamentId}_latest.jpg`
       );
 
       // Create image with timestamp overlay
@@ -349,7 +379,7 @@ class VNCService {
     }
   }
 
-  async getScreenshot(tournamentId, saveHistory = false) {
+  async getScreenshot(tournamentId: string, saveHistory: boolean = false) {
     try {
       // Ensure we have a valid connection
       const session = await this.ensureValidConnection(tournamentId);
@@ -367,7 +397,7 @@ class VNCService {
         this.initFrameBuffer(
           tournamentId,
           session.clientWidth || 1280,
-          session.clientHeight || 720,
+          session.clientHeight || 720
         );
       }
 
@@ -383,6 +413,8 @@ class VNCService {
       }
 
       const frameBuffer = this.frameBuffers.get(tournamentId);
+      if (!frameBuffer)
+        throw Error("Could not find framebuffer for " + tournamentId);
       const timestamp = Date.now();
 
       // If saveHistory is true (e.g. for chat messages), save timestamped file
@@ -417,11 +449,13 @@ class VNCService {
       // For regular updates (e.g. get-challenge polling), just update latest.jpg
       const savedTimestamp = await this.saveLatestImage(
         tournamentId,
-        frameBuffer,
+        frameBuffer
       );
 
       return {
-        url: `/api/screenshots/${tournamentId}_latest.jpg?t=${savedTimestamp || timestamp}`,
+        url: `/api/screenshots/${tournamentId}_latest.jpg?t=${
+          savedTimestamp || timestamp
+        }`,
         width: frameBuffer.width,
         height: frameBuffer.height,
         timestamp: savedTimestamp || timestamp,
@@ -436,7 +470,7 @@ class VNCService {
     }
   }
 
-  async closeSession(tournamentId) {
+  async closeSession(tournamentId: string) {
     const session = this.sessions.get(tournamentId);
     if (session) {
       // Reset reconnection attempts when explicitly closing
@@ -460,7 +494,7 @@ class VNCService {
       } catch (error) {
         console.error(
           `Error closing VNC session for tournament ${tournamentId}:`,
-          error,
+          error
         );
       } finally {
         // Clean up session data regardless of close success
@@ -478,13 +512,13 @@ class VNCService {
   }
 
   // Clean up old screenshots (keep last 100 per tournament)
-  async cleanupScreenshots(tournamentId) {
+  async cleanupScreenshots(tournamentId: string) {
     try {
       const files = fs
         .readdirSync(this.screenshotsDir)
         .filter(
           (file) =>
-            file.startsWith(tournamentId) && !file.endsWith("_latest.jpg"),
+            file.startsWith(tournamentId) && !file.endsWith("_latest.jpg")
         )
         .sort((a, b) => {
           const timestampA = parseInt(a.split("_")[1]);

@@ -1,59 +1,61 @@
-import { Router } from 'express';
-import { Server } from "socket.io";
+import { Router } from "express";
+import { Server, Socket } from "socket.io";
+// @ts-ignore
 import VncClient from "vnc-rfb-client";
-import { spawn } from 'child_process';
-import sharp from 'sharp';
-import { executeComputerAction } from '../services/vnc/actions.js';
-import OpenAI from 'openai';
+import { ChildProcess, spawn } from "child_process";
+import sharp from "sharp";
+import { executeComputerAction } from "../services/vnc/actions.js";
+import OpenAI from "openai";
+import { Http2Server } from "http2";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const socketRoute = Router();
-async function generateQuest(imageBase64) {
+async function generateQuest(imageBase64: string) {
   // Predefined single-step quests with hints
   const questTemplates = [
     {
       quest: "Open the activities menu and search for 'Terminal'",
-      hint: "Press Super key or click Activities in the top-left corner"
+      hint: "Press Super key or click Activities in the top-left corner",
     },
     {
       quest: "Create a folder named 'Projects' on the desktop",
-      hint: "Right-click on desktop and select 'New Folder'"
+      hint: "Right-click on desktop and select 'New Folder'",
     },
     {
       quest: "Open LibreOffice and start a new spreadsheet",
-      hint: "Search for 'LibreOffice Calc' in your applications"
+      hint: "Search for 'LibreOffice Calc' in your applications",
     },
     {
       quest: "Go to a simple web game like Chrome's dino game",
-      hint: "Type 'chrome://dino' in Chrome's address bar"
+      hint: "Type 'chrome://dino' in Chrome's address bar",
     },
     {
       quest: "Create 'notes.txt' in a folder and write 'hello<TAB>'",
-      hint: "Right-click in folder, select 'New Text Document'"
+      hint: "Right-click in folder, select 'New Text Document'",
     },
     {
       quest: "Open MS Paint and draw a smiley face",
-      hint: "Search for 'Paint' in your start menu"
+      hint: "Search for 'Paint' in your start menu",
     },
     {
       quest: "Open the calculator app and perform 123 + 456",
-      hint: "Search for 'Calculator' in your applications"
+      hint: "Search for 'Calculator' in your applications",
     },
     {
       quest: "Open the browser and search for 'weather today'",
-      hint: "Press Super key and type 'Firefox' or 'Chrome'"
+      hint: "Press Super key and type 'Firefox' or 'Chrome'",
     },
     {
       quest: "Take a screenshot of your desktop",
-      hint: "Press PrintScreen or use Screenshot tool"
+      hint: "Press PrintScreen or use Screenshot tool",
     },
     {
       quest: "Visit a random Wikipedia article and read 2 paragraphs",
-      hint: "Go to Wikipedia and click 'Random article'"
-    }
+      hint: "Go to Wikipedia and click 'Random article'",
+    },
   ];
 
   try {
@@ -65,32 +67,38 @@ async function generateQuest(imageBase64) {
           content: [
             {
               type: "text",
-              text: `You are an AI assistant that needs to propose a ms-paint related computer-use quest based on the user's current screen state (try tasks that involve mouse drags, i.e. sliders, doodling [thing] on online mspaint (do this do this)). Please do a doodling task. Please provide the output in a JSON code block with "quest" and "hint" keys. Start with a mspaint related task.`
+              text: `You are an AI assistant that needs to propose a ms-paint related computer-use quest based on the user's current screen state (try tasks that involve mouse drags, i.e. sliders, doodling [thing] on online mspaint (do this do this)). Please do a doodling task. Please provide the output in a JSON code block with "quest" and "hint" keys. Start with a mspaint related task.`,
             },
             {
               type: "image_url",
-              image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
-            }
-          ]
-        }
+              image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
+            },
+          ],
+        },
       ],
-      max_tokens: 150
+      max_tokens: 150,
     });
 
     // Extract JSON from markdown code block
-    const jsonMatch = response.choices[0].message.content.match(/```json\s*({[\s\S]*?})\s*```/);
+    const jsonMatch = response.choices[0].message.content?.match(
+      /```json\s*({[\s\S]*?})\s*```/
+    );
     if (jsonMatch && jsonMatch[1]) {
       return JSON.parse(jsonMatch[1]);
     }
-    throw new Error('No valid JSON found in response');
+    throw new Error("No valid JSON found in response");
   } catch (error) {
-    console.error('Error generating quest:', error);
+    console.error("Error generating quest:", error);
     // Return a random quest from templates
     return questTemplates[Math.floor(Math.random() * questTemplates.length)];
   }
 }
 
-async function generateHint(imageBase64, currentQuest, socket) {
+async function generateHint(
+  imageBase64: string,
+  currentQuest: string,
+  socket: Socket
+) {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -98,48 +106,64 @@ async function generateHint(imageBase64, currentQuest, socket) {
         {
           role: "user",
           content: [
-            { 
-              type: "text", 
-              text: `Current quest: ${currentQuest}\nProvide a single actionable hint that includes one of these patterns if applicable:\n- Type 'x[TAB]' to autocomplete\n- Scroll in [area] to find [target]\n- Click the [specific element]\n- Move cursor to [exact location]\nKeep it to one sentence.` 
+            {
+              type: "text",
+              text: `Current quest: ${currentQuest}\nProvide a single actionable hint that includes one of these patterns if applicable:\n- Type 'x[TAB]' to autocomplete\n- Scroll in [area] to find [target]\n- Click the [specific element]\n- Move cursor to [exact location]\nKeep it to one sentence.`,
             },
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${imageBase64}`
-              }
-            }
-          ]
-        }
+                url: `data:image/jpeg;base64,${imageBase64}`,
+              },
+            },
+          ],
+        },
       ],
       max_tokens: 60,
-      stream: true
+      stream: true,
     });
 
-    let hintText = '';
+    let hintText = "";
     for await (const chunk of response) {
       if (chunk.choices[0]?.delta?.content) {
         hintText += chunk.choices[0].delta.content;
-        socket.emit('hint_update', { hint: hintText });
+        socket.emit("hint_update", { hint: hintText });
       }
     }
 
     // Emit final hint as training event
-    socket.emit('training_event', {
-      type: 'hint',
-      message: hintText
+    socket.emit("training_event", {
+      type: "hint",
+      message: hintText,
     });
 
     return hintText;
   } catch (error) {
-    console.error('Error generating hint:', error);
-    const fallbackHint = "Scroll in the environments list to explore available tasks";
-    socket.emit('hint_update', { hint: fallbackHint });
+    console.error("Error generating hint:", error);
+    const fallbackHint =
+      "Scroll in the environments list to explore available tasks";
+    socket.emit("hint_update", { hint: fallbackHint });
     return fallbackHint;
   }
 }
 
 class Episode {
-  constructor(socket, options = {}) {
+  socket: Socket;
+  fps: number;
+  frameInterval: number;
+  client: VncClient | null;
+  ffmpeg: ChildProcess | null;
+  recordingTimer: NodeJS.Timeout | null;
+  frameTimer: NodeJS.Timeout | null;
+  isReplayingTrajectory: boolean;
+  currentQuest: string | null;
+  isGeneratingHint: boolean;
+  startTime: number | undefined;
+
+  constructor(
+    socket: Socket,
+    options: { fps?: number; frameInterval?: number } = {}
+  ) {
     this.socket = socket;
     this.fps = options.fps || 15;
     this.frameInterval = options.frameInterval || 1000; // 1 second for sending frames to client
@@ -152,20 +176,23 @@ class Episode {
     this.isGeneratingHint = false;
   }
 
-  connect(host = '127.0.0.1', port = 5900, password = 'abc123') {
-    this.socket.emit('training_event', {
-      type: 'task', 
-      message: "Neural Link established. You are now part of VM-1's collective intelligence network."
+  connect(host = "127.0.0.1", port = 5900, password = "abc123") {
+    this.socket.emit("training_event", {
+      type: "task",
+      message:
+        "Neural Link established. You are now part of VM-1's collective intelligence network.",
     });
-     
-    this.socket.emit('training_event', {
-      type: 'task',
-      message: "As part of the swarm, your interactions teach fundamental patterns of computer control."
+
+    this.socket.emit("training_event", {
+      type: "task",
+      message:
+        "As part of the swarm, your interactions teach fundamental patterns of computer control.",
     });
-     
-    this.socket.emit('training_event', {
-      type: 'task',
-      message: "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision."
+
+    this.socket.emit("training_event", {
+      type: "task",
+      message:
+        "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision.",
     });
 
     this.client = new VncClient({
@@ -178,18 +205,20 @@ class Episode {
         VncClient.consts.encodings.hextile,
         VncClient.consts.encodings.raw,
         VncClient.consts.encodings.pseudoDesktopSize,
-      ]
+      ],
     });
 
     this.client.connect({ host, port, password });
 
-    this.client.on('firstFrameUpdate', async () => {
-      console.log('VNC Session started, beginning recording...');
-      const sessionId = `VM1-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-      this.socket.emit('recording_started', { sessionId });
-      this.socket.emit('training_event', {
-        type: 'system',
-        message: 'VNC connection established. Starting session recording.'
+    this.client.on("firstFrameUpdate", async () => {
+      console.log("VNC Session started, beginning recording...");
+      const sessionId = `VM1-${new Date().getFullYear()}-${String(
+        new Date().getMonth() + 1
+      ).padStart(2, "0")}`;
+      this.socket.emit("recording_started", { sessionId });
+      this.socket.emit("training_event", {
+        type: "system",
+        message: "VNC connection established. Starting session recording.",
       });
 
       // Get first frame and generate quest
@@ -199,61 +228,70 @@ class Episode {
         raw: {
           width: clientWidth,
           height: clientHeight,
-          channels: 4
-        }
+          channels: 4,
+        },
       })
-      .jpeg()
-      .toBuffer();
+        .jpeg()
+        .toBuffer();
 
-      const questData = await generateQuest(jpeg.toString('base64'));
+      const questData = await generateQuest(jpeg.toString("base64"));
       this.currentQuest = questData.quest;
-      
+
       // Emit quest as training event
-      this.socket.emit('training_event', {
-        type: 'quest',
-        message: questData.quest
+      this.socket.emit("training_event", {
+        type: "quest",
+        message: questData.quest,
       });
 
       // Emit initial hint as training event
-      this.socket.emit('training_event', {
-        type: 'hint',
-        message: questData.hint
+      this.socket.emit("training_event", {
+        type: "hint",
+        message: questData.hint,
       });
 
       // Also emit quest_update for overlay
-      this.socket.emit('quest_update', {
+      this.socket.emit("quest_update", {
         quest: questData.quest,
-        hint: questData.hint
+        hint: questData.hint,
       });
 
       this.startRecording();
       this.startFrameSending();
     });
 
-    this.client.on('disconnect', () => {
-      console.log('VNC session disconnected.');
+    this.client.on("disconnect", () => {
+      console.log("VNC session disconnected.");
       this.close();
     });
   }
 
   startRecording() {
     const { clientWidth, clientHeight } = this.client;
-    
-    this.ffmpeg = spawn('ffmpeg', [
-      '-loglevel', 'error',
-      '-hide_banner',
-      '-y',
-      '-f', 'rawvideo',
-      '-vcodec', 'rawvideo',
-      '-an',
-      '-pix_fmt', 'rgba',
-      '-s', `${clientWidth}x${clientHeight}`,
-      '-r', `${this.fps}`,
-      '-i', '-',
-      '-an',
-      '-r', `${this.fps}`,
-      '-vcodec', 'libx264rgb',
-      'session.h264'
+
+    this.ffmpeg = spawn("ffmpeg", [
+      "-loglevel",
+      "error",
+      "-hide_banner",
+      "-y",
+      "-f",
+      "rawvideo",
+      "-vcodec",
+      "rawvideo",
+      "-an",
+      "-pix_fmt",
+      "rgba",
+      "-s",
+      `${clientWidth}x${clientHeight}`,
+      "-r",
+      `${this.fps}`,
+      "-i",
+      "-",
+      "-an",
+      "-r",
+      `${this.fps}`,
+      "-vcodec",
+      "libx264rgb",
+      "session.h264",
     ]);
 
     this.recordFrame();
@@ -271,24 +309,24 @@ class Episode {
       try {
         const fb = this.client.getFb();
         const { clientWidth, clientHeight } = this.client;
-        
+
         const jpeg = await sharp(fb, {
           raw: {
             width: clientWidth,
             height: clientHeight,
-            channels: 4
-          }
+            channels: 4,
+          },
         })
-        .jpeg()
-        .toBuffer();
+          .jpeg()
+          .toBuffer();
 
-        this.socket.emit('frame', {
-          buffer: jpeg.toString('base64'),
+        this.socket.emit("frame", {
+          buffer: jpeg.toString("base64"),
           width: clientWidth,
-          height: clientHeight
+          height: clientHeight,
         });
       } catch (err) {
-        console.error('Error sending frame:', err);
+        console.error("Error sending frame:", err);
       }
     }, this.frameInterval);
   }
@@ -301,7 +339,7 @@ class Episode {
       clearInterval(this.frameTimer);
     }
     if (this.ffmpeg) {
-      this.ffmpeg.kill('SIGINT');
+      this.ffmpeg.kill("SIGINT");
     }
     if (this.client) {
       this.client.end();
@@ -309,20 +347,20 @@ class Episode {
   }
 }
 
-export function initializeSocketIO(httpServer) {
+export function initializeSocketIO(httpServer: Http2Server) {
   const io = new Server(httpServer, {
     cors: {
       origin: "*",
-      methods: ["GET", "POST"]
-    }
+      methods: ["GET", "POST"],
+    },
   });
 
-  io.on('connection', (socket) => {
-    console.log('Socket.io connected');
+  io.on("connection", (socket) => {
+    console.log("Socket.io connected");
 
     const episode = new Episode(socket);
-    const host = process.env['VNC_HOST_GYMTEST'];
-    const pass = process.env['VNC_PASS_GYMTEST'];
+    const host = process.env["VNC_HOST_GYMTEST"];
+    const pass = process.env["VNC_PASS_GYMTEST"];
     episode.connect(host, 5900, pass);
 
     socket.on("disconnect", () => {
@@ -332,7 +370,7 @@ export function initializeSocketIO(httpServer) {
 
     socket.on("request_hint", async () => {
       if (episode.isGeneratingHint) {
-        console.log('Hint generation already in progress');
+        console.log("Hint generation already in progress");
         return;
       }
 
@@ -340,22 +378,26 @@ export function initializeSocketIO(httpServer) {
         episode.isGeneratingHint = true;
         const fb = episode.client.getFb();
         const { clientWidth, clientHeight } = episode.client;
-        
+
         const jpeg = await sharp(fb, {
           raw: {
             width: clientWidth,
             height: clientHeight,
-            channels: 4
-          }
+            channels: 4,
+          },
         })
-        .jpeg()
-        .toBuffer();
+          .jpeg()
+          .toBuffer();
 
-        await generateHint(jpeg.toString('base64'), episode.currentQuest, socket);
+        await generateHint(
+          jpeg.toString("base64"),
+          episode.currentQuest || "",
+          socket
+        );
       } catch (error) {
-        console.error('Error generating hint:', error);
-        socket.emit('hint_update', { 
-          hint: "Try exploring the visible interface elements" 
+        console.error("Error generating hint:", error);
+        socket.emit("hint_update", {
+          hint: "Try exploring the visible interface elements",
         });
       } finally {
         episode.isGeneratingHint = false;
@@ -364,18 +406,22 @@ export function initializeSocketIO(httpServer) {
 
     socket.on("vnc_keypress", async (data) => {
       try {
-        const result = await executeComputerAction('key', { text: data.key }, episode.client);
-        
-        socket.emit('training_event', {
-          type: 'keyboard',
+        const result = await executeComputerAction(
+          "key",
+          { text: data.key },
+          episode.client
+        );
+
+        socket.emit("training_event", {
+          type: "keyboard",
           message: `Key pressed: ${data.key}`,
-          result
+          result,
         });
       } catch (error) {
-        console.error('Error handling keypress:', error);
-        socket.emit('training_event', {
-          type: 'error',
-          message: `Failed to process key: ${data.key}`
+        console.error("Error handling keypress:", error);
+        socket.emit("training_event", {
+          type: "error",
+          message: `Failed to process key: ${data.key}`,
         });
       }
     });
@@ -384,62 +430,89 @@ export function initializeSocketIO(httpServer) {
       try {
         let result;
         let eventMessage;
-        let eventData = {
-          type: 'mouse',
+        let eventData: {
+          type: string;
+          coordinates: { x: number; y: number } | undefined;
+          trajectory: any;
+        } = {
+          type: "mouse",
           coordinates: undefined,
-          trajectory: undefined
+          trajectory: undefined,
         };
-        
+
         if (!data.action && !data.button && episode.isReplayingTrajectory) {
           return;
         }
-        
-        if (data.action?.endsWith('_drag')) {
+
+        if (data.action?.endsWith("_drag")) {
           episode.isReplayingTrajectory = true;
-          result = await executeComputerAction(data.action, {
-            trajectory: data.trajectory
-          }, episode.client);
+          result = await executeComputerAction(
+            data.action,
+            {
+              trajectory: data.trajectory,
+            },
+            episode.client
+          );
           episode.isReplayingTrajectory = false;
-          
-          eventMessage = `Mouse ${data.action.replace('_', ' ')}`;
+
+          eventMessage = `Mouse ${data.action.replace("_", " ")}`;
           eventData.trajectory = data.trajectory;
-        } else if (data.action === 'scroll_up' || data.action === 'scroll_down') {
+        } else if (
+          data.action === "scroll_up" ||
+          data.action === "scroll_down"
+        ) {
           result = await executeComputerAction(data.action, {}, episode.client);
-          eventMessage = `Mouse ${data.action.replace('_', ' ')}`;
+          eventMessage = `Mouse ${data.action.replace("_", " ")}`;
         } else {
           if (data.button === 1) {
-            result = await executeComputerAction('left_click', {}, episode.client);
-            eventMessage = 'Left click';
+            result = await executeComputerAction(
+              "left_click",
+              {},
+              episode.client
+            );
+            eventMessage = "Left click";
           } else if (data.button === 2) {
-            result = await executeComputerAction('right_click', {}, episode.client);
-            eventMessage = 'Right click';
+            result = await executeComputerAction(
+              "right_click",
+              {},
+              episode.client
+            );
+            eventMessage = "Right click";
           } else if (data.button === 3) {
-            result = await executeComputerAction('middle_click', {}, episode.client);
-            eventMessage = 'Middle click';
+            result = await executeComputerAction(
+              "middle_click",
+              {},
+              episode.client
+            );
+            eventMessage = "Middle click";
           } else {
-            result = await executeComputerAction('mouse_move', {
-              coordinate: [data.x, data.y]
-            }, episode.client);
+            result = await executeComputerAction(
+              "mouse_move",
+              {
+                coordinate: [data.x, data.y],
+              },
+              episode.client
+            );
             return; // Don't emit events for mouse moves
           }
-          
+
           if (data.x !== undefined && data.y !== undefined) {
             eventData.coordinates = { x: data.x, y: data.y };
           }
         }
-    
-        socket.emit('training_event', {
-          type: 'mouse',
-          message: eventMessage,
+
+        socket.emit("training_event", {
           ...eventData,
+          type: "mouse",
+          message: eventMessage,
           frame: data.frame,
-          timestamp: Date.now() - episode.startTime
+          timestamp: Date.now() - (episode.startTime || 0),
         });
       } catch (error) {
-        console.error('Error handling mouse event:', error);
-        socket.emit('training_event', {
-          type: 'error',
-          message: `Failed to process mouse event: ${error.message}`
+        console.error("Error handling mouse event:", error);
+        socket.emit("training_event", {
+          type: "error",
+          message: `Failed to process mouse event: ${(error as Error).message}`,
         });
       }
     });
