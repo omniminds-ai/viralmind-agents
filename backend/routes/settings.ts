@@ -1,58 +1,65 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import DatabaseService from "../services/db/index.js";
 import getSolPriceInUSDT from "../hooks/solPrice.js";
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
     const challenges = await DatabaseService.getSettings();
     const pages = await DatabaseService.getPages({});
-    const endpoints = pages.find((page) => page.name === "api-endpoints")
+    const endpoints = pages?.find((page) => page.name === "api-endpoints")
       ?.content?.endpoints;
-    const faq = pages.find((page) => page.name === "faq")?.content?.faq;
-    const jailToken = pages.find((page) => page.name === "viral-token")?.content;
+    const faq = pages?.find((page) => page.name === "faq")?.content?.faq;
+    const jailToken = pages?.find(
+      (page) => page.name === "viral-token"
+    )?.content;
 
     const solPrice = await getSolPriceInUSDT();
 
     // Get active/upcoming challenge
     const display_conditions = ["active", "upcoming"];
-    let activeChallenge = challenges.find((challenge) =>
+    let activeChallenge = challenges?.find((challenge) =>
       display_conditions.includes(challenge.status)
     );
 
     // Add prize calculation to active challenge if it exists
     if (activeChallenge) {
-      const prize = activeChallenge.winning_prize || (activeChallenge.entryFee * 100);
+      const prize =
+        activeChallenge.winning_prize || activeChallenge.entryFee! * 100;
       const usdPrize = prize * solPrice;
+      // TODO: activeChallnege is alredy an object, prize and usdPrize is not definedin the schema
       activeChallenge = {
+        //@ts-ignore
         ...activeChallenge.toObject(),
         prize,
-        usdPrize
+        usdPrize,
       };
     }
 
     // Get concluded challenges, sorted by most recent first
     const concludedChallenges = challenges
-      .filter(challenge => challenge.status === "concluded")
-      .sort((a, b) => new Date(b.expiry) - new Date(a.expiry))
-      .map(challenge => {
-        // Try to convert to plain object if it's a Mongoose document
-        const plainChallenge = challenge.toObject ? challenge.toObject() : challenge;
-        const prize = plainChallenge.winning_prize || (plainChallenge.entryFee * 100);
+      ?.filter((challenge) => challenge.status === "concluded")
+      .sort(
+        (a, b) => new Date(b.expiry!).getTime() - new Date(a.expiry!).getTime()
+      )
+      .map((challenge) => {
+        const plainChallenge = challenge;
+        const prize =
+          plainChallenge.winning_prize || plainChallenge.entryFee! * 100;
         const usdPrize = prize * solPrice;
         return {
           ...plainChallenge,
           prize,
-          usdPrize
+          usdPrize,
         };
       });
 
     const totalWinningPrize = challenges
-      .filter((challenge) => challenge.winning_prize)
+      ?.filter((challenge) => challenge.winning_prize)
       .map((challenge) => {
         const treasury =
-          challenge.winning_prize * (challenge.developer_fee / 100);
-        const total_payout = challenge.winning_prize - treasury;
+          challenge.winning_prize! * (challenge.developer_fee! / 100);
+        const total_payout = challenge.winning_prize! - treasury;
 
         return {
           treasury: treasury * solPrice,
@@ -60,11 +67,11 @@ router.get("/", async (req, res) => {
         };
       });
 
-    const totalTreasury = totalWinningPrize.reduce(
+    const totalTreasury = totalWinningPrize?.reduce(
       (acc, item) => acc + item.treasury,
       0
     );
-    const totalPayout = totalWinningPrize.reduce(
+    const totalPayout = totalWinningPrize?.reduce(
       (acc, item) => acc + item.total_payout,
       0
     );

@@ -1,9 +1,11 @@
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import { GenericModelMessage } from "../../types.js";
 
 dotenv.config();
 
 class OpenAIService {
+  public static serviceName = "openai";
   openai: OpenAI;
   model: string;
   finish_reasons: { name: string; description: string }[];
@@ -38,14 +40,17 @@ class OpenAIService {
   }
 
   async createChatCompletion(
-    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-    tools: OpenAI.Chat.Completions.ChatCompletionTool[],
-    tool_choice: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption
-  ) {
+    messages: GenericModelMessage[],
+    tools?: OpenAI.Chat.Completions.ChatCompletionTool[],
+    tool_choice?: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption
+  ): Promise<
+    AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | undefined
+  > {
     try {
       const stream = await this.openai.chat.completions.create({
         model: this.model,
-        messages: messages,
+        messages:
+          messages as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
         temperature: 0.9,
         max_tokens: 1024,
         top_p: 0.7,
@@ -60,7 +65,6 @@ class OpenAIService {
       return stream;
     } catch (error) {
       console.error("OpenAI Service Error:", error);
-      return false;
     }
   }
 }

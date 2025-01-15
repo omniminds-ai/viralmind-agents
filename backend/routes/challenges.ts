@@ -13,7 +13,7 @@ import path from "path";
 dotenv.config();
 
 const router = express.Router();
-const solanaRpc = process.env.RPC_URL;
+const solanaRpc = process.env.RPC_URL!;
 const model = "gpt-4o-mini";
 
 // Time threshold for screenshot updates (5 seconds)
@@ -242,7 +242,7 @@ router.get("/get-challenge", async (req: Request, res: Response) => {
         const blockchainService = new BlockchainService(solanaRpc, programId);
         const concluded = await blockchainService.concludeTournament(
           tournamentPDA,
-          winner
+          winner!
         );
         const successMessage = `🥳 Tournament concluded: ${concluded}`;
         const assistantMessage: ChatDocument = {

@@ -1,10 +1,10 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import DatabaseService from "../services/db/index.js";
 dotenv.config();
 
 const router = express.Router();
-export const clients = new Set();
+export const clients = new Set<Response>();
 
 // Modify the event handler to properly format SSE messages
 DatabaseService.on("new-chat", async (chatData) => {
@@ -15,7 +15,7 @@ DatabaseService.on("new-chat", async (chatData) => {
   });
 });
 
-router.get("/challenge-chat", async (req, res) => {
+router.get("/challenge-chat", async (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -23,7 +23,7 @@ router.get("/challenge-chat", async (req, res) => {
   res.flushHeaders(); // flush the headers to establish SSE with client
 
   const name = req.query.name;
-  const projection = {
+  const projection: { [key: string]: number } = {
     _id: 1,
     title: 1,
     label: 1,
@@ -63,16 +63,21 @@ router.get("/challenge-chat", async (req, res) => {
     projection.system_message = 1;
   }
 
-  let challenge = await DatabaseService.getChallengeByName(name, projection);
+  let challenge = await DatabaseService.getChallengeByName(
+    name as string,
+    projection
+  );
   if (!challenge) {
-    return res.status(404).send("Challenge not found");
+    res.status(404).send("Challenge not found");
+    return;
   }
 
   const challengeName = challenge.name;
 
   const allowedStatuses = ["active", "concluded", "upcoming"];
   if (!allowedStatuses.includes(challenge.status)) {
-    return res.status(404).send("Challenge is not active");
+    res.status(404).send("Challenge is not active");
+    return;
   }
 
   console.log("Stream Initialized");

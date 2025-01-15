@@ -91,7 +91,7 @@ export const chatSchema = new mongoose.Schema(
 
 export const Chat = mongoose.model("Chat", chatSchema);
 
-const userSchema = new mongoose.Schema(
+export const userSchema = new mongoose.Schema(
   {
     api_key: String,
     address: String,
@@ -102,7 +102,7 @@ const userSchema = new mongoose.Schema(
 
 export const User = mongoose.model("User", userSchema);
 
-const pageSchema = new mongoose.Schema(
+export const pageSchema = new mongoose.Schema(
   {
     name: String,
     content: Object,

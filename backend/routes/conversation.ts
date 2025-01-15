@@ -10,13 +10,18 @@ import { executeComputerAction } from "../services/vnc/actions.js";
 import TournamentService from "../services/tournament/index.js";
 import MessageFilters from "../services/tournament/filters.js";
 import ConversationService from "../services/conversation/index.js";
+import { GenericModelMessage } from "../types.js";
 
 const router = express.Router();
 
 // Handle Message Submission
 router.post("/submit/:id", async (req: Request, res: Response) => {
   try {
-    let { prompt, signature, walletAddress } = req.body;
+    let { prompt, signature, walletAddress } = req.body as {
+      prompt: string;
+      signature: string;
+      walletAddress: string;
+    };
     const { id } = req.params;
 
     // validate req data
@@ -41,9 +46,9 @@ router.post("/submit/:id", async (req: Request, res: Response) => {
     await TournamentService.validateChallenge(challenge);
 
     // validate tournament program + transaction
-    const tournamentPDA = challenge.tournamentPDA;
+    const tournamentPDA = challenge.tournamentPDA!;
     const blockchain = new BlockchainService(
-      process.env.RPC_URL,
+      process.env.RPC_URL!,
       challenge.idl?.address
     );
     const tournament = await blockchain.getTournamentData(tournamentPDA);
@@ -102,16 +107,20 @@ router.post("/submit/:id", async (req: Request, res: Response) => {
     // apply tournament prompt filters
     prompt = MessageFilters.applyFilters(prompt, {
       disable: challenge.disable,
-      characterLimit: challenge.characterLimit,
-      charactersPerWord: challenge.charactersPerWord,
+      characterLimit: challenge.characterLimit!,
+      charactersPerWord: challenge.charactersPerWord!,
     });
 
     const model = challenge.model || "claude-3-5-sonnet-20241022";
-    const format = model.startsWith("gpt") ? "openai" : "anthropic";
+    const format: "anthropic" | "openai" = model.startsWith("gpt")
+      ? "openai"
+      : "anthropic";
     let systemPrompt = challenge.system_message;
 
     // construct LLM context
-    let messages = [{ role: "system", content: systemPrompt }];
+    let messages: GenericModelMessage[] = [
+      { role: "system", content: systemPrompt || "" },
+    ];
     // process chat history if contextLimit > 1
     const contextLimit = challenge.contextLimit || 1;
     if (contextLimit > 1) {
@@ -142,7 +151,10 @@ router.post("/submit/:id", async (req: Request, res: Response) => {
       role: "user",
       content: [
         { type: "text", text: prompt },
-        await ConversationService.createImageContent(screenshot, format),
+        (await ConversationService.createImageContent(screenshot, format)) ?? {
+          type: "image",
+          text: "",
+        },
       ],
     });
 
@@ -341,6 +353,7 @@ router.post("/submit/:id", async (req: Request, res: Response) => {
           await DatabaseService.updateChallenge(id, {
             scores: scores.map((score) => ({
               account: score.account,
+              address: score.address,
               score: score.score,
               timestamp: new Date(),
             })),

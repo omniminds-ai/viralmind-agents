@@ -46,7 +46,7 @@ class TournamentService {
    *   });
    * }
    */
-  async checkScores() {
+  async checkScores(): Promise<ChallengeDocument["scores"] | void> {
     try {
       const response = await axios.get(
         `http://${process.env.SERVICE_HOST}:${process.env.SERVICE_PORT}/scores`
@@ -54,7 +54,6 @@ class TournamentService {
       return response.data;
     } catch (error) {
       console.error("Error checking winner:", error);
-      return null;
     }
   }
 

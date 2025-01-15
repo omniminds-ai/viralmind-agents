@@ -1,16 +1,8 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import nacl from "tweetnacl";
 import axios from "axios";
 import dotenv from "dotenv";
-import {
-  Connection,
-  Transaction,
-  TransactionInstruction,
-  PublicKey,
-  SystemProgram,
-  Keypair,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import BlockchainService from "../services/blockchain/index.js";
 import DatabaseService from "../services/db/index.js";
 import { Challenge } from "../models/Models.js";
@@ -18,20 +10,21 @@ import { Challenge } from "../models/Models.js";
 dotenv.config();
 
 const router = express.Router();
-const solanaRpc = process.env.RPC_URL;
-const ipcSecret = process.env.IPC_SECRET;
+const solanaRpc = process.env.RPC_URL!;
+const ipcSecret = process.env.IPC_SECRET!;
 const DISCORD_WEBHOOK_URL =
   "https://discord.com/api/webhooks/1324084322151567442/U7SIuKh859Lt7g73UWxMa6Zk7p9-seJoQmd6sgVc9Msj__dMCbxQDu2S8RTCzfFEt3nG";
 const VIRAL_TOKEN = new PublicKey(
   "HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump"
 );
 
-router.get("/whitelist", async (req, res) => {
+router.get("/whitelist", async (req: Request, res: Response) => {
   try {
     const { name } = req.query;
 
     if (!name) {
-      return res.status(400).json({ error: "Missing challenge name" });
+      res.status(400).json({ error: "Missing challenge name" });
+      return;
     }
 
     const challenge = await Challenge.findOne(
@@ -42,7 +35,8 @@ router.get("/whitelist", async (req, res) => {
     ).lean();
 
     if (!challenge) {
-      return res.status(404).json({ error: "Challenge not found" });
+      res.status(404).json({ error: "Challenge not found" });
+      return;
     }
 
     res.json({ whitelist: challenge.whitelist || [] });
@@ -52,12 +46,13 @@ router.get("/whitelist", async (req, res) => {
   }
 });
 
-router.post("/reveal", async (req, res) => {
+router.post("/reveal", async (req: Request, res: Response) => {
   try {
     const { address, username, signature, challengeName } = req.body;
 
     if (!address || !username || !signature || !challengeName) {
-      return res.status(400).json({ error: "Missing required fields" });
+      res.status(400).json({ error: "Missing required fields" });
+      return;
     }
 
     // Get challenge and verify it exists
@@ -72,7 +67,8 @@ router.post("/reveal", async (req, res) => {
     ).lean();
 
     if (!challenge) {
-      return res.status(404).json({ error: "Challenge not found" });
+      res.status(404).json({ error: "Challenge not found" });
+      return;
     }
 
     // Verify signature
@@ -88,11 +84,13 @@ router.post("/reveal", async (req, res) => {
       );
 
       if (!verified) {
-        return res.status(401).json({ error: "Invalid signature" });
+        res.status(401).json({ error: "Invalid signature" });
+        return;
       }
     } catch (error) {
       console.error("Signature verification error:", error);
-      return res.status(401).json({ error: "Invalid signature" });
+      res.status(401).json({ error: "Invalid signature" });
+      return;
     }
 
     // Get token balance
@@ -132,22 +130,26 @@ router.post("/reveal", async (req, res) => {
     }
 
     // Update whitelist
-    const whitelist = challenge.whitelist || [];
+    const whitelist = (challenge.whitelist || []).map((entry) => ({
+      username: entry.username,
+      address: entry.address,
+      viral_balance: entry.viral_balance,
+      signature: entry.signature,
+    }));
     const filteredWhitelist = whitelist.filter(
       (entry) => entry.address !== address
     );
 
-    // Add new whitelist entry
-    const whitelistEntry = {
+    // Add new whitelist entry as plain object
+    filteredWhitelist.push({
       username,
       address,
       viral_balance: tokenBalance,
       signature,
-    };
-    filteredWhitelist.push(whitelistEntry);
+    });
 
     // Update challenge with new whitelist
-    await DatabaseService.updateChallenge(challenge._id, {
+    await DatabaseService.updateChallenge(challenge._id!, {
       whitelist: filteredWhitelist,
     });
 
@@ -198,11 +200,13 @@ router.post("/reward", async (req, res) => {
     const { username, secret } = req.body;
 
     if (!username || !secret) {
-      return res.status(400).json({ error: "Missing required fields" });
+      res.status(400).json({ error: "Missing required fields" });
+      return;
     }
 
     if (secret !== ipcSecret) {
-      return res.status(401).json({ error: "Invalid secret" });
+      res.status(401).json({ error: "Invalid secret" });
+      return;
     }
 
     // Find active tournament
@@ -212,25 +216,26 @@ router.post("/reward", async (req, res) => {
     });
 
     if (!challenge) {
-      return res.status(404).json({ error: "No active game tournament found" });
+      res.status(404).json({ error: "No active game tournament found" });
+      return;
     }
 
     // Find winner's address from whitelist
     const winnerEntry = challenge.whitelist?.find(
-      (entry) => entry.username.toLowerCase() === username.toLowerCase()
+      (entry) => entry.username?.toLowerCase() === username.toLowerCase()
     );
 
     if (!winnerEntry || !winnerEntry.address) {
-      return res.status(404).json({ error: "Winner not found in whitelist" });
+      res.status(404).json({ error: "Winner not found in whitelist" });
+      return;
     }
 
     const programId = challenge.idl?.address;
     const tournamentPDA = challenge.tournamentPDA;
 
     if (!programId || !tournamentPDA) {
-      return res
-        .status(404)
-        .json({ error: "Tournament program info not found" });
+      res.status(404).json({ error: "Tournament program info not found" });
+      return;
     }
 
     // Conclude tournament on-chain with winner's address
@@ -242,19 +247,19 @@ router.post("/reward", async (req, res) => {
 
     // Add victory message to chat
     const victoryMessage = {
-      challenge: challenge.name,
+      challenge: challenge.name!,
       model: "gpt-4o-mini",
       role: "assistant",
       content: `🏆 Tournament concluded! Winner: ${username}\nTransaction: ${concluded}`,
       tool_calls: {},
-      address: winnerEntry.address,
+      address: winnerEntry.address!,
       date: new Date(),
     };
 
     await DatabaseService.createChat(victoryMessage);
 
     // Update challenge status
-    await DatabaseService.updateChallenge(challenge._id, {
+    await DatabaseService.updateChallenge(challenge._id!, {
       status: "concluded",
     });
 
@@ -273,15 +278,18 @@ router.post("/chat", async (req, res) => {
     console.log(process.env);
 
     if (!username || !content || !secret) {
-      return res.status(400).json({ error: "Missing required fields" });
+      res.status(400).json({ error: "Missing required fields" });
+      return;
     }
 
     if (secret !== ipcSecret) {
-      return res.status(401).json({ error: "Invalid secret" });
+      res.status(401).json({ error: "Invalid secret" });
+      return;
     }
 
     // if (username !== "viral_steve") {
-    //   return res.status(403).json({ error: 'Unauthorized username' });
+    //   res.status(403).json({ error: 'Unauthorized username' });
+    //   return
     // }
 
     // Find active game challenge
@@ -291,12 +299,13 @@ router.post("/chat", async (req, res) => {
     });
 
     if (!challenge) {
-      return res.status(404).json({ error: "No active game challenge found" });
+      res.status(404).json({ error: "No active game challenge found" });
+      return;
     }
 
     // Create chat message
     await DatabaseService.createChat({
-      challenge: challenge.name,
+      challenge: challenge.name!,
       role: username === "viral_steve" ? "assistant" : "player",
       content: content,
       address: username,

@@ -5,9 +5,9 @@ import {
   Pages,
   chatSchema,
   challengeSchema,
+  pageSchema,
 } from "../../models/Models.js";
 import dotenv from "dotenv";
-import { TournamentData } from "../../types.js";
 import {
   Document,
   InferSchemaType,
@@ -20,6 +20,7 @@ import {
 
 export type ChallengeDocument = InferSchemaType<typeof challengeSchema>;
 export type ChatDocument = InferSchemaType<typeof chatSchema>;
+export type PageDocument = InferSchemaType<typeof pageSchema>;
 
 dotenv.config();
 
@@ -162,16 +163,15 @@ class DataBaseService extends EventEmitter {
       return false;
     }
   }
-  async getPages(query: QueryOptions): Promise<ChatDocument[] | false> {
+  async getPages(query: QueryOptions): Promise<PageDocument[] | undefined> {
     try {
       return await Pages.find(query);
     } catch (error) {
       console.error("Database Service Error:", error);
-      return false;
     }
   }
   // Settings-related methods
-  async getSettings(): Promise<ChallengeDocument[] | false> {
+  async getSettings(): Promise<ChallengeDocument[] | undefined> {
     try {
       const challenge = await Challenge.find(
         {},
@@ -195,10 +195,9 @@ class DataBaseService extends EventEmitter {
         }
       );
 
-      return challenge || false;
+      return challenge;
     } catch (error) {
       console.error("Database Service Error:", error);
-      return false;
     }
   }
 
@@ -319,7 +318,7 @@ class DataBaseService extends EventEmitter {
   }
 
   async createTournament(
-    tournamentData: TournamentData
+    tournamentData: ChallengeDocument
   ): Promise<ChallengeDocument | false> {
     try {
       const savedChallenge = new Challenge(tournamentData);

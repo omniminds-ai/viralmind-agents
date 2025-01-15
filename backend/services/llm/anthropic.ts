@@ -1,5 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
+import { GenericModelMessage } from "../../types.js";
 
 dotenv.config();
 
@@ -38,22 +39,38 @@ class AnthropicService {
     return JSON.stringify(processed, null, indent);
   }
   async createChatCompletion(
-    messages: { role: "user" | "assistant" | "system"; content: string }[],
-    tool: Anthropic.Beta.BetaTool,
-    toolChoice: Anthropic.Beta.BetaToolChoice
-  ) {
+    messages: GenericModelMessage[],
+    _tool?: Anthropic.Beta.BetaTool,
+    _toolChoice?: Anthropic.Beta.BetaToolChoice
+  ): Promise<{
+    [Symbol.asyncIterator](): AsyncGenerator<
+      | {
+          type: "tool_call";
+          function: {
+            id: string;
+            name: string;
+            arguments: string;
+          };
+        }
+      | {
+          type: "text_delta";
+          delta: string;
+        }
+      | {
+          type: "stop";
+        }
+      | {
+          type: "error";
+          message: string;
+        },
+      void,
+      unknown
+    >;
+  }> {
     try {
       // TODO: figure out a better way of passing the system message than manipulating types for anthropic messages
       const systemMessage = messages.find((m) => m.role === "system")?.content;
       if (systemMessage) messages = messages.slice(1);
-
-      // // before:
-      // console.log('beforebeforebefore')
-      // console.log(prettyPrintJson(messages));
-
-      // // after:
-      // console.log('AFTER')
-      // console.log(prettyPrintJson(messages));
 
       // Prepare API call parameters
       const apiParams: Anthropic.Beta.Messages.MessageCreateParams = {

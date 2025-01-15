@@ -2,6 +2,7 @@ import OpenAIService from "./openai.js";
 import AnthropicService from "./anthropic.js";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
+import { GenericModelMessage } from "../../types.js";
 
 class LLMService {
   getService(model: string) {
@@ -20,10 +21,10 @@ class LLMService {
 
   async createChatCompletion(
     model: string,
-    messages: { role: "user" | "assistant" | "system"; content: string }[],
-    tools: OpenAI.Chat.Completions.ChatCompletionTool[] &
+    messages: GenericModelMessage[],
+    tools?: OpenAI.Chat.Completions.ChatCompletionTool[] &
       Anthropic.Beta.BetaTool,
-    tool_choice: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption &
+    tool_choice?: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption &
       Anthropic.Beta.BetaToolChoice
   ) {
     const service = this.getService(model);

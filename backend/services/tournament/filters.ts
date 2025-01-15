@@ -42,7 +42,7 @@ export default class MessageFilters {
   static applyFilters(
     message: any,
     rules: {
-      disable: string;
+      disable: string[];
       characterLimit: number;
       charactersPerWord: number;
     }

@@ -389,6 +389,7 @@ class VNCService {
           url: "/images/Screenshot.png",
           width: 1280,
           height: 720,
+          timestamp: Date.now(),
         };
       }
 
@@ -409,6 +410,7 @@ class VNCService {
           url: "/images/Screenshot.png",
           width: 1280,
           height: 720,
+          timestamp: Date.now(),
         };
       }
 
@@ -466,6 +468,7 @@ class VNCService {
         url: "/images/Screenshot.png",
         width: 1280,
         height: 720,
+        timestamp: Date.now(),
       };
     }
   }

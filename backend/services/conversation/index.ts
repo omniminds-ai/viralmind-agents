@@ -35,7 +35,7 @@ class ConversationService {
     format: string
   ) {
     if (!screenshot?.url || screenshot.url.includes("Screenshot.png")) {
-      return null;
+      return;
     }
 
     // Remove '/api/' prefix from URL if present
@@ -45,7 +45,7 @@ class ConversationService {
     const imagePath = path.join(process.cwd(), "public", cleanUrl);
     const base64Data = this.imageFileToDataURI(imagePath);
 
-    if (!base64Data) return null;
+    if (!base64Data) return;
 
     if (format === "openai") {
       return {
@@ -82,9 +82,9 @@ class ConversationService {
   extractToolCalls(
     message: string,
     format: "anthropic" | "openai" = "anthropic",
-    imageContent?: string
+    imageContent?: object
   ) {
-    const conversation = [];
+    const conversation: GenericModelMessage[] = [];
     let position = 0;
     const contentBlocks = [];
     const toolCalls = [];
@@ -191,8 +191,8 @@ class ConversationService {
     // If there are tool results and imageContent is provided, set it as the content
     // for the last tool result
     if (toolResults.length > 0 && imageContent) {
-      // TODO: changed this from [imageContent] to fix type errors
-      toolResults[toolResults.length - 1].content = imageContent;
+      toolResults[toolResults.length - 1].content =
+        JSON.stringify(imageContent);
     }
 
     if (format === "openai") {
