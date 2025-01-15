@@ -1,92 +1,41 @@
 import { Anthropic } from "@anthropic-ai/sdk";
-import dotenv from "dotenv";
 import { GenericModelMessage } from "../../types.js";
+import { ILLMService, LLMConfig, StreamResponse } from "./types.js";
 
-dotenv.config();
+export class AnthropicService implements ILLMService {
+  private anthropic: Anthropic;
+  private config: LLMConfig;
 
-class AnthropicService {
-  anthropic: Anthropic;
-  constructor() {
+  constructor(config: LLMConfig) {
+    this.config = config;
     this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: config.apiKey,
     });
   }
 
-  static prettyPrintJson(obj: object, maxLength = 100, indent = 2) {
-    // Helper function to process values recursively
-    function processValue(value: any): any {
-      if (typeof value === "string" && value.length > maxLength) {
-        return `[String truncated - ${value.length} chars]`;
-      }
-
-      if (Array.isArray(value)) {
-        return value.map((item) => processValue(item));
-      }
-
-      if (typeof value === "object" && value !== null) {
-        const processed: { [key: string]: any } = {};
-        for (const [key, val] of Object.entries(value)) {
-          processed[key] = processValue(val);
-        }
-        return processed;
-      }
-
-      return value;
-    }
-
-    // Process the object and stringify with indentation
-    const processed = processValue(obj);
-    return JSON.stringify(processed, null, indent);
-  }
   async createChatCompletion(
     messages: GenericModelMessage[],
-    _tool?: Anthropic.Beta.BetaTool,
+    tools?: Anthropic.Beta.BetaTool[],
     _toolChoice?: Anthropic.Beta.BetaToolChoice
-  ): Promise<{
-    [Symbol.asyncIterator](): AsyncGenerator<
-      | {
-          type: "tool_call";
-          function: {
-            id: string;
-            name: string;
-            arguments: string;
-          };
-        }
-      | {
-          type: "text_delta";
-          delta: string;
-        }
-      | {
-          type: "stop";
-        }
-      | {
-          type: "error";
-          message: string;
-        },
-      void,
-      unknown
-    >;
-  }> {
+  ): Promise<StreamResponse> {
     try {
-      // TODO: figure out a better way of passing the system message than manipulating types for anthropic messages
+      // Extract system message if present
       const systemMessage = messages.find((m) => m.role === "system")?.content;
-      if (systemMessage) messages = messages.slice(1);
+      const filteredMessages = messages.filter((m) => m.role !== "system");
 
-      // Prepare API call parameters
       const apiParams: Anthropic.Beta.Messages.MessageCreateParams = {
-        model: "claude-3-5-sonnet-20241022",
-        messages: messages as unknown as Anthropic.Beta.BetaMessage[],
+        model: this.config.model,
+        messages: filteredMessages as Anthropic.Beta.BetaMessage[],
         system: systemMessage,
-        max_tokens: 1024,
-        temperature: 0.9,
+        max_tokens: this.config.maxTokens ?? 1024,
+        temperature: this.config.temperature ?? 0.9,
         stream: true,
-        betas: ["computer-use-2024-10-22"],
-        tools: [
+        tools: tools ?? [
           {
             type: "computer_20241022",
             name: "computer",
-            display_width_px: 1280, // Match our VNC resolution
-            display_height_px: 720, // Match our VNC resolution
+            display_width_px: 1280,
+            display_height_px: 720,
             display_number: 1,
           },
         ],
@@ -95,12 +44,12 @@ class AnthropicService {
       const stream = await this.anthropic.beta.messages.create(apiParams);
       if (!stream) throw new Error("Failed to create message stream");
 
-      // Track if we've received any content
       let currentToolCall: {
         id: string;
         name: string;
         arguments: string;
-      } | null;
+      } | null = null;
+
       return {
         async *[Symbol.asyncIterator]() {
           try {
@@ -110,19 +59,12 @@ class AnthropicService {
                 continue;
               }
 
-              console.log(chunk);
-
-              // TODO: this will never evaluate... is it needed?
-              // if (chunk.type === "tool_call") {
-              //   yield chunk;
-              // }
               if (
                 chunk.type === "content_block_start" &&
                 chunk.content_block?.type === "tool_use" &&
                 chunk.content_block?.id &&
                 chunk.content_block?.name
               ) {
-                // tool call start
                 currentToolCall = {
                   id: chunk.content_block.id,
                   name: chunk.content_block.name,
@@ -134,19 +76,13 @@ class AnthropicService {
                 currentToolCall &&
                 chunk.delta?.partial_json
               ) {
-                // tool call delta
-                const jsonDelta = chunk.delta.partial_json || "";
-                currentToolCall.arguments += jsonDelta;
+                currentToolCall.arguments += chunk.delta.partial_json;
               } else if (
                 chunk.type === "content_block_stop" &&
-                currentToolCall &&
-                currentToolCall.arguments
+                currentToolCall?.arguments
               ) {
-                // tool call complete
                 try {
-                  if (currentToolCall.arguments)
-                    JSON.parse(currentToolCall.arguments); // validate json
-
+                  JSON.parse(currentToolCall.arguments); // Validate JSON
                   yield {
                     type: "tool_call",
                     function: {
@@ -158,44 +94,42 @@ class AnthropicService {
                 } catch (e) {
                   yield {
                     type: "error",
-                    message: "Invalid tool call",
+                    message: "Invalid tool call arguments",
                   };
                 }
                 currentToolCall = null;
-              } else {
-                // TODO: this will always be ""
-                //@ts-ignore
-                const content = chunk.delta?.text || "";
-                if (content)
-                  yield {
-                    type: "text_delta",
-                    delta: content,
-                  };
+              } else if (
+                chunk.type === "content_block_delta" &&
+                chunk.delta?.type === "text_delta"
+              ) {
+                yield {
+                  type: "text_delta",
+                  delta: chunk.delta.text,
+                };
               }
 
-              // if the generation is complete
               const finishReason = (
                 chunk as Anthropic.Beta.Messages.BetaRawMessageDeltaEvent
               ).delta?.stop_reason;
-              if (finishReason && finishReason != "tool_use")
-                yield {
-                  type: "stop",
-                };
+              if (finishReason && finishReason !== "tool_use") {
+                yield { type: "stop" };
+              }
             }
           } catch (error) {
-            console.error("Error in Claude stream:", error);
+            console.error("Error in Anthropic stream:", error);
             yield {
               type: "error",
-              message: "LLM Stream Error",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Unknown error occurred",
             };
           }
         },
       };
     } catch (error) {
-      console.error("Service error:", error);
+      console.error("Anthropic Service Error:", error);
       throw error;
     }
   }
 }
-
-export default new AnthropicService();

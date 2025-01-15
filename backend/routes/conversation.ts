@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 dotenv.config();
-import LLMService from "../services/llm/index.js";
+import { LLMService } from "../services/llm/index.js";
 import BlockchainService from "../services/blockchain/index.js";
 import DatabaseService, { ChatDocument } from "../services/db/index.js";
 import VNCService from "../services/vnc/index.js";
@@ -203,7 +203,8 @@ router.post("/submit/:id", async (req: Request, res: Response) => {
     // agentic loop
     // 1. stream response, returns true if tool call
     async function streamResponse() {
-      const stream = await LLMService.createChatCompletion(model, messages);
+      const llm = new LLMService(model);
+      const stream = await llm.createChatCompletion(messages);
 
       if (!stream) return false;
 
@@ -221,7 +222,7 @@ router.post("/submit/:id", async (req: Request, res: Response) => {
 
           // execute tool call
           try {
-            if (toolCall.name === "computer") {
+            if (toolCall?.name === "computer") {
               // validate tool call
               if (!toolCall.arguments)
                 throw new Error("Incomplete tool call arguments received");
@@ -252,7 +253,7 @@ router.post("/submit/:id", async (req: Request, res: Response) => {
               } else
                 throw new Error("No VNC client available for computer actions");
             } else {
-              throw new Error(`Invalid tool call name ${toolCall.name}`);
+              throw new Error(`Invalid tool call name ${toolCall?.name}`);
             }
           } catch (tool_er) {
             messages.push({

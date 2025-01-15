@@ -1,72 +1,80 @@
 import OpenAI from "openai";
-import dotenv from "dotenv";
 import { GenericModelMessage } from "../../types.js";
+import { ILLMService, LLMConfig, StreamResponse } from "./types.js";
 
-dotenv.config();
+export class OpenAIService implements ILLMService {
+  private openai: OpenAI;
+  private config: LLMConfig;
 
-class OpenAIService {
-  public static serviceName = "openai";
-  openai: OpenAI;
-  model: string;
-  finish_reasons: { name: string; description: string }[];
-  constructor() {
+  constructor(config: LLMConfig) {
+    this.config = config;
     this.openai = new OpenAI({
-      apiKey: process.env.OPEN_AI_SECRET,
+      apiKey: config.apiKey,
     });
-    this.model = "gpt-4o-mini";
-    this.finish_reasons = [
-      {
-        name: "length",
-        description: "The conversation was too long for the context window.",
-      },
-      {
-        name: "tool_calls",
-        description: "The assistant is waiting for a tool call response.",
-      },
-      {
-        name: "content_filter",
-        description:
-          "The conversation was blocked by OpenAI's content filters.",
-      },
-      {
-        name: "stop",
-        description: "The conversation was ended by the user.",
-      },
-      {
-        name: "other",
-        description: "The conversation was ended for an unspecified reason.",
-      },
-    ];
   }
 
   async createChatCompletion(
     messages: GenericModelMessage[],
     tools?: OpenAI.Chat.Completions.ChatCompletionTool[],
-    tool_choice?: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption
-  ): Promise<
-    AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | undefined
-  > {
+    toolChoice?: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption
+  ): Promise<StreamResponse> {
     try {
       const stream = await this.openai.chat.completions.create({
-        model: this.model,
-        messages:
-          messages as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-        temperature: 0.9,
-        max_tokens: 1024,
+        model: this.config.model,
+        messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+        temperature: this.config.temperature ?? 0.9,
+        max_tokens: this.config.maxTokens ?? 1024,
         top_p: 0.7,
         frequency_penalty: 1.0,
         presence_penalty: 1.0,
         stream: true,
         tools: tools,
-        tool_choice: tool_choice,
+        tool_choice: toolChoice,
         parallel_tool_calls: false,
       });
 
-      return stream;
+      return {
+        async *[Symbol.asyncIterator]() {
+          try {
+            for await (const chunk of stream) {
+              const delta = chunk.choices[0]?.delta;
+              
+              if (delta?.content) {
+                yield {
+                  type: "text_delta",
+                  delta: delta.content,
+                };
+              }
+
+              if (delta?.tool_calls?.[0]) {
+                const toolCall = delta.tool_calls[0];
+                if (toolCall.function && toolCall.id) {
+                  yield {
+                    type: "tool_call",
+                    function: {
+                      id: toolCall.id,
+                      name: toolCall.function.name || "unknown",
+                      arguments: toolCall.function.arguments || "",
+                    },
+                  };
+                }
+              }
+
+              if (chunk.choices[0]?.finish_reason === "stop") {
+                yield { type: "stop" };
+              }
+            }
+          } catch (error) {
+            yield {
+              type: "error",
+              message: error instanceof Error ? error.message : "Unknown error occurred",
+            };
+          }
+        },
+      };
     } catch (error) {
       console.error("OpenAI Service Error:", error);
+      throw error;
     }
   }
 }
-
-export default new OpenAIService();

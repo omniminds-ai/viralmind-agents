@@ -1,35 +1,53 @@
-import OpenAIService from "./openai.js";
-import AnthropicService from "./anthropic.js";
-import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
+import { OpenAIService } from "./openai.js";
+import { AnthropicService } from "./anthropic.js";
 import { GenericModelMessage } from "../../types.js";
+import { ILLMService, LLMConfig, StreamResponse } from "./types.js";
+import dotenv from "dotenv";
 
-class LLMService {
-  getService(model: string) {
+dotenv.config();
+
+export class LLMService implements ILLMService {
+  private service: ILLMService;
+
+  constructor(model: string) {
     if (!model) {
       throw new Error("Model name is required");
     }
 
+    let apiKey: string;
     if (model.startsWith("gpt-")) {
-      return OpenAIService;
+      apiKey = process.env.OPEN_AI_SECRET || "";
+      if (!apiKey) throw new Error("OpenAI API key is required");
     } else if (model.startsWith("claude-")) {
-      return AnthropicService;
+      apiKey = process.env.ANTHROPIC_API_KEY || "";
+      if (!apiKey) throw new Error("Anthropic API key is required");
     } else {
       throw new Error(`Unsupported model: ${model}`);
+    }
+
+    const config: LLMConfig = {
+      model,
+      apiKey,
+      maxTokens: 1024,
+      temperature: 0.9,
+    };
+
+    if (model.startsWith("gpt-")) {
+      this.service = new OpenAIService(config);
+    } else {
+      this.service = new AnthropicService(config);
     }
   }
 
   async createChatCompletion(
-    model: string,
     messages: GenericModelMessage[],
-    tools?: OpenAI.Chat.Completions.ChatCompletionTool[] &
-      Anthropic.Beta.BetaTool,
-    tool_choice?: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption &
-      Anthropic.Beta.BetaToolChoice
-  ) {
-    const service = this.getService(model);
-    return service.createChatCompletion(messages, tools, tool_choice);
+    tools?: any,
+    toolChoice?: any
+  ): Promise<StreamResponse> {
+    return this.service.createChatCompletion(messages, tools, toolChoice);
   }
 }
 
-export default new LLMService();
+export { OpenAIService } from "./openai.js";
+export { AnthropicService } from "./anthropic.js";
+export * from "./types.js";
