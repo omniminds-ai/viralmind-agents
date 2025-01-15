@@ -4,13 +4,16 @@ import dotenv from "dotenv";
 dotenv.config();
 
 class TelegramBotService {
+  token: string;
+  chatId: string;
+  bot: any;
   constructor() {
-    this.token = process.env.ZYNX_TELEGRAM_TOKEN;
-    this.chatId = process.env.TELEGRAM_CHAT_ID;
+    this.token = process.env.ZYNX_TELEGRAM_TOKEN || "";
+    this.chatId = process.env.TELEGRAM_CHAT_ID || "";
     this.bot = new TelegramBot(this.token, { polling: false });
   }
 
-  async sendMessageToGroup(message) {
+  async sendMessageToGroup(message: string) {
     try {
       await this.bot.sendMessage(this.chatId, message);
     } catch (error) {

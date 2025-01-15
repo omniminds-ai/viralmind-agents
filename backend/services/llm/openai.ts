@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 class OpenAIService {
+  openai: OpenAI;
+  model: string;
+  finish_reasons: { name: string; description: string }[];
   constructor() {
     this.openai = new OpenAI({
       apiKey: process.env.OPEN_AI_SECRET,
@@ -34,7 +37,11 @@ class OpenAIService {
     ];
   }
 
-  async createChatCompletion(messages, tools, tool_choice) {
+  async createChatCompletion(
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    tools: OpenAI.Chat.Completions.ChatCompletionTool[],
+    tool_choice: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption
+  ) {
     try {
       const stream = await this.openai.chat.completions.create({
         model: this.model,

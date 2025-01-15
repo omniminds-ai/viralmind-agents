@@ -7,7 +7,7 @@ import {
   challengeSchema,
 } from "../../models/Models.js";
 import dotenv from "dotenv";
-import { ChatMessage, TournamentData } from "../../types.js";
+import { TournamentData } from "../../types.js";
 import {
   Document,
   InferSchemaType,

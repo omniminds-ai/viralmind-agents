@@ -12,13 +12,15 @@ import bs58 from "bs58";
 import { readFileSync } from "fs";
 
 class BlockchainService {
-  constructor(solanaRpc, programId) {
+  connection: Connection;
+  programId: string;
+  constructor(solanaRpc: string, programId: string) {
     this.connection = new Connection(solanaRpc, "confirmed");
     this.programId = programId;
   }
 
   // Utility to calculate the discriminator
-  calculateDiscriminator(instructionName) {
+  calculateDiscriminator(instructionName: string) {
     const hash = createHash("sha256")
       .update(`global:${instructionName}`, "utf-8")
       .digest();
@@ -28,10 +30,10 @@ class BlockchainService {
   // Verify a transaction
 
   async verifyTransaction(
-    signature,
-    tournamentPDA,
-    expectedAmount,
-    senderWalletAddress
+    signature: string,
+    tournamentPDA: string,
+    expectedAmount: number,
+    senderWalletAddress: string
   ) {
     try {
       let verified = false;
@@ -52,7 +54,7 @@ class BlockchainService {
       const { meta, transaction } = transactionDetails;
 
       // Ensure the transaction was successful
-      if (meta.err) {
+      if (meta?.err) {
         console.log(
           `Transaction ${signature} failed with error: ${JSON.stringify(
             meta.err
@@ -62,7 +64,7 @@ class BlockchainService {
       }
 
       // Extract inner instructions
-      const innerInstructions = meta.innerInstructions || [];
+      const innerInstructions = meta?.innerInstructions || [];
 
       // Initialize variable to hold total transferred lamports
       let totalLamportsSent = 0;
@@ -71,11 +73,16 @@ class BlockchainService {
       for (const innerInstruction of innerInstructions) {
         for (const instruction of innerInstruction.instructions) {
           // Check if the instruction is a system program transfer
+          // Todo: figure out what is up with these things... are the instructiosn typed incorrectly
           if (
+            //@ts-ignore
             instruction.program === "system" &&
+            //@ts-ignore
             instruction.parsed &&
+            //@ts-ignore
             instruction.parsed.type === "transfer"
           ) {
+            //@ts-ignore
             const info = instruction.parsed.info;
             const sender = info.source;
             const recipient = info.destination;
@@ -120,13 +127,15 @@ class BlockchainService {
       console.log(`Total Amount Received: ${amountReceivedSOL} SOL`);
       return verified;
     } catch (error) {
-      console.error(`Verification failed: ${error.message} ${signature}`);
+      console.error(
+        `Verification failed: ${(error as Error).message} ${signature}`
+      );
       return false;
     }
   }
 
   // Get tournament data
-  async getTournamentData(tournamentPDA) {
+  async getTournamentData(tournamentPDA: string) {
     try {
       // Fetch the account info
       const accountInfo = await this.connection.getAccountInfo(
@@ -158,7 +167,7 @@ class BlockchainService {
   }
 
   //   Conclude Tournament
-  async concludeTournament(tournamentPDA, winnerAccount) {
+  async concludeTournament(tournamentPDA: string, winnerAccount: string) {
     try {
       // Load wallet keypair (payer/authority)
       const keypairFile = readFileSync("./secrets/solana-keypair.json");

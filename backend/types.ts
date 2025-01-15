@@ -1,15 +1,3 @@
-export interface ChatMessage {
-  challenge: string;
-  model: string;
-  role: string;
-  content: string;
-  screenshot: string;
-  address: string;
-  txn: string;
-  verified: boolean;
-  date: Date;
-}
-
 export interface TournamentData {
   title: string;
   name: string;
@@ -25,4 +13,9 @@ export interface TournamentData {
   contextLimit: number;
   chatLimit: number;
   tools: any[];
+}
+
+export interface GenericModelMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
 }

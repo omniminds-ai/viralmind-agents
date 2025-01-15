@@ -4,9 +4,9 @@ import BlockchainService from "../blockchain/index.js";
 import axios from "axios";
 
 class TournamentService {
-  solanaRpc: string | undefined;
+  solanaRpc: string;
   constructor() {
-    this.solanaRpc = process.env.RPC_URL;
+    this.solanaRpc = process.env.RPC_URL!;
   }
 
   // validate
@@ -124,7 +124,7 @@ class TournamentService {
         );
 
         const concluded = await blockchainService.concludeTournament(
-          challenge.tournamentPDA,
+          challenge.tournamentPDA!,
           winner
         );
         console.log(`✅ Tournament concluded on blockchain. TX: ${concluded}`);
@@ -179,7 +179,7 @@ class TournamentService {
   ) {
     const blockchainService = new BlockchainService(
       this.solanaRpc,
-      process.env.PROGRAM_ID
+      process.env.PROGRAM_ID!
     );
 
     return blockchainService.verifyTransaction(
