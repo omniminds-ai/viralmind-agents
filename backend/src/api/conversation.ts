@@ -4,6 +4,7 @@ import DatabaseService from "../services/db/index.ts";
 const router = express.Router();
 
 router.get("/", verify, async (req: Request, res: Response) => {
+  //@ts-ignore
   const address = req.user?.address;
   const limit = parseInt(req.query.limit as string) || 20;
   const skip = parseInt(req.query.skip as string) || 0;
@@ -25,6 +26,7 @@ router.get(
   "/tournament/:tournament",
   verify,
   async (req: Request, res: Response) => {
+    //@ts-ignore
     const address = req.user?.address;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = parseInt(req.query.skip as string) || 0;

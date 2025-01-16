@@ -11,7 +11,8 @@
     "tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts",
     "init-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts init",
     "start-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts start",
-    "conclude-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts conclude"
+    "conclude-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts conclude",
+    "tsc": "tsc"
   },
   "keywords": [],
   "author": "",

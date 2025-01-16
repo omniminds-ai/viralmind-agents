@@ -5,7 +5,7 @@ import mongoose, { ConnectOptions } from "mongoose";
 import { catchErrors } from "./hooks/errors.ts";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer } from "http";
+import { createServer } from "http2";
 import { initializeSocketIO } from "./routes/socket.ts";
 
 dotenv.config();
