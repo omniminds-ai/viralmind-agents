@@ -2,12 +2,12 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "export NODE_OPTIONS=--openssl-legacy-provider && nodemon server.js",
-    "start": "node server.js",
+    "dev": "pwd && export NODE_OPTIONS=--openssl-legacy-provider && nodemon",
+    "build": "export NODE_OPTIONS=--openssl-legacy-provider && tsc",
+    "start": "export NODE_OPTIONS=--openssl-legacy-provider node build/server.js",
     "tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts",
     "init-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts init",
     "start-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts start",
@@ -35,8 +35,6 @@
     "openai": "^4.73.1",
     "sharp": "^0.33.5",
     "socket.io": "^4.8.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.0.0",
     "url": "^0.11.4",
     "vnc-rfb-client": "^0.2.0"
   },
@@ -46,6 +44,8 @@
     "@types/mongoose": "^5.11.97",
     "@types/node": "^20.0.0",
     "@types/node-telegram-bot-api": "^0.64.7",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.0"
   }
 }
