@@ -5,16 +5,13 @@
   import Footer from '$lib/components/Footer.svelte';
   import { page } from '$app/state';
   import WalletProvider from '$lib/components/solana/WalletProvider.svelte';
-  import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
-  import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+  import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+  import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 
   let { children } = $props();
 
-  const localStorageKey = "walletAdapter";
-  const walletAdapters = [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-  ];
+  const localStorageKey = 'walletAdapter';
+  const walletAdapters = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
 
   const isGymRoute = $derived(page.url.pathname.startsWith('/gym'));
   const isTournamentRoute = $derived(page.url.pathname.startsWith('/tournament'));
@@ -52,4 +49,15 @@
   {#if !isTournamentRoute}
     <Footer />
   {/if}
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TQ5Z1BBEGG"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-TQ5Z1BBEGG');
+  </script>
 </div>
