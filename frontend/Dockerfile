@@ -1,16 +1,17 @@
-FROM node:20-alpine
- 
-WORKDIR /usr/src/app/frontend/
+FROM node:20-slim
 
+WORKDIR /usr/src/app/svelte-frontend
+
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies with legacy peer deps and include dev dependencies
-RUN npm install --legacy-peer-deps --include=dev
+# Install dependencies
+RUN npm ci --include=dev
 
+# Copy the rest of the application
 COPY . .
-RUN npm run build
 
-ENV CHOKIDAR_USEPOLLING=true
-ENV WATCHPACK_POLLING=true
+# Expose port 5173 (Vite's default port)
+EXPOSE 5173
 
-EXPOSE 3000
+# Command is specified in docker-compose.dev.yml
