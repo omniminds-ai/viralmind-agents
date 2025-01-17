@@ -1,0 +1,20 @@
+{
+  "name": "viralmind-agents",
+  "version": "0.3.0",
+  "description": "Monorepo for viralmind.ai agents and training.",
+  "scripts": {
+    "dev": "docker compose -f docker-compose.dev.yml up",
+    "build": "docker compose -f docker-compose.prod.yml build",
+    "start": "docker compose -f docker-compose.prod.yml up"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/viralmind-ai/viralmind-agents.git"
+  },
+  "author": "viralmind.ai",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/viralmind-ai/viralmind-agents/issues"
+  },
+  "homepage": "https://github.com/viralmind-ai/viralmind-agents#readme"
+}

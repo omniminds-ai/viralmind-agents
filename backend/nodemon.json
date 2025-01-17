@@ -1,18 +1,5 @@
 {
-  "watch": [
-    "server.js",
-    "api/**/*.js",
-    "routes/**/*.js",
-    "services/**/*.js",
-    "models/**/*.js",
-    "hooks/**/*.js"
-  ],
-  "ignore": [
-    "node_modules",
-    "jailbreak-pool/**/*",
-    ".git",
-    "public/**/*"
-  ],
-  "ext": "js,json",
-  "exec": "node server.js"
+  "watch": ["src"],
+  "ext": "ts,json",
+  "exec": "tsx ./src/server.ts"      
 }
