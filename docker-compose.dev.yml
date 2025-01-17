@@ -38,8 +38,8 @@ services:
       - "8001:8001"
     command: npm run dev
     volumes:
-      - ./backend:/usr/src/app/backend
-      - /usr/src/app/backend/node_modules/
+      # - ./backend:/usr/src/app/backend
+      # - /usr/src/app/backend/node_modules/
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
     environment:
       - DB_URI=${DB_URI}
@@ -79,18 +79,18 @@ services:
 
   front-end:
     build:
-      context: svelte-frontend
+      context: frontend
     container_name: front-end
-    working_dir: /usr/src/app/svelte-frontend
+    working_dir: /usr/src/app/frontend
     networks:
       - node-network
     tty: true
     ports:
       - "5173:5173"
     command: npm run dev
-    volumes:
-      - ./svelte-frontend:/usr/src/app/svelte-frontend
-      - /usr/src/app/svelte-frontend/node_modules/  # This creates an anonymous volume for node_modules
+    # volumes:
+      # - ./frontend:/usr/src/app/frontend
+      # - /usr/src/app/frontend/node_modules/  # This creates an anonymous volume for node_modules
     environment:
       - NODE_ENV=development
 
