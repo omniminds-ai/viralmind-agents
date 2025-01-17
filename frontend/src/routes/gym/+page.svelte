@@ -1,29 +1,130 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Dumbbell, Trophy, Timer, MessagesSquare, ArrowRight, BellRing } from 'lucide-svelte';
-  import ButtonCTA from '$lib/components/ButtonCTA.svelte';
+  import { 
+    Trophy, Timer, MessagesSquare, ArrowRight, BellRing, 
+    Brain, DollarSign, Sparkles, Gamepad2, Book,
+    Palette, Video, FileSpreadsheet, Globe2, MousePointer,
+    Coffee, Dice5, Monitor, Crosshair, Zap, Move, TrendingUp, LineChart
+  } from 'lucide-svelte';
+  import CategorySection from '$lib/components/gym/CategorySection.svelte';
+  import SubmitRace from '$lib/components/gym/SubmitRace.svelte';
+  import FeaturedCarousel from '$lib/components/gym/FeaturedCarousel.svelte';
+
+  interface Race {
+    id: string;
+    title: string;
+    description: string;
+    icon: any;
+    iconColor: string;
+    bgGradient: string;
+    hoverGradient: string;
+    prompt?: string;
+    reward?: number;
+    buttonText: string;
+    stakeRequired?: number;
+    href?: string;
+  }
+
+  interface Category {
+    id: string;
+    title: string;
+    icon: any;
+    races: Race[];
+  }
+
+  const categories: Category[] = [
+    {
+      id: 'free',
+      title: 'Free Races',
+      icon: Gamepad2,
+      races: [
+        {
+          id: 'creative-races',
+          title: 'Creative Challenges',
+          description: 'Train AI to assist with art, video editing, and web design',
+          icon: Palette,
+          iconColor: 'text-pink-400',
+          bgGradient: 'from-pink-900/30 to-purple-900/30',
+          hoverGradient: 'hover:from-pink-900/40 hover:to-purple-900/40',
+          reward: 50,
+          buttonText: 'Join Race',
+          href: '/gym/free-races'
+        },
+        {
+          id: 'productivity-races',
+          title: 'Office Skills',
+          description: 'Master spreadsheets, documents, and productivity tools',
+          icon: FileSpreadsheet,
+          iconColor: 'text-blue-400',
+          bgGradient: 'from-blue-900/30 to-purple-900/30',
+          hoverGradient: 'hover:from-blue-900/40 hover:to-purple-900/40',
+          reward: 75,
+          buttonText: 'Join Race',
+          href: '/gym/free-races'
+        },
+        {
+          id: 'mouse-races',
+          title: 'Mouse Mastery',
+          description: 'Perfect your clicking, dragging, and precision skills',
+          icon: MousePointer,
+          iconColor: 'text-purple-400',
+          bgGradient: 'from-purple-900/30 to-stone-900/30',
+          hoverGradient: 'hover:from-purple-900/40 hover:to-stone-900/40',
+          reward: 60,
+          buttonText: 'Join Race',
+          href: '/gym/free-races'
+        }
+      ]
+    },
+    {
+      id: 'staked',
+      title: 'Staked Races',
+      icon: Sparkles,
+      races: [
+        {
+          id: 'pro-creative',
+          title: 'Creative Pro League',
+          description: 'High-stakes creative challenges with bigger rewards',
+          icon: Palette,
+          iconColor: 'text-pink-400',
+          bgGradient: 'from-pink-900/30 to-purple-900/30',
+          hoverGradient: 'hover:from-pink-900/40 hover:to-purple-900/40',
+          reward: 500,
+          stakeRequired: 100,
+          buttonText: 'Join Race',
+          href: '/gym/staked-races'
+        },
+        {
+          id: 'pro-trading',
+          title: 'Trading League',
+          description: 'Master market analysis and trading strategies',
+          icon: TrendingUp,
+          iconColor: 'text-emerald-400',
+          bgGradient: 'from-emerald-900/30 to-purple-900/30',
+          hoverGradient: 'hover:from-emerald-900/40 hover:to-purple-900/40',
+          reward: 1500,
+          stakeRequired: 300,
+          buttonText: 'Join Race',
+          href: '/gym/staked-races'
+        },
+        {
+          id: 'pro-mouse',
+          title: 'Elite Mouse League',
+          description: 'Ultimate precision and speed challenges',
+          icon: Crosshair,
+          iconColor: 'text-yellow-400',
+          bgGradient: 'from-yellow-900/30 to-purple-900/30',
+          hoverGradient: 'hover:from-yellow-900/40 hover:to-purple-900/40',
+          reward: 700,
+          stakeRequired: 140,
+          buttonText: 'Join Race',
+          href: '/gym/staked-races'
+        }
+      ]
+    }
+  ];
 
   let mousePosition = { x: 0, y: 0 };
-  let countdown = {
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0
-  };
-
-  // TODO: set launch date here
-  const launchDate = new Date();
-  launchDate.setDate(launchDate.getDate() + 30);
-
-  function updateCountdown() {
-    const now = new Date().getTime();
-    const distance = launchDate.getTime() - now;
-
-    countdown.days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    countdown.hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    countdown.minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    countdown.seconds = Math.floor((distance % (1000 * 60)) / 1000);
-  }
 
   function handleMouseMove(event: MouseEvent) {
     mousePosition.x = (event.clientX / window.innerWidth) * 100;
@@ -32,101 +133,35 @@
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
-    const timer = setInterval(updateCountdown, 1000);
-    updateCountdown(); // Initial call
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      clearInterval(timer);
     };
   });
 </script>
 
 <div class="min-h-screen bg-black pb-24 text-white">
-  <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
+  <div class="relative flex min-h-screen flex-col items-start justify-center overflow-hidden">
     <!-- Content Container -->
-    <div class="relative z-10 mx-auto w-full max-w-4xl px-4 text-center">
-      <!-- Coming Soon Badge -->
-      <div class="mb-8 inline-block rounded-full bg-purple-600/20 px-4 py-2 text-purple-400">
-        <div class="flex items-center gap-2">
-          <Timer class="h-4 w-4" />
-          <span>Coming Soon</span>
-        </div>
-      </div>
-
+    <div class="relative z-10 mx-auto w-full max-w-[1400px] px-8">
       <!-- Main Title -->
-      <h1 class="mb-6 text-5xl font-bold drop-shadow-lg md:text-7xl">Training Gym</h1>
+      <h1 class="my-6 text-5xl font-bold drop-shadow-lg md:text-7xl">Training Gym</h1>
 
       <!-- Subtitle -->
-      <p class="mx-auto mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
-        Train AI agents through demonstration. Earn $VIRAL for quality contributions.
+      <p class="mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
+        Train AI agents through desktop challenges or learn to train your own
       </p>
 
-      <!-- Countdown Timer -->
-      <!-- <div class="grid grid-cols-4 gap-4 max-w-xl mx-auto mb-16">
-        {#each Object.entries(countdown) as [unit, value]}
-        <div class="bg-stone-900/40 rounded-xl p-4 backdrop-blur-sm">
-            <div class="text-3xl md:text-4xl font-bold mb-1">{value}</div>
-            <div class="text-sm text-gray-400">{unit}</div>
-        </div>
-        {/each}
-    </div> -->
+      <!-- Featured Carousel -->
+      <FeaturedCarousel />
 
-      <!-- Feature Cards -->
-      <div class="mb-12 grid gap-6 md:grid-cols-2">
-        <!-- Free Races -->
-        <div class="rounded-2xl bg-stone-900/25 p-8 text-left backdrop-blur-sm">
-          <div class="mb-4 flex items-center gap-3">
-            <div class="rounded-xl bg-purple-600/20 p-3">
-              <Trophy class="h-6 w-6 text-purple-400" />
-            </div>
-            <h3 class="text-xl font-semibold">Free Races</h3>
-          </div>
-          <p class="mb-4 text-gray-400">
-            Join races by simply holding $VIRAL. No staking required, pure reward potential.
-          </p>
-          <a href="https://viralmind.gitbook.io/viralmind.ai/training-gym/free-races">
-            <div class="group flex cursor-pointer items-center text-purple-400">
-              <span class="mr-2">Learn more</span>
-              <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </div>
-          </a>
-        </div>
+      <!-- Categories -->
+      {#each categories as category}
+        <CategorySection {category} />
+      {/each}
 
-        <!-- Staked Races -->
-        <div class="rounded-2xl bg-stone-900/25 p-8 text-left backdrop-blur-sm">
-          <div class="mb-4 flex items-center gap-3">
-            <div class="rounded-xl bg-purple-600/20 p-3">
-              <Dumbbell class="h-6 w-6 text-purple-400" />
-            </div>
-            <h3 class="text-xl font-semibold">Staked Races</h3>
-          </div>
-          <p class="mb-4 text-gray-400">
-            Stake $VIRAL to join high-reward races. Win big from redistributed stakes.
-          </p>
-          <a href="https://viralmind.gitbook.io/viralmind.ai/training-gym/staked-races">
-            <div class="group flex cursor-pointer items-center text-purple-400">
-              <span class="mr-2">Learn more</span>
-              <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </div>
-          </a>
-        </div>
-      </div>
-
-      <!-- Notification Sign Up -->
-      <div class="mx-auto max-w-2xl rounded-3xl bg-stone-900/25 p-8 backdrop-blur-sm md:p-12">
-        <div class="mb-6 flex flex-col items-center justify-center gap-3 md:flex-row">
-          <BellRing class="h-6 w-6 text-purple-400" />
-          <h3 class="text-xl font-semibold">Get Notified When We Launch</h3>
-        </div>
-
-        <div class="flex justify-center">
-          <ButtonCTA href="https://t.me/viralmind" target="_blank">
-            <MessagesSquare class="h-5 w-5" />
-            Join Our Telegram
-          </ButtonCTA>
-        </div>
-      </div>
+      <!-- Submit Race Idea -->
+      <SubmitRace />
     </div>
   </div>
 
