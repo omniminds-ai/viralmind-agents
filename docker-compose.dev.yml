@@ -88,9 +88,11 @@ services:
     ports:
       - "5173:5173"
     command: npm run dev
-    # volumes:
-      # - ./frontend:/usr/src/app/frontend
-      # - /usr/src/app/frontend/node_modules/  # This creates an anonymous volume for node_modules
+    volumes: # comment out the volumes if you get npm issues
+      - ./frontend:/usr/src/app/frontend
+      # - type: tmpfs
+      #   target: /usr/src/app/frontend/node_modules/
+      - /usr/src/app/frontend/node_modules/  # This creates an anonymous volume for node_modules
     environment:
       - NODE_ENV=development
 
