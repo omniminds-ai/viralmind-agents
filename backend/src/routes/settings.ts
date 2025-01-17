@@ -27,7 +27,6 @@ router.get("/", async (_req: Request, res: Response) => {
       const prize =
         activeChallenge.winning_prize || activeChallenge.entryFee! * 100;
       const usdPrize = prize * solPrice;
-      // TODO: activeChallnege is alredy an object, prize and usdPrize is not definedin the schema
       activeChallenge = {
         //@ts-ignore
         ...activeChallenge.toObject(),

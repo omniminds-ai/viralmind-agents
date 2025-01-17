@@ -28,6 +28,8 @@ export const challengeSchema = new mongoose.Schema(
     developer_fee: Number,
     tools: Array,
     fee_multiplier: Number,
+    prize: Number,
+    usdPrize: Number,
     winning_message: String,
     phrase: String,
     winning_prize: Number,
