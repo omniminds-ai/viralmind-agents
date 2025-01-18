@@ -1,5 +1,6 @@
 import dots from "dots-wrapper";
-import crypto, { randomInt } from "crypto";
+import sshpk from "sshpk";
+import crypto, { generateKeyPairSync, randomInt } from "crypto";
 import DatabaseService, { GymVPSDocument } from "../db/index.ts";
 import { NodeSSH } from "node-ssh";
 
@@ -41,6 +42,7 @@ export class GymVPSService {
       droplet_id: vpsInfo.droplet_id,
       status: "assigned",
       address,
+      ssh_keypair: vpsInfo.ssh_keypair,
       vnc: vpsInfo.vnc,
     };
   }
@@ -54,17 +56,24 @@ export class GymVPSService {
     try {
       // build droplet information
       const login = {
-        username: "trainer",
-        password: `password-${randomInt(1000)}`,
+        username: "user",
+        password: `viralmind-${randomInt(1000)}`,
       };
       const name = `gym-${GymVPSService.genId}`;
+
+      // setup ssh keys
+
+      const { fingerprint, private_key, public_key } = await this.createSSHKey(
+        name
+      );
 
       // create droplet
       const {
         data: { droplet },
       } = await this.client.droplet.createDroplet({
         name,
-        region: "nyc3",
+        ssh_keys: [fingerprint],
+        region: "sfo2",
         image: "ubuntudesktopgno",
         size: "s-1vcpu-2gb",
         tags: ["gym"],
@@ -81,7 +90,7 @@ export class GymVPSService {
         new Promise((resolve) => setTimeout(resolve, ms));
 
       while (true) {
-        console.log("Droplet IP Address not found. Retrying request...");
+        console.log("Droplet IP Address not found. Retrying...");
         // wait 10 seconds
         await wait(10000);
         const res = await this.client.droplet.getDroplet({
@@ -101,6 +110,7 @@ export class GymVPSService {
         login,
         status,
         address,
+        ssh_keypair: { public: public_key, private: private_key },
         vnc: { password: login.password },
       };
 
@@ -108,36 +118,42 @@ export class GymVPSService {
       console.log(vps);
 
       // todo: if we can't figure out the script to enable the vnc server, we can just login in as root using ssh.
-      // console.log("Setting VNC Password.");
+      console.log("Setting VNC Password.");
 
-      // // ssh into the droplet and reset the vnc password
-      // const ssh = new NodeSSH();
-      // while (true) {
-      //   try {
-      //     await wait(5000);
-      //     await ssh.connect({
-      //       host: vps.ip,
-      //       username: vps.login.username,
-      //       password: vps.login.password,
-      //     });
-      //     break;
-      //   } catch (e) {
-      //     // loop until ssh connection establishes
-      //     console.log("SSH error:", e);
-      //   }
-      // }
-      // const sshRes = await ssh
-      //   .execCommand(
-      //     `x11vnc -storepasswd ${vps.login.password} /home/user/.vnc/passwd`
-      //   )
-      //   .catch((e) => console.log(e));
-      // console.log("ssh result:", sshRes);
-      // const sshRes2 = await ssh
-      //   .execCommand(
-      //     `x11vnc -storepasswd ${vps.login.password} /home/tester/.vnc/passwd`
-      //   )
-      //   .catch((e) => console.log(e));
-      // console.log("ssh result:", sshRes2);
+      // ssh into the droplet and reset the vnc password
+      const ssh = new NodeSSH();
+      while (true) {
+        try {
+          await wait(5000);
+          await ssh.connect({
+            host: vps.ip,
+            username: "root",
+            privateKey: private_key,
+          });
+          break;
+        } catch (e) {
+          // loop until ssh connection establishes
+          if ((e as Error).message.includes("ECONNREFUSED")) {
+            console.log(
+              "Server still initializing. Retrying SSH connection..."
+            );
+          } else console.log("SSH error:", e);
+        }
+      }
+      await ssh
+        .execCommand("mkdir /home/user/.vnc/")
+        .then((r) => console.log(r))
+        .catch((e) => console.log(e));
+      await ssh
+        .execCommand(
+          `x11vnc -storepasswd "${vps.login.password}" /home/user/.vnc/passwd`
+        )
+        .then((r) => console.log(r))
+        .catch((e) => console.log(e));
+      await ssh
+        .execCommand(`echo "user:${vps.login.password}" | chpasswd`)
+        .then((r) => console.log(r))
+        .catch((e) => console.log(e));
 
       // save new instance to the database
       const newVps = await DatabaseService.saveGymVPS(vps);
@@ -153,45 +169,33 @@ export class GymVPSService {
     }
   }
 
+  public async createSSHKey(name: string) {
+    // Generate the key pair
+    const { publicKey: public_key, privateKey: private_key } =
+      generateKeyPairSync("rsa", {
+        modulusLength: 2048, // Length of the key in bits
+        publicKeyEncoding: {
+          type: "pkcs1", // Recommended format for public key
+          format: "pem",
+        },
+        privateKeyEncoding: {
+          type: "pkcs1", // Recommended format for private key
+          format: "pem",
+        },
+      });
+    const res = await this.client.sshKey.createSshKey({
+      name,
+      public_key: sshpk.parseKey(public_key).toString("ssh"),
+    });
+    return { ...res.data.ssh_key, private_key };
+  }
+
   private static genUserInit = (
     username: string,
     password: string,
     vnc_password: string
   ): string => {
-    // todo: figure out the correct script to enable the vnc server
-    return `#!/bin/bash
-
-# Enable SSH password authentication and root login
-sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
-
-sudo useradd -m -s /bin/bash ${username}
-echo "${username}:${password}" | chpasswd
-
-sudo -u ${username} mkdir /home/user/.vnc
-x11vnc -storepasswd ${vnc_password} /home/${username}/.vnc/passwd
-
-systemctl enable x11vnc
-systemctl enable sddm
-systemctl restart sddm
-systemctl restart x11vnc
-
-cp -f /etc/skel/.bashrc /root/.bashrc
-
-# Restart SSH service
-systemctl restart sshd`;
-
-    //     return `#cloud-config
-
-    // # Create new user
-    // users:
-    //   - name: ${username}
-    //     passwd: ${password}
-    //     shell: /bin/bash
-    //     sudo: ALL=(ALL) NOPASSWD:ALL
-    //     groups: sudo
-
-    // ssh_pwauth: true`;
+    return ``;
   };
 
   private static get genId() {

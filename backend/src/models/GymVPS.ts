@@ -13,6 +13,13 @@ export const gymVPSSchema = new mongoose.Schema(
       },
       required: true,
     },
+    ssh_keypair: {
+      type: {
+        public: { type: String, required: true },
+        private: { type: String, required: true },
+      },
+      required: true,
+    },
     vnc: {
       type: {
         password: { type: String, required: true },
