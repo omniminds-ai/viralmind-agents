@@ -51,6 +51,7 @@ services:
       - RPC_URL=${RPC_URL}
       - ANCHOR_PROVIDER_URL=${ANCHOR_PROVIDER_URL}
       - IPC_SECRET=${IPC_SECRET}
+      - FEEDBACK_WEBHOOK=${FEEDBACK_WEBHOOK}
       # Hardcoded gym vnc config
       - VNC_HOST_GYMTEST=${VNC_HOST_GYMTEST}
       - VNC_PASS_GYMTEST=${VNC_PASS_GYMTEST}

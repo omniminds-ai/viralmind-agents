@@ -86,21 +86,21 @@
     }
 
     function setupSocket(sessionData: RaceSession, sessionId: string) {
-            socket = io('http://localhost:8001', {
-                query: {
-                    sessionId
-                }
-            });
+        socket = io('http://localhost:8001', {
+            query: {
+                sessionId
+            }
+        });
 
-            socket.on('connect_error', (err) => {
-                handleError(`Failed to connect to VNC: ${err.message}`);
-                console.error('Socket connection error:', err);
-            });
+        socket.on('connect_error', (err) => {
+            handleError(`Failed to connect to VNC: ${err.message}`);
+            console.error('Socket connection error:', err);
+        });
 
-            socket.on('error', (err) => {
-                handleError(`Socket error: ${err.message}`);
-                console.error('Socket error:', err);
-            });
+        socket.on('error', (err) => {
+            handleError(`Socket error: ${err.message}`);
+            console.error('Socket error:', err);
+        });
 
         socket.on('connect', () => {
             isConnected = true;
@@ -144,6 +144,7 @@
         socket.on('quest_update', (data) => {
             currentQuest = data.quest;
             currentHint = data.hint;
+            currentReward = data.maxReward;
             isHintActive = true;
         });
 
@@ -156,6 +157,7 @@
     // Quest state
     let currentQuest = '';
     let currentHint = '';
+    let currentReward = 0;
     let isHintActive = true;
 
     function refreshHint() {
@@ -633,6 +635,7 @@
                         <QuestOverlay 
                             quest={currentQuest}
                             hint={currentHint}
+                            maxReward={currentReward}
                             {isHintActive}
                         />
                     {/if}

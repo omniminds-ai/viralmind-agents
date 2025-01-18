@@ -4,6 +4,7 @@ export const raceSessionSchema = new mongoose.Schema(
   {
     address: { type: String, required: true },
     challenge: { type: String, ref: "Challenge", required: true },
+    prompt: { type: String, required: true },
     category: { 
       type: String, 
       enum: ["creative", "mouse", "slacker", "gaming", "wildcard"],

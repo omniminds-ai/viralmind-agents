@@ -56,6 +56,7 @@ router.post("/:id/start", async (req: Request, res: Response) => {
     const sessionData: RaceSessionInput = {
       address,
       challenge: id,
+      prompt: race.prompt,
       status: "active",
       vm_ip: process.env.VNC_HOST_GYMTEST || vps.ip,
       vm_port: 5900,
@@ -162,6 +163,39 @@ router.put("/session/:id", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error updating session:", error);
     res.status(500).json({ error: "Failed to update session" });
+  }
+});
+
+// Submit feedback/race idea
+router.post("/feedback", async (req: Request, res: Response) => {
+  try {
+    const { raceIdea } = req.body;
+    
+    if (!raceIdea || typeof raceIdea !== 'string') {
+      res.status(400).json({ error: "Race idea is required" });
+      return;
+    }
+
+    // Forward to webhook if configured
+    const webhookUrl = process.env.FEEDBACK_WEBHOOK;
+    if (webhookUrl) {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: `New Race Idea Submission:\n${raceIdea}`,
+          timestamp: new Date().toISOString()
+        })
+      });
+    }
+
+    res.json({ success: true, message: "Feedback received" });
+
+  } catch (error) {
+    console.error("Error submitting feedback:", error);
+    res.status(500).json({ error: "Failed to submit feedback" });
   }
 });
 
