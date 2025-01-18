@@ -72,9 +72,9 @@ services:
 
   front-end:
     build:
-      context: svelte-frontend
+      context: frontend
     container_name: front-end
-    working_dir: /usr/src/app/svelte-frontend
+    working_dir: /usr/src/app/frontend
     networks:
       - node-network
     tty: true
