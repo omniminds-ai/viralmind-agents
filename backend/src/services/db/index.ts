@@ -543,6 +543,16 @@ class DataBaseService extends EventEmitter {
       console.error("Database Service Error:", error);
     }
   }
+
+  async getGymVPSByIP(ip: string): Promise<GymVPSDocument | null> {
+    try {
+      const vps = await GymVPS.findOne({ ip });
+      return vps;
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
 }
 
 export default new DataBaseService();

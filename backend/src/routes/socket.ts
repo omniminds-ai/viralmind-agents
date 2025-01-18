@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Server, Socket } from "socket.io";
 // @ts-ignore
 import VncClient from "vnc-rfb-client";
+import { GymVPSService } from "../services/gym-vps/index.ts";
 import { ChildProcess, spawn } from "child_process";
 import sharp from "sharp";
 import { executeComputerAction } from "../services/vnc/actions.ts";
@@ -17,6 +18,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const vpsService = new GymVPSService();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -639,6 +641,13 @@ class Episode {
     }
     if (this.client) {
       this.client.disconnect();
+    }
+
+    // Get VPS instance and destroy it
+    const vpsInstance = await DatabaseService.getGymVPSByIP(this.session.vm_ip);
+    if (vpsInstance) {
+      await vpsService.destroyInstance(vpsInstance.droplet_id);
+      console.log(`Destroyed VPS instance ${vpsInstance.droplet_id}`);
     }
 
     // Log disconnection event
