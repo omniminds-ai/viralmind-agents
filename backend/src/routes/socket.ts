@@ -114,7 +114,7 @@ async function generateHint(
             {
               type: "text",
               text: `Current quest: ${currentQuest}
-Previous hints: ${hintHistory.slice(-3).join(', ')}
+Previous hints: ${hintHistory.slice(-3).join(", ")}
 
 First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
 
@@ -159,11 +159,11 @@ Or if incomplete:
     let fullResponse = "";
     let partialHint = "";
     const hintRegex = /"hint":\s*"([^"]*)/;
-    
+
     for await (const chunk of response) {
       if (chunk.choices[0]?.delta?.content) {
         fullResponse += chunk.choices[0]?.delta?.content;
-        
+
         // Try to extract hint from partial JSON
         const hintMatch = fullResponse.match(hintRegex);
         if (hintMatch && hintMatch[1]) {
@@ -209,7 +209,7 @@ Or if incomplete:
       message: parsedResponse.reasoning,
       session: socket.handshake.query.sessionId,
       frame: 0,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     socket.emit("training_event", reasoningEvent);
     await DatabaseService.createTrainingEvent(reasoningEvent);
@@ -222,12 +222,12 @@ Or if incomplete:
         message: questData.quest,
         session: socket.handshake.query.sessionId,
         frame: 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      
+
       socket.emit("training_event", questEvent);
       await DatabaseService.createTrainingEvent(questEvent);
-      
+
       socket.emit("quest_update", {
         quest: questData.quest,
         hint: questData.hint,
@@ -237,23 +237,24 @@ Or if incomplete:
         hint: parsedResponse.hint,
         reasoning: parsedResponse.reasoning,
         isCompleted: true,
-        newQuest: questData.quest
+        newQuest: questData.quest,
       };
     }
 
     return {
       hint: parsedResponse.hint,
       reasoning: parsedResponse.reasoning,
-      isCompleted: false
+      isCompleted: false,
     };
   } catch (error) {
     console.error("Error generating hint:", error);
-    const fallbackHint = "Scroll in the environments list to explore available tasks";
+    const fallbackHint =
+      "Scroll in the environments list to explore available tasks";
     socket.emit("hint_update", { hint: fallbackHint });
     return {
       hint: fallbackHint,
       reasoning: "Error occurred during analysis",
-      isCompleted: false
+      isCompleted: false,
     };
   }
 }
@@ -295,16 +296,19 @@ class Episode {
     const initialEvents = [
       {
         type: "task",
-        message: "Neural Link established. You are now part of VM-1's collective intelligence network."
+        message:
+          "Neural Link established. You are now part of VM-1's collective intelligence network.",
       },
       {
         type: "task",
-        message: "As part of the swarm, your interactions teach fundamental patterns of computer control."
+        message:
+          "As part of the swarm, your interactions teach fundamental patterns of computer control.",
       },
       {
         type: "task",
-        message: "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision."
-      }
+        message:
+          "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision.",
+      },
     ];
 
     // Emit and store initial events
@@ -313,7 +317,7 @@ class Episode {
         ...event,
         session: this.socket.handshake.query.sessionId,
         frame: 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       this.socket.emit("training_event", eventData);
       await DatabaseService.createTrainingEvent(eventData);
@@ -338,13 +342,13 @@ class Episode {
       console.log("VNC Session started, beginning recording...");
       const sessionId = this.socket.handshake.query.sessionId as string;
       this.socket.emit("recording_started", { sessionId });
-      
+
       const eventData = {
         type: "system",
         message: "VNC connection established. Starting session recording.",
         session: sessionId,
         frame: 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       this.socket.emit("training_event", eventData);
       await DatabaseService.createTrainingEvent(eventData);
@@ -371,7 +375,7 @@ class Episode {
         message: questData.quest,
         session: sessionId,
         frame: 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       this.socket.emit("training_event", questEvent);
       await DatabaseService.createTrainingEvent(questEvent);
@@ -382,7 +386,7 @@ class Episode {
         message: questData.hint,
         session: sessionId,
         frame: 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       this.socket.emit("training_event", hintEvent);
       await DatabaseService.createTrainingEvent(hintEvent);
@@ -406,11 +410,14 @@ class Episode {
   startRecording() {
     const { clientWidth, clientHeight } = this.client;
     const sessionId = this.socket.handshake.query.sessionId as string;
-    const videoPath = path.resolve(process.cwd(), `public/recordings/${sessionId}.mp4`);
+    const videoPath = path.resolve(
+      process.cwd(),
+      `public/recordings/${sessionId}.mp4`
+    );
 
     // Update session with video path
     DatabaseService.updateRaceSession(sessionId, {
-      video_path: videoPath
+      video_path: videoPath,
     });
 
     const ffmpegArgs = [
@@ -440,25 +447,29 @@ class Episode {
     ];
 
     // Debug log the full command
-    console.log('Starting ffmpeg with command:', 'ffmpeg', ffmpegArgs.join(' '));
+    console.log(
+      "Starting ffmpeg with command:",
+      "ffmpeg",
+      ffmpegArgs.join(" ")
+    );
 
     this.ffmpeg = spawn("ffmpeg", ffmpegArgs);
 
-    this.ffmpeg.on('error', (err) => {
-      console.error('FFmpeg process error:', err);
+    this.ffmpeg.on("error", (err) => {
+      console.error("FFmpeg process error:", err);
     });
-    
-    this.ffmpeg?.stdin?.on('error', (err) => {
-      console.error('FFmpeg stdin error:', err);
+
+    this.ffmpeg?.stdin?.on("error", (err) => {
+      console.error("FFmpeg stdin error:", err);
     });
-    
-    this.ffmpeg?.stdout?.on('error', (err) => {
-      console.error('FFmpeg stdout error:', err);
+
+    this.ffmpeg?.stdout?.on("error", (err) => {
+      console.error("FFmpeg stdout error:", err);
     });
 
     // Log any ffmpeg errors
-    this.ffmpeg.stderr?.on('data', (data) => {
-      console.error('FFmpeg error:', data.toString());
+    this.ffmpeg.stderr?.on("data", (data) => {
+      console.error("FFmpeg error:", data.toString());
     });
 
     this.recordFrame();
@@ -470,7 +481,7 @@ class Episode {
         const writeResult = this.ffmpeg.stdin.write(this.client.getFb());
         if (!writeResult) {
           // Handle backpressure
-          this.ffmpeg.stdin.once('drain', () => this.recordFrame());
+          this.ffmpeg.stdin.once("drain", () => this.recordFrame());
           return;
         }
       }
@@ -499,7 +510,7 @@ class Episode {
           buffer: jpeg.toString("base64"),
           width: clientWidth,
           height: clientHeight,
-          frame: this.frameCount
+          frame: this.frameCount,
         });
       } catch (err) {
         console.error("Error sending frame:", err);
@@ -515,8 +526,10 @@ class Episode {
       clearInterval(this.frameTimer);
     }
     if (this.ffmpeg?.stdin) {
-      this.ffmpeg.stdin.end();  // End the stream properly
-      await new Promise(resolve => this.ffmpeg?.stdin?.once('finish', resolve));
+      this.ffmpeg.stdin.end(); // End the stream properly
+      await new Promise((resolve) =>
+        this.ffmpeg?.stdin?.once("finish", resolve)
+      );
     }
     if (this.ffmpeg) {
       this.ffmpeg.kill("SIGINT");
@@ -533,7 +546,7 @@ class Episode {
         message: "Disconnected from VNC server",
         session: sessionId,
         frame: 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       await DatabaseService.createTrainingEvent(eventData);
     }
@@ -580,14 +593,14 @@ export function initializeSocketIO(httpServer: HttpServer) {
     socket.on("disconnect", async () => {
       console.log("Socket.io disconnected");
       episode.close();
-      
+
       // End the race session
       const sessionId = socket.handshake.query.sessionId as string;
       if (sessionId) {
         try {
           await DatabaseService.updateRaceSession(sessionId, {
             status: "expired",
-            updated_at: new Date()
+            updated_at: new Date(),
           });
           console.log(`Race session ${sessionId} marked as expired`);
           activeEpisodes.delete(sessionId);
@@ -602,12 +615,12 @@ export function initializeSocketIO(httpServer: HttpServer) {
         console.log("Hint generation already in progress");
         return;
       }
-    
+
       try {
         episode.isGeneratingHint = true;
         const fb = episode.client.getFb();
         const { clientWidth, clientHeight } = episode.client;
-    
+
         const jpeg = await sharp(fb, {
           raw: {
             width: clientWidth,
@@ -617,17 +630,17 @@ export function initializeSocketIO(httpServer: HttpServer) {
         })
           .jpeg()
           .toBuffer();
-    
+
         const result = await generateHint(
           jpeg.toString("base64"),
           episode.currentQuest || "",
           socket,
           episode.hintHistory
         );
-    
+
         // Add new hint to history
         episode.hintHistory.push(result.hint);
-    
+
         // If quest is completed, update current quest and reset hint history
         if (result.isCompleted && result.newQuest) {
           episode.currentQuest = result.newQuest;
@@ -659,7 +672,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
           result,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
 
         socket.emit("training_event", eventData);
@@ -671,7 +684,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
           message: `Failed to process key: ${data.key}`,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
         socket.emit("training_event", errorEvent);
         await DatabaseService.createTrainingEvent(errorEvent);
@@ -696,7 +709,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
           trajectory: undefined,
           session: sessionId as string,
           frame: data.frame,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
 
         if (!data.action && !data.button && episode.isReplayingTrajectory) {
@@ -770,7 +783,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
           message: `Failed to process mouse event: ${(error as Error).message}`,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
         socket.emit("training_event", errorEvent);
         await DatabaseService.createTrainingEvent(errorEvent);

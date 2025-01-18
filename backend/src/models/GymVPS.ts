@@ -4,6 +4,7 @@ export const gymVPSSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
     ip: { type: String, required: true },
+    droplet_id: { type: Number, required: true },
     name: { type: String, required: true },
     login: {
       type: {

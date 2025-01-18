@@ -20,7 +20,6 @@ router.get("/", async (_req: Request, res: Response) => {
       res.status(404).json({ error: "No races found" });
       return;
     }
-    console.log(races);
     res.json(races);
   } catch (error) {
     console.error("Error fetching races:", error);

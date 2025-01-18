@@ -1,11 +1,30 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { 
-    Trophy, Timer, MessagesSquare, ArrowRight, BellRing, 
-    Palette, Video, Layout, FileSpreadsheet, Globe2, 
-    MousePointer, Sparkles, Brain, Music,
-    Coffee, Gamepad, Dice5, Monitor, Gamepad2,
-    Crosshair, Zap, Move, TrendingUp, LineChart
+  import {
+    Trophy,
+    Timer,
+    MessagesSquare,
+    ArrowRight,
+    BellRing,
+    Palette,
+    Video,
+    Layout,
+    FileSpreadsheet,
+    Globe2,
+    MousePointer,
+    Sparkles,
+    Brain,
+    Music,
+    Coffee,
+    Gamepad,
+    Dice5,
+    Monitor,
+    Gamepad2,
+    Crosshair,
+    Zap,
+    Move,
+    TrendingUp,
+    LineChart
   } from 'lucide-svelte';
   import FeaturedRace from '$lib/components/gym/FeaturedRace.svelte';
   import CategorySection from '$lib/components/gym/CategorySection.svelte';
@@ -14,67 +33,73 @@
 
   // Icon mapping for each race icon
   const iconMap: Record<string, any> = {
-    'Palette': Palette,
-    'FileSpreadsheet': FileSpreadsheet,
-    'Video': Video,
-    'Globe2': Globe2,
-    'MousePointer': MousePointer,
-    'Crosshair': Crosshair,
-    'Zap': Zap,
-    'Move': Move,
-    'Gamepad': Gamepad,
-    'Dice5': Dice5,
-    'TrendingUp': TrendingUp,
-    'LineChart': LineChart,
-    'Monitor': Monitor,
-    'Brain': Brain,
-    'Music': Music
+    Palette: Palette,
+    FileSpreadsheet: FileSpreadsheet,
+    Video: Video,
+    Globe2: Globe2,
+    MousePointer: MousePointer,
+    Crosshair: Crosshair,
+    Zap: Zap,
+    Move: Move,
+    Gamepad: Gamepad,
+    Dice5: Dice5,
+    TrendingUp: TrendingUp,
+    LineChart: LineChart,
+    Monitor: Monitor,
+    Brain: Brain,
+    Music: Music
   };
 
   // Category metadata
   const categoryMeta: Record<string, { title: string; icon: any }> = {
-    'creative': {
+    creative: {
       title: 'Creative Chaos',
       icon: Sparkles
     },
-    'mouse': {
+    mouse: {
       title: 'Mouse Skills',
       icon: MousePointer
     },
-    'slacker': {
+    slacker: {
       title: 'Slacker Skills',
       icon: Coffee
     },
-    'gaming': {
+    gaming: {
       title: 'Gaming',
       icon: Gamepad2
     }
   };
 
   let categories: Category[] = [];
-  
+
   async function fetchRaces() {
     try {
       const response = await fetch('/api/races');
+      console.log(await response.text());
       const races: Race[] = await response.json();
-      
+
       // Filter out staked races and group by category
-      const freeRaces = races.filter(race => !race.stakeRequired);
-      const groupedRaces: Record<string, Race[]> = freeRaces.reduce((acc: Record<string, Race[]>, race) => {
-        if (!acc[race.category]) {
-          acc[race.category] = [];
-        }
-        acc[race.category].push(race);
-        return acc;
-      }, {} as Record<string, Race[]>);
+      const freeRaces = races.filter((race) => !race.stakeRequired);
+      const groupedRaces: Record<string, Race[]> = freeRaces.reduce(
+        (acc: Record<string, Race[]>, race) => {
+          if (!acc[race.category]) {
+            acc[race.category] = [];
+          }
+          acc[race.category].push(race);
+          return acc;
+        },
+        {} as Record<string, Race[]>
+      );
 
       // Convert grouped races to categories array
-      categories = Object.entries(groupedRaces).map(([id, races]): Category => ({
-        id,
-        title: categoryMeta[id]?.title || id,
-        icon: categoryMeta[id]?.icon || Brain,
-        races
-      }));
+      categories = Object.entries(groupedRaces).map(
+        ([id, races]): Category => ({
+          id,
+          title: categoryMeta[id]?.title || id,
+          icon: categoryMeta[id]?.icon || Brain,
+          races
+        })
+      );
     } catch (error) {
       console.error('Error fetching races:', error);
     }

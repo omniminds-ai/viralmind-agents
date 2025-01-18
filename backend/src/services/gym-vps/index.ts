@@ -7,8 +7,12 @@ export class GymVPSService {
   private instances: GymVPSDocument[] = [];
   private client;
   constructor() {
+    if (!process.env.DIGITALOCEAN_API_KEY)
+      throw Error(
+        "Cannot initialize Gym VPS Service. Digital Ocean API key required."
+      );
     this.client = dots.createApiClient({
-      token: process.env.DIGITALOCEAN_API_KEY!,
+      token: process.env.DIGITALOCEAN_API_KEY,
     });
   }
 
@@ -26,6 +30,7 @@ export class GymVPSService {
     await DatabaseService.assignGymVPS(vpsInfo.id, address);
 
     // create new open instance
+    console.log("Creating new open instance for the future.");
     await this.createInstance();
 
     return {
@@ -33,6 +38,7 @@ export class GymVPSService {
       ip: vpsInfo.ip,
       login: vpsInfo.login,
       name: vpsInfo.name,
+      droplet_id: vpsInfo.droplet_id,
       status: "assigned",
       address,
       vnc: vpsInfo.vnc,
@@ -60,32 +66,78 @@ export class GymVPSService {
         name,
         region: "nyc3",
         image: "ubuntudesktopgno",
-        size: "s-1vcpu-1gb",
+        size: "s-1vcpu-2gb",
         tags: ["gym"],
-        user_data: GymVPSService.genUserInit(login.username, login.password),
+        user_data: GymVPSService.genUserInit(
+          login.username,
+          login.password,
+          login.password
+        ),
       });
+
+      // get droplet creation information that should include the IP
+
+      const wait = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+
+      while (true) {
+        console.log("Droplet IP Address not found. Retrying request...");
+        // wait 10 seconds
+        await wait(10000);
+        const res = await this.client.droplet.getDroplet({
+          droplet_id: droplet.id,
+        });
+        if (res.data.droplet.networks.v4?.[0]?.ip_address) {
+          droplet.networks.v4 = res.data.droplet.networks.v4;
+          break;
+        }
+      }
 
       const vps: GymVPSDocument = {
         id: GymVPSService.genId,
         name,
         ip: droplet.networks.v4[0].ip_address,
+        droplet_id: droplet.id,
         login,
         status,
         address,
         vnc: { password: login.password },
       };
 
-      // ssh into the droplet and reset the vnc password
-      const ssh = new NodeSSH();
-      await ssh.connect({
-        host: vps.ip,
-        username: vps.login.username,
-        password: vps.login.password,
-      });
-      const sshRes = await ssh.execCommand(
-        `x11vnc -storepasswd ${vps.login.password} $HOME/.vnc/passwd`
-      );
-      console.log("ssh result:", sshRes);
+      console.log("Created new VPS.");
+      console.log(vps);
+
+      // todo: if we can't figure out the script to enable the vnc server, we can just login in as root using ssh.
+      // console.log("Setting VNC Password.");
+
+      // // ssh into the droplet and reset the vnc password
+      // const ssh = new NodeSSH();
+      // while (true) {
+      //   try {
+      //     await wait(5000);
+      //     await ssh.connect({
+      //       host: vps.ip,
+      //       username: vps.login.username,
+      //       password: vps.login.password,
+      //     });
+      //     break;
+      //   } catch (e) {
+      //     // loop until ssh connection establishes
+      //     console.log("SSH error:", e);
+      //   }
+      // }
+      // const sshRes = await ssh
+      //   .execCommand(
+      //     `x11vnc -storepasswd ${vps.login.password} /home/user/.vnc/passwd`
+      //   )
+      //   .catch((e) => console.log(e));
+      // console.log("ssh result:", sshRes);
+      // const sshRes2 = await ssh
+      //   .execCommand(
+      //     `x11vnc -storepasswd ${vps.login.password} /home/tester/.vnc/passwd`
+      //   )
+      //   .catch((e) => console.log(e));
+      // console.log("ssh result:", sshRes2);
 
       // save new instance to the database
       const newVps = await DatabaseService.saveGymVPS(vps);
@@ -101,34 +153,45 @@ export class GymVPSService {
     }
   }
 
-  private static genUserInit = (username: string, password: string): string => {
-    return `#cloud-config
-package_update: true
-package_upgrade: true
-# Create user and set password
-users:
-  - name: ${username}
-    plain_text_passwd: ${password}
-    lock_passwd: false
-    shell: /bin/bash
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']  # Allow sudo without password
-    groups: [sudo, admin]  # Add to both sudo and admin groups
+  private static genUserInit = (
+    username: string,
+    password: string,
+    vnc_password: string
+  ): string => {
+    // todo: figure out the correct script to enable the vnc server
+    return `#!/bin/bash
 
-# Enable password authentication globally
-ssh_pwauth: true
+# Enable SSH password authentication and root login
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
 
-# Configure SSH to allow password auth
-write_files:
-  - path: /etc/ssh/sshd_config.d/99-custom.conf
-    content: |
-      PasswordAuthentication yes
-      PermitRootLogin no
+sudo useradd -m -s /bin/bash ${username}
+echo "${username}:${password}" | chpasswd
 
-# Run final commands
-runcmd:
-  - systemctl restart sshd
-  - echo "${username} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/90-${username}
-  - chmod 0440 /etc/sudoers.d/90-${username}`;
+sudo -u ${username} mkdir /home/user/.vnc
+x11vnc -storepasswd ${vnc_password} /home/${username}/.vnc/passwd
+
+systemctl enable x11vnc
+systemctl enable sddm
+systemctl restart sddm
+systemctl restart x11vnc
+
+cp -f /etc/skel/.bashrc /root/.bashrc
+
+# Restart SSH service
+systemctl restart sshd`;
+
+    //     return `#cloud-config
+
+    // # Create new user
+    // users:
+    //   - name: ${username}
+    //     passwd: ${password}
+    //     shell: /bin/bash
+    //     sudo: ALL=(ALL) NOPASSWD:ALL
+    //     groups: sudo
+
+    // ssh_pwauth: true`;
   };
 
   private static get genId() {
