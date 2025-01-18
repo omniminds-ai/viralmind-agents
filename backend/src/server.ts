@@ -80,6 +80,10 @@ app.use(
   "/api/screenshots",
   express.static(path.join(__dirname, "public", "screenshots"))
 );
+app.use(
+  "/api/recordings",
+  express.static(path.join(__dirname, "public", "recordings"))
+);
 
 // UI:
 import { challengesRoute } from "./routes/challenges.ts";

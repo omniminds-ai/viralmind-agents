@@ -31,6 +31,7 @@
     "dots-wrapper": "^3.11.14",
     "express": "^4.18.3",
     "fs": "^0.0.1-security",
+    "http2-express-bridge": "^1.0.7",
     "mongoose": "^8.2.1",
     "node-rdpjs": "https://github.com/t-system/node-rdpjs.git",
     "node-ssh": "^13.2.0",

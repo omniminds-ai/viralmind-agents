@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 export const raceSessionSchema = new mongoose.Schema(
   {
+    _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
     address: { type: String, required: true },
     challenge: { type: String, ref: "Challenge", required: true },
     prompt: { type: String, required: true },

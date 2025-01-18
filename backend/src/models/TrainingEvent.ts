@@ -5,7 +5,7 @@ export const trainingEventSchema = new mongoose.Schema(
     session: { type: String, ref: "RaceSession", required: true },
     type: { 
       type: String, 
-      enum: ["task", "mouse", "keyboard", "scroll", "system", "hint", "quest", "error", "reasoning"],
+      enum: ["task", "mouse", "keyboard", "scroll", "system", "hint", "quest", "error", "reasoning", "reward"],
       required: true 
     },
     message: { type: String, required: true },

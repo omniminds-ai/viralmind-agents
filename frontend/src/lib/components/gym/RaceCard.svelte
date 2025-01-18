@@ -2,9 +2,18 @@
   import { ArrowRight, TicketSlash, Trophy } from 'lucide-svelte';
   import type { Race } from '$lib/types';
   import { colorSchemes } from '$lib/types';
+  import RaceWarningModal from './RaceWarningModal.svelte';
+  import { raceWarningModal } from '$lib/stores/raceWarningModal';
 
   export let race: Race;
   export let icon: any; // Icon component passed from parent
+
+  function handleRaceClick(e: MouseEvent) {
+    if (!race.href) {
+      e.preventDefault();
+      raceWarningModal.show(race.id);
+    }
+  }
   
   let scheme: typeof colorSchemes[keyof typeof colorSchemes];
   $: {
@@ -27,13 +36,18 @@
         <p class="text-gray-300 font-light">{race.description}</p>
       </div>
       <div class="flex flex-col gap-2">
-    <a href={race.href || `/gym/race?id=${race.id}`} class="group relative inline-flex items-center justify-between rounded-lg bg-white/10 px-5 py-2.5 font-medium text-white transition-all hover:bg-white/15" target={race.href?.startsWith('http') ? '_blank' : undefined}>
+    <a 
+      href={race.href || "#"} 
+      class="group relative inline-flex items-center justify-between rounded-lg bg-white/10 px-5 py-2.5 font-medium text-white transition-all hover:bg-white/15" 
+      target={race.href?.startsWith('http') ? '_blank' : undefined}
+      on:click={handleRaceClick}
+    >
           <span class="flex items-center gap-2">
             {race.buttonText}
             <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </span>
           <div class="flex items-center ml-2 gap-2 text-sm text-purple-400/80">
-            {#if race.stakeRequired}
+            <!-- {#if race.stakeRequired}
               <span class="flex items-center gap-1">
                 <TicketSlash class="h-3 w-3" />
                 {race.stakeRequired}
@@ -44,7 +58,7 @@
                 <Trophy class="h-3 w-3" />
                 {race.reward}
               </span>
-            {/if}
+            {/if} -->
           </div>
         </a>
       </div>

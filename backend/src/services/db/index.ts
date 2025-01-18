@@ -359,6 +359,66 @@ class DataBaseService extends EventEmitter {
     }
   }
 
+
+  async getRaceSessions(): Promise<RaceSessionDocument[] | false> {
+    try {
+      return await RaceSession.find(
+        { },
+        {
+          // id: "$_id",
+          _id: 1,
+          status: 1,
+          challenge: 1,
+          category: 1,
+          video_path: 1,
+          created_at: 1
+        }
+      )
+      .sort({ created_at: -1 }); // Sort by newest first
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  async getRaceSessionsByIds(ids: string[]): Promise<RaceSessionDocument[] | false> {
+    try {
+
+      
+      console.log('Getting race sessions for IDs:', ids);
+      const mongoose = await import('mongoose');
+      const objectIds = ids.map(id => new mongoose.Types.ObjectId(id));
+      console.log('Converted to ObjectIds:', objectIds);
+      return await RaceSession.find(
+        { _id: { $in: objectIds } },
+        {
+          _id: 1,
+          status: 1,
+          challenge: 1,
+          category: 1,
+          video_path: 1,
+          created_at: 1
+        }
+      ).sort({ created_at: -1 });
+
+      // console.log('Getting race sessions for IDs:', ids);
+      // const allSessions = await this.getRaceSessions();
+      // if (!allSessions) return false;
+
+      // // Filter sessions by ID
+      // const filteredSessions = allSessions.filter(session => {
+      //   const sessionDoc = session as any;
+      //   return ids.includes(sessionDoc._id?.toString());
+      // });
+
+      // console.log(`Found ${filteredSessions.length} matching sessions`);
+      // return filteredSessions;
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
   // Training event methods
   async createTrainingEvent(eventData: any): Promise<any> {
     try {

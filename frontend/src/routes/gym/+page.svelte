@@ -5,28 +5,15 @@
     Palette, Video, Layout, FileSpreadsheet, Globe2, 
     MousePointer, Sparkles, Brain, DollarSign,
     Coffee, Gamepad, Dice5, Monitor, Gamepad2,
-    Crosshair, Zap, Move, TrendingUp, LineChart
+    Crosshair, Zap, Move, TrendingUp, LineChart,
+    Download, Upload, Cpu, Shield
   } from 'lucide-svelte';
   import FeaturedRace from '$lib/components/gym/FeaturedRace.svelte';
   import CategorySection from '$lib/components/gym/CategorySection.svelte';
   import SubmitRace from '$lib/components/gym/SubmitRace.svelte';
   import FeaturedCarousel from '$lib/components/gym/FeaturedCarousel.svelte';
 
-  interface Race {
-    id: string;
-    title: string;
-    description: string;
-    icon: any;
-    iconColor: string;
-    bgGradient: string;
-    hoverGradient: string;
-    prompt?: string;
-    reward?: number;
-    buttonText: string;
-    category: string;
-    isStaked: boolean;
-    href?: string;
-  }
+  import type { Race, ColorScheme } from '$lib/types';
 
   // Icon mapping for each race ID
   const iconMap: Record<string, any> = {
@@ -68,13 +55,24 @@
       const races: Race[] = await response.json();
       
       // Get a mix of free and staked races for featuring
-      featuredRaces = races
-        .filter(race => race.id === 'wildcard' || (race.reward && race.reward >= 100)) // Only high reward races
-        .map(race => ({
+      // Get wildcard race first
+      const wildcardRace = races.find(race => race.id === 'wildcard');
+      const highRewardRaces = races
+        .filter(race => race.id !== 'wildcard' && !race.stakeRequired)
+        .slice(0, 2); // Get top 2 high reward races
+
+      featuredRaces = [
+        ...(wildcardRace ? [{
+          ...wildcardRace,
+          icon: iconMap[wildcardRace.icon || 'Brain'] || Brain,
+          colorScheme: 'purple' as ColorScheme
+        }] : []),
+        ...highRewardRaces.map(race => ({
           ...race,
-          icon: iconMap[race.id] || Brain
+          icon: iconMap[race.icon || 'Brain'] || Brain,
+          colorScheme: 'purple' as ColorScheme
         }))
-        .slice(0, 3); // Show top 3 races
+      ];
     } catch (error) {
       console.error('Error fetching races:', error);
     }
@@ -115,7 +113,7 @@
       <!-- Featured Races -->
       <div class="mb-16">
         <h2 class="mb-8 text-3xl font-bold text-purple-400">Featured Races</h2>
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {#each featuredRaces as race}
             <FeaturedRace {race} />
           {/each}
@@ -151,8 +149,82 @@
         </div>
       </div>
 
+      <!-- Desktop App Section -->
+      <div class="my-16">
+        <h2 class="mb-8 text-3xl font-bold text-purple-400">Get the Training Gym on Your Desktop</h2>
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+              <div class="rounded-xl bg-purple-400/20 p-4">
+                <Gamepad2 class="h-8 w-8 text-purple-400" />
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold">Train AI on Your Games</h3>
+                <p class="text-gray-300">Desktop app for recording gameplay - beyond just desktop apps</p>
+              </div>
+            </div>
+            <button 
+              class="inline-flex items-center gap-2 rounded-lg bg-purple-600/50 px-6 py-3 font-semibold text-white cursor-not-allowed"
+              disabled
+            >
+              Coming Soon
+              <Download class="h-5 w-5" />
+            </button>
+          </div>
+
+          <!-- Feature Cards -->
+          <div class="grid gap-6 md:grid-cols-2">
+            <!-- Game Recording Features -->
+            <div class="rounded-2xl bg-black/20 p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <Gamepad2 class="h-6 w-6 text-purple-400" />
+                <h4 class="text-xl font-semibold">Game Recording</h4>
+              </div>
+              <ul class="space-y-3 text-gray-300">
+                <li class="flex items-center gap-2">
+                  <Cpu class="h-4 w-4 text-purple-400" />
+                  <span>Record any PC game</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <Zap class="h-4 w-4 text-purple-400" />
+                  <span>Ultra-low latency capture</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <Shield class="h-4 w-4 text-purple-400" />
+                  <span>Sandbox mode for desktop apps (requires Windows 11)</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Advanced AI Training -->
+            <div class="rounded-2xl bg-black/20 p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <Brain class="h-6 w-6 text-purple-400" />
+                <h4 class="text-xl font-semibold">Advanced AI Training</h4>
+              </div>
+              <ul class="space-y-3 text-gray-300">
+                <li class="flex items-center gap-2">
+                  <Sparkles class="h-4 w-4 text-purple-400" />
+                  <span>Data augmentation for higher quality</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <Brain class="h-4 w-4 text-purple-400" />
+                  <span>One-click AI training using unsloth</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <Upload class="h-4 w-4 text-purple-400" />
+                  <span>Enhanced dataset processing</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Notification Sign Up -->
       <SubmitRace />
+
     </div>
   </div>
 

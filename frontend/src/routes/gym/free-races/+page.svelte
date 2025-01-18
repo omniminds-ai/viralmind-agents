@@ -29,6 +29,7 @@
   import FeaturedRace from '$lib/components/gym/FeaturedRace.svelte';
   import CategorySection from '$lib/components/gym/CategorySection.svelte';
   import SubmitRace from '$lib/components/gym/SubmitRace.svelte';
+  import RaceWarningModal from '$lib/components/gym/RaceWarningModal.svelte';
   import type { Race, Category } from '$lib/types';
 
   // Icon mapping for each race icon
@@ -143,12 +144,14 @@
 
       <!-- Subtitle -->
       <p class="mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
-        Join our AI assistants in fun desktop challenges
+        Join our AI assistants in fun desktop challenges and earn $VIRAL tokens
       </p>
 
-      <!-- Featured Wildcard Section -->
-      <FeaturedRace race={wildcardRace} icon={Brain} />
-
+      <div class="mb-12">
+        <!-- Featured Wildcard Section -->
+        <FeaturedRace race={wildcardRace} icon={Brain} />
+      </div>
+      
       <!-- Categories -->
       {#each categories as category}
         <CategorySection {category} {iconMap} />
@@ -156,7 +159,10 @@
 
       <!-- Notification Sign Up -->
       <SubmitRace />
-    </div>
+</div>
+
+<!-- Single modal instance for the entire page -->
+<RaceWarningModal />
   </div>
 
   <!-- Background effects -->

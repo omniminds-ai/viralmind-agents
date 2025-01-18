@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { fade } from 'svelte/transition';
+    import { Gem } from 'lucide-svelte';
 
     export let quest: string = '';
     export let hint: string = '';
@@ -39,8 +40,9 @@
             <h3 class="text-sm uppercase tracking-wider font-bold text-gray-800">Current Quest</h3>
             {#if maxReward > 0}
                 <div class="bg-gradient-to-br from-amber-200 to-amber-500 rounded-full px-2 shadow-sm border border-amber-200/50">
-                    <span class="text-sm font-bold text-amber-900">
-                        ${maxReward.toFixed(2)}*
+                    <span class="text-sm font-bold text-amber-900 flex items-center gap-1">
+                        <Gem class="w-3.5 h-3.5" />
+                        {Math.ceil(maxReward)}*
                     </span>
                 </div>
             {/if}

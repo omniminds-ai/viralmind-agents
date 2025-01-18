@@ -3,6 +3,11 @@ import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
 import { GymVPSService } from "../services/gym-vps/index.ts";
 import { getEpisode } from "./socket.ts";
 
+import { TrainingEvent } from "../models/TrainingEvent.ts";
+import { Keypair } from "@solana/web3.js";
+import { readFileSync } from "fs";
+import BlockchainService from "../services/blockchain/index.ts";
+
 const router = express.Router();
 
 type RaceCategory = "creative" | "mouse" | "slacker" | "gaming" | "wildcard";
@@ -11,6 +16,33 @@ type RaceSessionInput = Omit<RaceSessionDocument, "_id"> & {
 };
 
 const vpsService = new GymVPSService();
+
+const solanaRpc = process.env.RPC_URL!;
+const viralToken = process.env.VIRAL_TOKEN!;
+const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
+
+// Initialize blockchain service
+const blockchainService = new BlockchainService(solanaRpc, "");
+
+// Load treasury wallet
+const treasuryKeypair = Keypair.fromSecretKey(
+  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
+);
+
+
+// Get treasury balance endpoint
+router.get("/treasury-balance", async (req, res) => {
+  try {
+    const balance = await blockchainService.getTokenBalance(
+      viralToken,
+      treasuryKeypair.publicKey.toBase58()
+    );
+    res.json({ balance });
+  } catch (error) {
+    console.error("Error getting treasury balance:", error);
+    res.status(500).json({ error: "Failed to get treasury balance" });
+  }
+});
 
 // List all available races
 router.get("/", async (_req: Request, res: Response) => {
@@ -35,10 +67,10 @@ router.post("/:id/start", async (req: Request, res: Response) => {
     const { id } = req.params;
     const { address } = req.body;
 
-    // if (!address) {
-    //   res.status(400).json({ error: "Address is required" });
-    //   return;
-    // }
+    if (!address) {
+      res.status(400).json({ error: "Address is required" });
+      return;
+    }
 
     // Get the race details
     const race = await DatabaseService.getRaceById(id);
@@ -100,9 +132,6 @@ router.get("/session/:id", async (req: Request, res: Response) => {
 
     res.json({
       status: session.status,
-      vm_ip: session.vm_ip,
-      vm_port: session.vm_port,
-      vm_password: session.vm_password,
       vm_credentials: session.vm_credentials,
       created_at: session.created_at,
       updated_at: session.updated_at,
@@ -159,7 +188,13 @@ router.put("/session/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    res.json(session);
+    res.json({
+      status: session.status,
+      vm_credentials: session.vm_credentials,
+      created_at: session.created_at,
+      updated_at: session.updated_at
+    });
+
   } catch (error) {
     console.error("Error updating session:", error);
     res.status(500).json({ error: "Failed to update session" });
@@ -195,6 +230,114 @@ router.post("/feedback", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error submitting feedback:", error);
     res.status(500).json({ error: "Failed to submit feedback" });
+  }
+});
+
+// List all race sessions
+router.get("/history", async (_req: Request, res: Response) => {
+  try {
+    const races = await DatabaseService.getRaceSessions();
+    if (!races) {
+      res.status(404).json({ error: "No races found" });
+      return;
+    }
+
+    // Get training events for all sessions
+    const enrichedRaces = await Promise.all(races.map(async (race) => {
+      // Get all training events for this session
+      const events = await TrainingEvent.find({ session: race._id });
+      const actionTokens = events.length; // Total number of events
+
+      // Get reward events with metadata
+      const rewardEvents = events.filter(event => 
+        event.type === 'reward' && 
+        event.metadata && 
+        typeof event.metadata.rewardValue === 'number' &&
+        typeof event.metadata.scoreValue === 'number'
+      );
+
+      // Find first quest event for title
+      const questEvent = events.find(event => event.type === 'quest');
+      const title = questEvent ? questEvent.message : `Race ${race.challenge}`;
+
+      // Calculate earnings
+      const earnings = rewardEvents.reduce((sum, event) => sum + event.metadata.rewardValue, 0);
+
+      return {
+        ...(race as any).toObject(),
+        actionTokens,
+        earnings,
+        title
+      };
+    }));
+
+    res.json(enrichedRaces);
+  } catch (error) {
+    console.error("Error fetching races:", error);
+    res.status(500).json({ error: "Failed to fetch races" });
+  }
+});
+
+// Export training events for selected race sessions
+router.post("/export", async (req: Request, res: Response) => {
+  try {
+    const { sessionIds } = req.body;
+    if (!Array.isArray(sessionIds)) {
+      res.status(400).json({ error: "Session IDs array is required" });
+      return;
+    }
+
+    console.log(`Exporting data for ${sessionIds.length} sessions:`, sessionIds);
+
+    // Get all sessions first
+    const sessions = await DatabaseService.getRaceSessionsByIds(sessionIds);
+    if (!sessions) {
+      res.status(404).json({ error: "No sessions found" });
+      return;
+    }
+
+    console.log(`Found ${sessions.length} sessions`);
+
+    // Get all training events for the selected sessions
+    const events = await Promise.all(sessions.map(async (session) => {
+      console.log(`Processing session ${session._id}...`);
+
+      const sessionEvents = await TrainingEvent.find({ session: session._id })
+        .sort({ timestamp: 1 }); // Sort by timestamp ascending
+      
+      console.log(`Found ${sessionEvents.length} events for session ${session._id}`);
+
+      // Transform events into a more readable format
+      const events = sessionEvents.map(event => ({
+        session_id: session._id,
+        challenge: session.challenge,
+        category: session.category,
+        type: event.type,
+        message: event.message,
+        timestamp: event.timestamp,
+        frame: event.frame,
+        coordinates: event.coordinates,
+        trajectory: event.trajectory,
+        metadata: event.metadata
+      }));
+
+      // Add session metadata including video path
+      return {
+        session_id: session._id,
+        challenge: session.challenge,
+        category: session.category,
+        video_path: session.video_path ? '/api/recordings/' + session.video_path.split('/').pop() : null,
+        events
+      };
+    }));
+
+    // Flatten the array of arrays
+    const flatEvents = events.flat();
+
+    res.json(flatEvents);
+  } catch (error) {
+    console.error("Error exporting events:", error);
+    res.status(500).json({ error: "Failed to export events" });
   }
 });
 

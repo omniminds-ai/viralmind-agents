@@ -10,26 +10,45 @@ import { Http2Server } from "http2";
 import { Server as HttpServer } from "http";
 import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
 import path from "path";
+import { Keypair } from "@solana/web3.js";
+import { readFileSync } from "fs";
+import BlockchainService from "../services/blockchain/index.ts";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const socketRoute = Router();
+const solanaRpc = process.env.RPC_URL!;
+const viralToken = process.env.VIRAL_TOKEN!;
+const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
 
-async function generateQuest(
-  imageBase64: string,
-  prompt: string,
-  session: RaceSessionDocument
-) {
+// Initialize blockchain service
+const blockchainService = new BlockchainService(solanaRpc, "");
+
+// Load treasury wallet
+const treasuryKeypair = Keypair.fromSecretKey(
+  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
+);
+
+
+async function generateQuest(imageBase64: string, prompt: string, session: RaceSessionDocument) {
   try {
+    // Get treasury balance
+    const treasuryBalance = await blockchainService.getTokenBalance(
+      viralToken,
+      treasuryKeypair.publicKey.toString()
+    );
+
     // Calculate max reward
     const rng = Math.random();
-    const maxReward = Math.min(
+    const maxReward = Math.ceil(Math.min(
       1 / rng,
+      treasuryBalance / 128 // for now, we'll just divide total treasury by 128 to ensure sustainable rewards, and only fill up the treasury *AS NEEDED*
       // session.reward / Math.max(1, (session.desiredTasks || 500) - (session.completedTasks || 0))
-      3000 / Math.max(1, 500 - 0)
-    );
+    ));
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -48,16 +67,16 @@ For example, if the theme is "Draw cartoon characters in jspaint" and they drew 
 Return as JSON with these keys:
 - reasoning: Analyze what's on screen and explain why you're choosing a different task within the same theme
 - quest: The new specific task to complete (should match the theme but be distinct from what's visible)
-- hint: Helpful tip for completing the new task`,
+- hint: Helpful tip for completing the new task`
             },
             {
               type: "image_url",
-              image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
-            },
-          ],
-        },
+              image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+            }
+          ]
+        }
       ],
-      max_tokens: 250,
+      max_tokens: 250
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
@@ -65,20 +84,20 @@ Return as JSON with these keys:
       const questData = JSON.parse(jsonMatch[0]);
       return {
         ...questData,
-        maxReward,
+        maxReward
       };
     }
 
     throw new Error("No valid JSON found in response");
+
   } catch (error) {
     console.error("Error generating quest:", error);
-
+    
     return {
-      reasoning:
-        "Failed to analyze screen, providing a generic task within theme",
+      reasoning: "Failed to analyze screen, providing a generic task within theme",
       quest: "Open the Activities overview and launch a relevant application",
       hint: "Press the Super (Windows) key or click Activities in the top-left corner",
-      maxReward: 0,
+      maxReward: 0
     };
   }
 }
@@ -102,7 +121,7 @@ async function generateHint(
             {
               type: "text",
               text: `Current quest: ${currentQuest}
-Previous hints: ${hintHistory.slice(-3).join(", ")}
+Previous hints: ${hintHistory.slice(-3).join(', ')}
 
 First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
 
@@ -147,11 +166,11 @@ Or if incomplete:
     let fullResponse = "";
     let partialHint = "";
     const hintRegex = /"hint":\s*"([^"]*)/;
-
+    
     for await (const chunk of response) {
       if (chunk.choices[0]?.delta?.content) {
         fullResponse += chunk.choices[0]?.delta?.content;
-
+        
         // Try to extract hint from partial JSON
         const hintMatch = fullResponse.match(hintRegex);
         if (hintMatch && hintMatch[1]) {
@@ -180,7 +199,7 @@ Or if incomplete:
     // Emit final hint and reasoning as training events
     const hintEvent = {
       type: "hint",
-      message: parsedResponse.hint,
+      message: parsedResponse.hint || '(empty)',
       session: socket.handshake.query.sessionId,
       frame: 0,
       timestamp: Date.now(),
@@ -191,10 +210,10 @@ Or if incomplete:
 
     const reasoningEvent = {
       type: "reasoning",
-      message: parsedResponse.reasoning,
+      message: parsedResponse.reasoning || '(empty)',
       session: socket.handshake.query.sessionId,
       frame: 0,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
     socket.emit("training_event", reasoningEvent);
     await DatabaseService.createTrainingEvent(reasoningEvent);
@@ -202,41 +221,60 @@ Or if incomplete:
     // If quest is completed, calculate reward and generate new quest
     if (parsedResponse.isCompleted) {
       // Calculate actual reward
-      const rewardRng = Math.random();
-      const actualReward = maxReward * rewardRng;
+      // TODO: this value needs to come from a judge model, which will be developed using the first batch of incoming data
+      const score = Math.random();
+      const actualReward = Math.ceil(maxReward * score);
+      
+      console.log(session);
+
+      // Transfer reward from treasury
+      const signature = await blockchainService.transferToken(
+        viralToken,
+        actualReward,
+        treasuryKeypair,
+        session.address
+      );
 
       // Emit reward event
       const rewardEvent = {
         type: "reward",
-        message: `The judge rewarded you ${actualReward.toFixed(
-          2
-        )} for this (${(rewardRng * 100).toFixed(0)}% of ${maxReward.toFixed(
-          2
-        )})`,
+        message: `The judge rewarded you ${actualReward.toFixed(2)} $VIRAL for this (${(score * 100).toFixed(0)}% of ${maxReward.toFixed(2)})${signature ? `\nTransaction: ${signature}` : ''}`,
         session: socket.handshake.query.sessionId,
         frame: 0,
         timestamp: Date.now(),
+        metadata: {
+          scoreValue: score,
+          rewardValue: actualReward,
+          transaction: signature
+        }
       };
       socket.emit("training_event", rewardEvent);
       await DatabaseService.createTrainingEvent(rewardEvent);
 
       // Generate new quest
-      const questData = await generateQuest(imageBase64, prompt, session);
+      const questData = await generateQuest(
+        imageBase64,
+        prompt,
+        session
+      );
       const questEvent = {
         type: "quest",
         message: questData.quest,
         session: socket.handshake.query.sessionId,
         frame: 0,
         timestamp: Date.now(),
+        metadata: {
+          maxReward: questData.maxReward
+        }
       };
-
+      
       socket.emit("training_event", questEvent);
       await DatabaseService.createTrainingEvent(questEvent);
-
+      
       socket.emit("quest_update", {
         quest: questData.quest,
         hint: questData.hint,
-        maxReward: questData.maxReward,
+        maxReward: questData.maxReward
       });
 
       return {
@@ -244,24 +282,23 @@ Or if incomplete:
         reasoning: parsedResponse.reasoning,
         isCompleted: true,
         newQuest: questData.quest,
-        maxReward: questData.maxReward,
+        maxReward: questData.maxReward
       };
     }
 
     return {
       hint: parsedResponse.hint,
       reasoning: parsedResponse.reasoning,
-      isCompleted: false,
+      isCompleted: false
     };
   } catch (error) {
     console.error("Error generating hint:", error);
-    const fallbackHint =
-      "Scroll in the environments list to explore available tasks";
+    const fallbackHint = "Scroll in the environments list to explore available tasks";
     socket.emit("hint_update", { hint: fallbackHint });
     return {
       hint: fallbackHint,
       reasoning: "Error occurred during analysis",
-      isCompleted: false,
+      isCompleted: false
     };
   }
 }
@@ -283,6 +320,7 @@ class Episode {
   hintHistory: string[];
   currentMaxReward: number;
   session: RaceSessionDocument;
+  expiryTimer: NodeJS.Timeout | null;
 
   constructor(
     prompt: string,
@@ -305,25 +343,67 @@ class Episode {
     this.frameCount = 0;
     this.hintHistory = [];
     this.currentMaxReward = 0;
+    this.expiryTimer = null;
+  }
+
+  resetExpiryTimer() {
+    // Clear existing timer if any
+    if (this.expiryTimer) {
+      clearTimeout(this.expiryTimer);
+    }
+
+    // Set new 5 minute expiry timer
+    this.expiryTimer = setTimeout(async () => {
+      console.log("Episode expired due to time limit");
+      
+      // Emit expiry event
+      const expiryEvent = {
+        type: "system",
+        message: "Session expired due to 5 minute limit",
+        session: this.socket.handshake.query.sessionId,
+        frame: this.frameCount,
+        timestamp: Date.now()
+      };
+      this.socket.emit("training_event", expiryEvent);
+      await DatabaseService.createTrainingEvent(expiryEvent);
+      
+      // Close episode
+      this.close();
+      
+      // Update session status
+      const sessionId = this.socket.handshake.query.sessionId as string;
+      if (sessionId) {
+        try {
+          await DatabaseService.updateRaceSession(sessionId, {
+            status: "expired",
+            updated_at: new Date()
+          });
+          console.log(`Race session ${sessionId} marked as expired`);
+          activeEpisodes.delete(sessionId);
+        } catch (error) {
+          console.error("Error ending expired race session:", error);
+        }
+      }
+
+      // Disconnect socket
+      this.socket.disconnect();
+    }, 5 * 60 * 1000); // 5 minutes in milliseconds
   }
 
   async connect(host = "127.0.0.1", port = 5900, password = "abc123") {
     const initialEvents = [
       {
         type: "task",
-        message:
-          "Neural Link established. You are now part of VM-1's collective intelligence network.",
+        message: "Neural Link established. You are now part of VM-1's collective intelligence network."
       },
       {
         type: "task",
-        message:
-          "As part of the swarm, your interactions teach fundamental patterns of computer control.",
+        message: "As part of the swarm, your interactions teach fundamental patterns of computer control."
       },
       {
         type: "task",
-        message:
-          "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision.",
-      },
+        message: "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision."
+      }
     ];
 
     // Emit and store initial events
@@ -332,7 +412,7 @@ class Episode {
         ...event,
         session: this.socket.handshake.query.sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
       this.socket.emit("training_event", eventData);
       await DatabaseService.createTrainingEvent(eventData);
@@ -357,13 +437,13 @@ class Episode {
       console.log("VNC Session started, beginning recording...");
       const sessionId = this.socket.handshake.query.sessionId as string;
       this.socket.emit("recording_started", { sessionId });
-
+      
       const eventData = {
         type: "system",
         message: "VNC connection established. Starting session recording.",
         session: sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
       this.socket.emit("training_event", eventData);
       await DatabaseService.createTrainingEvent(eventData);
@@ -389,6 +469,9 @@ class Episode {
       );
       this.currentQuest = questData.quest;
       this.currentMaxReward = questData.maxReward;
+      
+      // Reset expiry timer when new quest is set
+      this.resetExpiryTimer();
 
       // Emit and store quest event
       const questEvent = {
@@ -397,6 +480,9 @@ class Episode {
         session: sessionId,
         frame: 0,
         timestamp: Date.now(),
+        metadata: {
+          maxReward: questData.maxReward
+        }
       };
       this.socket.emit("training_event", questEvent);
       await DatabaseService.createTrainingEvent(questEvent);
@@ -407,7 +493,7 @@ class Episode {
         message: questData.hint,
         session: sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
       this.socket.emit("training_event", hintEvent);
       await DatabaseService.createTrainingEvent(hintEvent);
@@ -416,7 +502,7 @@ class Episode {
       this.socket.emit("quest_update", {
         quest: questData.quest,
         hint: questData.hint,
-        maxReward: questData.maxReward,
+        maxReward: questData.maxReward
       });
 
       this.startRecording();
@@ -432,14 +518,11 @@ class Episode {
   startRecording() {
     const { clientWidth, clientHeight } = this.client;
     const sessionId = this.socket.handshake.query.sessionId as string;
-    const videoPath = path.resolve(
-      process.cwd(),
-      `public/recordings/${sessionId}.mp4`
-    );
+    const videoPath = path.resolve(process.cwd(), `public/recordings/${sessionId}.mp4`);
 
     // Update session with video path
     DatabaseService.updateRaceSession(sessionId, {
-      video_path: videoPath,
+      video_path: videoPath
     });
 
     const ffmpegArgs = [
@@ -469,29 +552,25 @@ class Episode {
     ];
 
     // Debug log the full command
-    console.log(
-      "Starting ffmpeg with command:",
-      "ffmpeg",
-      ffmpegArgs.join(" ")
-    );
+    console.log('Starting ffmpeg with command:', 'ffmpeg', ffmpegArgs.join(' '));
 
     this.ffmpeg = spawn("ffmpeg", ffmpegArgs);
 
-    this.ffmpeg.on("error", (err) => {
-      console.error("FFmpeg process error:", err);
+    this.ffmpeg.on('error', (err) => {
+      console.error('FFmpeg process error:', err);
     });
-
-    this.ffmpeg?.stdin?.on("error", (err) => {
-      console.error("FFmpeg stdin error:", err);
+    
+    this.ffmpeg?.stdin?.on('error', (err) => {
+      console.error('FFmpeg stdin error:', err);
     });
-
-    this.ffmpeg?.stdout?.on("error", (err) => {
-      console.error("FFmpeg stdout error:", err);
+    
+    this.ffmpeg?.stdout?.on('error', (err) => {
+      console.error('FFmpeg stdout error:', err);
     });
 
     // Log any ffmpeg errors
-    this.ffmpeg.stderr?.on("data", (data) => {
-      console.error("FFmpeg error:", data.toString());
+    this.ffmpeg.stderr?.on('data', (data) => {
+      console.error('FFmpeg error:', data.toString());
     });
 
     this.recordFrame();
@@ -503,7 +582,7 @@ class Episode {
         const writeResult = this.ffmpeg.stdin.write(this.client.getFb());
         if (!writeResult) {
           // Handle backpressure
-          this.ffmpeg.stdin.once("drain", () => this.recordFrame());
+          this.ffmpeg.stdin.once('drain', () => this.recordFrame());
           return;
         }
       }
@@ -532,7 +611,7 @@ class Episode {
           buffer: jpeg.toString("base64"),
           width: clientWidth,
           height: clientHeight,
-          frame: this.frameCount,
+          frame: this.frameCount
         });
       } catch (err) {
         console.error("Error sending frame:", err);
@@ -548,13 +627,15 @@ class Episode {
       clearInterval(this.frameTimer);
     }
     if (this.ffmpeg?.stdin) {
-      this.ffmpeg.stdin.end(); // End the stream properly
-      await new Promise((resolve) =>
-        this.ffmpeg?.stdin?.once("finish", resolve)
-      );
+      this.ffmpeg.stdin.end();  // End the stream properly
+      await new Promise(resolve => this.ffmpeg?.stdin?.once('finish', resolve));
     }
     if (this.ffmpeg) {
       this.ffmpeg.kill("SIGINT");
+    }
+    if (this.expiryTimer) {
+      clearTimeout(this.expiryTimer);
+      this.expiryTimer = null;
     }
     if (this.client) {
       this.client.disconnect();
@@ -568,7 +649,7 @@ class Episode {
         message: "Disconnected from VNC server",
         session: sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
       await DatabaseService.createTrainingEvent(eventData);
     }
@@ -615,14 +696,14 @@ export function initializeSocketIO(httpServer: HttpServer) {
     socket.on("disconnect", async () => {
       console.log("Socket.io disconnected");
       episode.close();
-
+      
       // End the race session
       const sessionId = socket.handshake.query.sessionId as string;
       if (sessionId) {
         try {
           await DatabaseService.updateRaceSession(sessionId, {
             status: "expired",
-            updated_at: new Date(),
+            updated_at: new Date()
           });
           console.log(`Race session ${sessionId} marked as expired`);
           activeEpisodes.delete(sessionId);
@@ -637,12 +718,12 @@ export function initializeSocketIO(httpServer: HttpServer) {
         console.log("Hint generation already in progress");
         return;
       }
-
+    
       try {
         episode.isGeneratingHint = true;
         const fb = episode.client.getFb();
         const { clientWidth, clientHeight } = episode.client;
-
+    
         const jpeg = await sharp(fb, {
           raw: {
             width: clientWidth,
@@ -652,7 +733,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
         })
           .jpeg()
           .toBuffer();
-
+    
         const result = await generateHint(
           jpeg.toString("base64"),
           episode.currentQuest || "",
@@ -662,15 +743,17 @@ export function initializeSocketIO(httpServer: HttpServer) {
           episode.currentMaxReward,
           episode.hintHistory
         );
-
+    
         // Add new hint to history
         episode.hintHistory.push(result.hint);
-
+    
         // If quest is completed, update current quest and reset hint history
         if (result.isCompleted && result.newQuest) {
           episode.currentQuest = result.newQuest;
           episode.currentMaxReward = result.maxReward;
           episode.hintHistory = [];
+          // Reset expiry timer when new quest is set after completion
+          episode.resetExpiryTimer();
         }
       } catch (error) {
         console.error("Error generating hint:", error);
@@ -698,7 +781,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
           result,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
 
         socket.emit("training_event", eventData);
@@ -710,7 +793,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
           message: `Failed to process key: ${data.key}`,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
         socket.emit("training_event", errorEvent);
         await DatabaseService.createTrainingEvent(errorEvent);
@@ -735,13 +818,14 @@ export function initializeSocketIO(httpServer: HttpServer) {
           trajectory: undefined,
           session: sessionId as string,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
 
-        if (episode.isReplayingTrajectory) return;
+        if (episode.isReplayingTrajectory)
+          return;
 
         if (data.action?.endsWith("_drag")) {
-          console.log("started trajectory");
+          // console.log('started trajectory');
           episode.isReplayingTrajectory = true;
           result = await executeComputerAction(
             data.action,
@@ -751,7 +835,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
             episode.client
           );
           episode.isReplayingTrajectory = false;
-          console.log("stoppped trajectory");
+          // console.log('stoppped trajectory');
 
           eventMessage = `Mouse ${data.action.replace("_", " ")}`;
           eventData.trajectory = data.trajectory;
@@ -809,7 +893,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
           message: `Failed to process mouse event: ${(error as Error).message}`,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
         socket.emit("training_event", errorEvent);
         await DatabaseService.createTrainingEvent(errorEvent);

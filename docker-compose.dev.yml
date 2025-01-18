@@ -64,6 +64,8 @@ services:
       - VNC_PASSWORD=admin
       - SERVICE_HOST=windows
       - SERVICE_PORT=6950
+      - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
+      - VIRAL_TOKEN=${VIRAL_TOKEN}
     depends_on:
       - mongodb
       # - windows

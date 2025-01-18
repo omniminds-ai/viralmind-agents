@@ -1,6 +1,7 @@
 <script lang="ts">
   import logo from '$lib/assets/logoTransparent.png';
   import { Dumbbell, ChevronLeft, BellRing, Trophy, History } from 'lucide-svelte';
+  import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
   import { onMount } from 'svelte';
 
   let isScrolled = false;
@@ -81,14 +82,15 @@
 
       <!-- Right side notification button -->
       <div class="flex items-center">
-        <a
+        <!-- <a
           class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white"
           title="Notifications"
           href="https://t.me/viralmind"
           target="_blank"
         >
           <BellRing class="h-5 w-5" />
-        </a>
+        </a> -->
+        <WalletMultiButton />
       </div>
     </div>
   </div>
