@@ -8,7 +8,7 @@ import { executeComputerAction } from "../services/vnc/actions.ts";
 import OpenAI from "openai";
 import { Http2Server } from "http2";
 import { Server as HttpServer } from "http";
-import DatabaseService from "../services/db/index.ts";
+import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
 import path from "path";
 
 const openai = new OpenAI({
@@ -17,52 +17,16 @@ const openai = new OpenAI({
 
 export const socketRoute = Router();
 
-async function generateQuest(imageBase64: string) {
-  // Predefined single-step quests with hints
-  const questTemplates = [
-    {
-      quest: "Open the activities menu and search for 'Terminal'",
-      hint: "Press Super key or click Activities in the top-left corner",
-    },
-    {
-      quest: "Create a folder named 'Projects' on the desktop",
-      hint: "Right-click on desktop and select 'New Folder'",
-    },
-    {
-      quest: "Open LibreOffice and start a new spreadsheet",
-      hint: "Search for 'LibreOffice Calc' in your applications",
-    },
-    {
-      quest: "Go to a simple web game like Chrome's dino game",
-      hint: "Type 'chrome://dino' in Chrome's address bar",
-    },
-    {
-      quest: "Create 'notes.txt' in a folder and write 'hello<TAB>'",
-      hint: "Right-click in folder, select 'New Text Document'",
-    },
-    {
-      quest: "Open MS Paint and draw a smiley face",
-      hint: "Search for 'Paint' in your start menu",
-    },
-    {
-      quest: "Open the calculator app and perform 123 + 456",
-      hint: "Search for 'Calculator' in your applications",
-    },
-    {
-      quest: "Open the browser and search for 'weather today'",
-      hint: "Press Super key and type 'Firefox' or 'Chrome'",
-    },
-    {
-      quest: "Take a screenshot of your desktop",
-      hint: "Press PrintScreen or use Screenshot tool",
-    },
-    {
-      quest: "Visit a random Wikipedia article and read 2 paragraphs",
-      hint: "Go to Wikipedia and click 'Random article'",
-    },
-  ];
-
+async function generateQuest(imageBase64: string, prompt: string, session: RaceSessionDocument) {
   try {
+    // Calculate max reward
+    const rng = Math.random();
+    const maxReward = Math.min(
+      1 / rng,
+      // session.reward / Math.max(1, (session.desiredTasks || 500) - (session.completedTasks || 0))
+      3000 / Math.max(1, (500) - (0))
+    );
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -71,30 +35,47 @@ async function generateQuest(imageBase64: string) {
           content: [
             {
               type: "text",
-              text: `You are an AI assistant that needs to propose a ms-paint related computer-use quest based on the user's current screen state (try tasks that involve mouse drags, i.e. sliders, doodling [thing] on online mspaint (do this do this)). Please do a doodling task. Please provide the output in a JSON code block with "quest" and "hint" keys. Start with a mspaint related task.`,
+              text: `You are an AI assistant that needs to propose a new Ubuntu desktop quest based on the theme: "${prompt}". 
+              
+First, analyze the current screen state to understand what task the user has already completed. Then, propose a DIFFERENT task that fits the same theme but isn't repetitive.
+
+For example, if the theme is "Draw cartoon characters in jspaint" and they drew a jellyfish, propose drawing a completely different character - not another jellyfish or a variation of it.
+
+Return as JSON with these keys:
+- reasoning: Analyze what's on screen and explain why you're choosing a different task within the same theme
+- quest: The new specific task to complete (should match the theme but be distinct from what's visible)
+- hint: Helpful tip for completing the new task`
             },
             {
               type: "image_url",
-              image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
-            },
-          ],
-        },
+              image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+            }
+          ]
+        }
       ],
-      max_tokens: 150,
+      max_tokens: 250
     });
 
-    // Extract JSON from markdown code block
-    const jsonMatch = response.choices[0].message.content?.match(
-      /```json\s*({[\s\S]*?})\s*```/
-    );
-    if (jsonMatch && jsonMatch[1]) {
-      return JSON.parse(jsonMatch[1]);
+    const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
+    if (jsonMatch && jsonMatch[0]) {
+      const questData = JSON.parse(jsonMatch[0]);
+      return {
+        ...questData,
+        maxReward
+      };
     }
+
     throw new Error("No valid JSON found in response");
+
   } catch (error) {
     console.error("Error generating quest:", error);
-    // Return a random quest from templates
-    return questTemplates[Math.floor(Math.random() * questTemplates.length)];
+    
+    return {
+      reasoning: "Failed to analyze screen, providing a generic task within theme",
+      quest: "Open the Activities overview and launch a relevant application",
+      hint: "Press the Super (Windows) key or click Activities in the top-left corner",
+      maxReward: 0
+    };
   }
 }
 
@@ -102,6 +83,9 @@ async function generateHint(
   imageBase64: string,
   currentQuest: string,
   socket: Socket,
+  prompt: string,
+  session: RaceSessionDocument,
+  maxReward: number,
   hintHistory: string[] = []
 ) {
   try {
@@ -196,9 +180,6 @@ Or if incomplete:
       session: socket.handshake.query.sessionId,
       frame: 0,
       timestamp: Date.now(),
-      // metadata: {
-      //   reasoning: parsedResponse.reasoning
-      // }
     };
 
     socket.emit("training_event", hintEvent);
@@ -214,9 +195,29 @@ Or if incomplete:
     socket.emit("training_event", reasoningEvent);
     await DatabaseService.createTrainingEvent(reasoningEvent);
 
-    // If quest is completed, generate new quest
+    // If quest is completed, calculate reward and generate new quest
     if (parsedResponse.isCompleted) {
-      const questData = await generateQuest(imageBase64);
+      // Calculate actual reward
+      const rewardRng = Math.random();
+      const actualReward = maxReward * rewardRng;
+      
+      // Emit reward event
+      const rewardEvent = {
+        type: "reward",
+        message: `The judge rewarded you ${actualReward.toFixed(2)} for this (${(rewardRng * 100).toFixed(0)}% of ${maxReward.toFixed(2)})`,
+        session: socket.handshake.query.sessionId,
+        frame: 0,
+        timestamp: Date.now()
+      };
+      socket.emit("training_event", rewardEvent);
+      await DatabaseService.createTrainingEvent(rewardEvent);
+
+      // Generate new quest
+      const questData = await generateQuest(
+        imageBase64,
+        prompt,
+        session
+      );
       const questEvent = {
         type: "quest",
         message: questData.quest,
@@ -231,13 +232,15 @@ Or if incomplete:
       socket.emit("quest_update", {
         quest: questData.quest,
         hint: questData.hint,
+        maxReward: questData.maxReward
       });
 
       return {
         hint: parsedResponse.hint,
         reasoning: parsedResponse.reasoning,
         isCompleted: true,
-        newQuest: questData.quest
+        newQuest: questData.quest,
+        maxReward: questData.maxReward
       };
     }
 
@@ -259,6 +262,7 @@ Or if incomplete:
 }
 
 class Episode {
+  prompt: string;
   socket: Socket;
   fps: number;
   frameInterval: number;
@@ -272,12 +276,18 @@ class Episode {
   startTime: number | undefined;
   frameCount: number;
   hintHistory: string[];
+  currentMaxReward: number;
+  session: RaceSessionDocument;
 
   constructor(
+    prompt: string,
     socket: Socket,
+    session: RaceSessionDocument,
     options: { fps?: number; frameInterval?: number } = {}
   ) {
+    this.prompt = prompt;
     this.socket = socket;
+    this.session = session;
     this.fps = options.fps || 10;
     this.frameInterval = options.frameInterval || 1000; // 1 second for sending frames to client
     this.client = null;
@@ -289,6 +299,7 @@ class Episode {
     this.isGeneratingHint = false;
     this.frameCount = 0;
     this.hintHistory = [];
+    this.currentMaxReward = 0;
   }
 
   async connect(host = "127.0.0.1", port = 5900, password = "abc123") {
@@ -362,8 +373,14 @@ class Episode {
         .jpeg()
         .toBuffer();
 
-      const questData = await generateQuest(jpeg.toString("base64"));
+      // no quest yet, lets create one
+      const questData = await generateQuest(
+        jpeg.toString("base64"),
+        this.prompt,
+        this.session
+      );
       this.currentQuest = questData.quest;
+      this.currentMaxReward = questData.maxReward;
 
       // Emit and store quest event
       const questEvent = {
@@ -391,6 +408,7 @@ class Episode {
       this.socket.emit("quest_update", {
         quest: questData.quest,
         hint: questData.hint,
+        maxReward: questData.maxReward
       });
 
       this.startRecording();
@@ -573,7 +591,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
       return;
     }
 
-    const episode = new Episode(socket);
+    const episode = new Episode(session.prompt, socket, session);
     activeEpisodes.set(sessionId as string, episode);
     episode.connect(session.vm_ip, session.vm_port, session.vm_password);
 
@@ -622,6 +640,9 @@ export function initializeSocketIO(httpServer: HttpServer) {
           jpeg.toString("base64"),
           episode.currentQuest || "",
           socket,
+          episode.prompt,
+          episode.session,
+          episode.currentMaxReward,
           episode.hintHistory
         );
     
@@ -631,6 +652,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
         // If quest is completed, update current quest and reset hint history
         if (result.isCompleted && result.newQuest) {
           episode.currentQuest = result.newQuest;
+          episode.currentMaxReward = result.maxReward;
           episode.hintHistory = [];
         }
       } catch (error) {
@@ -699,11 +721,11 @@ export function initializeSocketIO(httpServer: HttpServer) {
           timestamp: Date.now()
         };
 
-        if (!data.action && !data.button && episode.isReplayingTrajectory) {
+        if (episode.isReplayingTrajectory)
           return;
-        }
 
         if (data.action?.endsWith("_drag")) {
+          console.log('started trajectory');
           episode.isReplayingTrajectory = true;
           result = await executeComputerAction(
             data.action,
@@ -713,6 +735,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
             episode.client
           );
           episode.isReplayingTrajectory = false;
+          console.log('stoppped trajectory');
 
           eventMessage = `Mouse ${data.action.replace("_", " ")}`;
           eventData.trajectory = data.trajectory;
