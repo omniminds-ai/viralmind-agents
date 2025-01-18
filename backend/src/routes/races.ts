@@ -1,6 +1,8 @@
 import express, { Request, Response } from "express";
 import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
 import { GymVPSService } from "../services/gym-vps/index.ts";
+import { getEpisode } from "./socket.ts";
+
 const router = express.Router();
 
 type RaceCategory = "creative" | "mouse" | "slacker" | "gaming" | "wildcard";
@@ -115,6 +117,13 @@ router.get("/session/:id", async (req: Request, res: Response) => {
 router.post("/session/:id/stop", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
+    // End the episode if it exists
+    const episode = getEpisode(id);
+    if (episode) {
+      await episode.close();
+      console.log(`Episode for session ${id} closed`);
+    }
 
     const session = await DatabaseService.updateRaceSession(id, {
       status: "expired",

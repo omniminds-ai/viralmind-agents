@@ -477,6 +477,8 @@
         }
     }
 
+    let handleBeforeUnload: { (e: BeforeUnloadEvent): void; (this: Window, ev: BeforeUnloadEvent): any; (this: Window, ev: BeforeUnloadEvent): any; } | undefined;
+
     function stopRace() {
         if (socket) {
             socket.disconnect();
@@ -487,13 +489,15 @@
                     method: 'POST'
                 }).catch(console.error);
             }
+            if(handleBeforeUnload)
+                window.removeEventListener('beforeunload', handleBeforeUnload);
             window.location.href = '/gym';
         }
     }
 
     onMount(() => {
         // Add beforeunload handler
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        handleBeforeUnload = (e: BeforeUnloadEvent) => {
             e.preventDefault();
             e.returnValue = '';
         };
@@ -549,7 +553,8 @@
 
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('beforeunload', handleBeforeUnload);
+            if(handleBeforeUnload)
+                window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     });
     
@@ -646,7 +651,7 @@
             >
                 Stop Race
             </button>
-            <div class="grid grid-cols-3 gap-4">
+            <!-- <div class="grid grid-cols-3 gap-4">
                 <div class="bg-purple-950/30 rounded-xl p-4 border border-purple-500/20">
                     <div class="flex items-center gap-2 text-purple-400 mb-2">
                         <Clock size={20} />
@@ -670,7 +675,7 @@
                     </div>
                     <span class="text-2xl text-white font-medium">{rewardPool}</span>
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 
