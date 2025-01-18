@@ -170,8 +170,8 @@ router.put("/session/:id", async (req: Request, res: Response) => {
 router.post("/feedback", async (req: Request, res: Response) => {
   try {
     const { raceIdea } = req.body;
-    
-    if (!raceIdea || typeof raceIdea !== 'string') {
+
+    if (!raceIdea || typeof raceIdea !== "string") {
       res.status(400).json({ error: "Race idea is required" });
       return;
     }
@@ -180,19 +180,18 @@ router.post("/feedback", async (req: Request, res: Response) => {
     const webhookUrl = process.env.FEEDBACK_WEBHOOK;
     if (webhookUrl) {
       await fetch(webhookUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           content: `New Race Idea Submission:\n${raceIdea}`,
-          timestamp: new Date().toISOString()
-        })
+          timestamp: new Date().toISOString(),
+        }),
       });
     }
 
     res.json({ success: true, message: "Feedback received" });
-
   } catch (error) {
     console.error("Error submitting feedback:", error);
     res.status(500).json({ error: "Failed to submit feedback" });

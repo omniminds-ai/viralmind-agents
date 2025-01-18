@@ -47,6 +47,15 @@ export class GymVPSService {
     };
   }
 
+  // destroys an instance
+  public async destroyInstance(id: number) {
+    await this.client.droplet.destroyDropletAndAllAssociatedResources({
+      droplet_id: id,
+      acknowledge: false,
+    });
+    //todo: update to delete from the database
+  }
+
   // spins up a new instance
   // saves instance information to the database
   public async createInstance(
@@ -56,7 +65,7 @@ export class GymVPSService {
     try {
       // build droplet information
       const login = {
-        username: "user",
+        username: "user", // NOTE: needs to be user because the droplets automatically configures it on startup
         password: `viralmind-${randomInt(1000)}`,
       };
       const name = `gym-${GymVPSService.genId}`;
@@ -110,15 +119,12 @@ export class GymVPSService {
         login,
         status,
         address,
-        ssh_keypair: { public: public_key, private: private_key },
         vnc: { password: login.password },
+        ssh_keypair: { public: public_key, private: private_key },
       };
 
       console.log("Created new VPS.");
       console.log(vps);
-
-      // todo: if we can't figure out the script to enable the vnc server, we can just login in as root using ssh.
-      console.log("Setting VNC Password.");
 
       // ssh into the droplet and reset the vnc password
       const ssh = new NodeSSH();
@@ -140,20 +146,44 @@ export class GymVPSService {
           } else console.log("SSH error:", e);
         }
       }
-      await ssh
-        .execCommand("mkdir /home/user/.vnc/")
-        .then((r) => console.log(r))
-        .catch((e) => console.log(e));
-      await ssh
-        .execCommand(
-          `x11vnc -storepasswd "${vps.login.password}" /home/user/.vnc/passwd`
-        )
-        .then((r) => console.log(r))
-        .catch((e) => console.log(e));
-      await ssh
-        .execCommand(`echo "user:${vps.login.password}" | chpasswd`)
-        .then((r) => console.log(r))
-        .catch((e) => console.log(e));
+
+      console.log("Initializing VNC server with custom password...");
+      await new Promise((resolve, reject) => {
+        ssh
+          .requestShell()
+          .then((shellStream) => {
+            shellStream.on("data", async (data: any) => {
+              let stringData = data.toString().trim();
+              if (stringData.includes(`root@${name}`)) {
+                await ssh.execCommand(
+                  `x11vnc -storepasswd "${vps.login.password}" /home/user/.vnc/passwd`
+                );
+                await ssh.execCommand(
+                  `echo "${vps.login.username}:${vps.login.password}" | chpasswd`
+                );
+                await ssh.execCommand(`adduser ${vps.login.username} sudo`);
+                await ssh.execCommand(
+                  `usermod -a -G sudo ${vps.login.username}`
+                );
+                resolve(true);
+              }
+            });
+
+            shellStream.stderr.on("data", (data: any) => {
+              console.log("Shell Stream Command Error: ", data.toString());
+            });
+
+            shellStream.on("close", () => {
+              resolve(false);
+            });
+
+            shellStream.on("error", (err: Error) => {
+              console.log("Shell Stream Error: ", err);
+              reject(err);
+            });
+          })
+          .catch(reject);
+      });
 
       // save new instance to the database
       const newVps = await DatabaseService.saveGymVPS(vps);
