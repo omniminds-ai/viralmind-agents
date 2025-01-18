@@ -6,6 +6,9 @@ export { RaceSession, raceSessionSchema };
 import { Race, raceSchema } from "./Race.ts";
 export { Race, raceSchema };
 
+import { GymVPS, gymVPSSchema } from "./GymVPS.ts";
+export { GymVPS, gymVPSSchema };
+
 export const challengeSchema = new mongoose.Schema(
   {
     _id: String,
@@ -119,4 +122,3 @@ export const pageSchema = new mongoose.Schema(
 );
 
 export const Pages = mongoose.model("Pages", pageSchema);
-

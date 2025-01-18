@@ -22,12 +22,14 @@ import {
   SortValues,
   UpdateWriteOpResult,
 } from "mongoose";
+import { GymVPS, gymVPSSchema } from "../../models/GymVPS.ts";
 
 export type ChallengeDocument = InferSchemaType<typeof challengeSchema>;
 export type ChatDocument = InferSchemaType<typeof chatSchema>;
 export type PageDocument = InferSchemaType<typeof pageSchema>;
 export type RaceSessionDocument = InferSchemaType<typeof raceSessionSchema>;
 export type RaceDocument = InferSchemaType<typeof raceSchema>;
+export type GymVPSDocument = InferSchemaType<typeof gymVPSSchema>;
 
 dotenv.config();
 
@@ -293,7 +295,9 @@ class DataBaseService extends EventEmitter {
   }
 
   // Race session methods
-  async createRaceSession(sessionData: RaceSessionDocument): Promise<RaceSessionDocument | false> {
+  async createRaceSession(
+    sessionData: RaceSessionDocument
+  ): Promise<RaceSessionDocument | false> {
     try {
       return await RaceSession.create(sessionData);
     } catch (error) {
@@ -311,7 +315,10 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async updateRaceSession(id: string, updateData: Partial<RaceSessionDocument>): Promise<RaceSessionDocument | null> {
+  async updateRaceSession(
+    id: string,
+    updateData: Partial<RaceSessionDocument>
+  ): Promise<RaceSessionDocument | null> {
     try {
       return await RaceSession.findByIdAndUpdate(id, updateData, { new: true });
     } catch (error) {
@@ -320,10 +327,7 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-  async getRaceById(
-    id: string,
-    projection = {}
-  ): Promise<RaceDocument | null> {
+  async getRaceById(id: string, projection = {}): Promise<RaceDocument | null> {
     try {
       return await Race.findOne({ id: id }, projection);
     } catch (error) {
@@ -335,7 +339,7 @@ class DataBaseService extends EventEmitter {
   async getRaces(): Promise<RaceDocument[] | false> {
     try {
       return await Race.find(
-        { },
+        {},
         {
           id: 1,
           title: 1,
@@ -346,7 +350,7 @@ class DataBaseService extends EventEmitter {
           prompt: 1,
           reward: 1,
           buttonText: 1,
-          stakeRequired: 1
+          stakeRequired: 1,
         }
       );
     } catch (error) {
@@ -367,7 +371,9 @@ class DataBaseService extends EventEmitter {
 
   async getTrainingEvents(sessionId: string): Promise<any[]> {
     try {
-      return await TrainingEvent.find({ session: sessionId }).sort({ timestamp: 1 });
+      return await TrainingEvent.find({ session: sessionId }).sort({
+        timestamp: 1,
+      });
     } catch (error) {
       console.error("Database Service Error:", error);
       return [];
@@ -443,6 +449,38 @@ class DataBaseService extends EventEmitter {
     } catch (error) {
       console.error("Database Service Error:", error);
       return null;
+    }
+  }
+
+  // gym VPS stuff
+
+  async saveGymVPS(data: GymVPSDocument): Promise<GymVPSDocument | void> {
+    try {
+      const res = await GymVPS.create(data);
+      return res;
+    } catch (error) {
+      console.error("Database Service ERror:", error);
+    }
+  }
+
+  async getOpenGymVPS(): Promise<GymVPSDocument | null> {
+    try {
+      const vps = await GymVPS.findOne({ status: "open" });
+      return vps;
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async assignGymVPS(id: string, address: string): Promise<void> {
+    try {
+      await GymVPS.updateOne(
+        { id: id },
+        { $set: { address, status: "assigned" } }
+      );
+    } catch (error) {
+      console.error("Database Service Error:", error);
     }
   }
 }

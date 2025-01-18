@@ -1,11 +1,14 @@
 import express, { Request, Response } from "express";
 import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
+import { GymVPSService } from "../services/gym-vps/index.ts";
 const router = express.Router();
 
-type RaceCategory = 'creative' | 'mouse' | 'slacker' | 'gaming' | 'wildcard';
-type RaceSessionInput = Omit<RaceSessionDocument, '_id'> & {
+type RaceCategory = "creative" | "mouse" | "slacker" | "gaming" | "wildcard";
+type RaceSessionInput = Omit<RaceSessionDocument, "_id"> & {
   category: RaceCategory;
 };
+
+const vpsService = new GymVPSService();
 
 // List all available races
 router.get("/", async (_req: Request, res: Response) => {
@@ -15,6 +18,7 @@ router.get("/", async (_req: Request, res: Response) => {
       res.status(404).json({ error: "No races found" });
       return;
     }
+    console.log(races);
     res.json(races);
   } catch (error) {
     console.error("Error fetching races:", error);
@@ -25,7 +29,7 @@ router.get("/", async (_req: Request, res: Response) => {
 // Start a new race session
 router.post("/:id/start", async (req: Request, res: Response) => {
   try {
-    console.log('starting a new race!');
+    console.log("starting a new race!");
 
     const { id } = req.params;
     const { address } = req.body;
@@ -42,23 +46,23 @@ router.post("/:id/start", async (req: Request, res: Response) => {
       return;
     }
 
+    // Get an open vps instance
+    console.log("Joining a Race");
+    const vps = await vpsService.assignOpenInstance(address);
+
     // Create a new race session
     const now = new Date();
     const sessionData: RaceSessionInput = {
       address,
       challenge: id,
       status: "active",
-      // TODO: load an available VM from the vultr vnc pool, or launch a headless .wsb vm locally
-      vm_ip: process.env.VNC_HOST_GYMTEST || "127.0.0.1",
+      vm_ip: process.env.VNC_HOST_GYMTEST || vps.ip,
       vm_port: 5900,
-      vm_password: process.env.VNC_PASS_GYMTEST || "password123",
-      vm_credentials: {
-        username: "admin",
-        password: "password123"
-      },
+      vm_password: process.env.VNC_PASS_GYMTEST || vps.vnc.password,
+      vm_credentials: vps.login,
       created_at: now,
       updated_at: now,
-      category: "creative" as RaceCategory
+      category: "creative" as RaceCategory,
     };
 
     const session = await DatabaseService.createRaceSession(sessionData);
@@ -73,9 +77,8 @@ router.post("/:id/start", async (req: Request, res: Response) => {
       vm_ip: session.vm_ip,
       vm_port: session.vm_port,
       vm_password: session.vm_password,
-      vm_credentials: session.vm_credentials
+      vm_credentials: session.vm_credentials,
     });
-
   } catch (error) {
     console.error("Error starting race:", error);
     res.status(500).json({ error: "Failed to start race" });
@@ -100,9 +103,8 @@ router.get("/session/:id", async (req: Request, res: Response) => {
       vm_password: session.vm_password,
       vm_credentials: session.vm_credentials,
       created_at: session.created_at,
-      updated_at: session.updated_at
+      updated_at: session.updated_at,
     });
-
   } catch (error) {
     console.error("Error fetching session:", error);
     res.status(500).json({ error: "Failed to fetch session" });
@@ -113,19 +115,18 @@ router.get("/session/:id", async (req: Request, res: Response) => {
 router.post("/session/:id/stop", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
-    const session = await DatabaseService.updateRaceSession(id, { 
+
+    const session = await DatabaseService.updateRaceSession(id, {
       status: "expired",
-      updated_at: new Date()
+      updated_at: new Date(),
     });
-    
+
     if (!session) {
       res.status(404).json({ error: "Session not found" });
       return;
     }
 
     res.json({ success: true });
-
   } catch (error) {
     console.error("Error stopping session:", error);
     res.status(500).json({ error: "Failed to stop session" });
@@ -150,7 +151,6 @@ router.put("/session/:id", async (req: Request, res: Response) => {
     }
 
     res.json(session);
-
   } catch (error) {
     console.error("Error updating session:", error);
     res.status(500).json({ error: "Failed to update session" });
