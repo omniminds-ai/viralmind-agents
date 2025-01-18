@@ -3,10 +3,15 @@ import {
   Chat,
   Challenge,
   Pages,
+  RaceSession,
+  Race,
   chatSchema,
   challengeSchema,
   pageSchema,
+  raceSessionSchema,
+  raceSchema,
 } from "../../models/Models.ts";
+import { TrainingEvent } from "../../models/TrainingEvent.ts";
 import dotenv from "dotenv";
 import {
   Document,
@@ -21,6 +26,8 @@ import {
 export type ChallengeDocument = InferSchemaType<typeof challengeSchema>;
 export type ChatDocument = InferSchemaType<typeof chatSchema>;
 export type PageDocument = InferSchemaType<typeof pageSchema>;
+export type RaceSessionDocument = InferSchemaType<typeof raceSessionSchema>;
+export type RaceDocument = InferSchemaType<typeof raceSchema>;
 
 dotenv.config();
 
@@ -282,6 +289,88 @@ class DataBaseService extends EventEmitter {
     } catch (error) {
       console.error("Database Service Error:", error);
       return false;
+    }
+  }
+
+  // Race session methods
+  async createRaceSession(sessionData: RaceSessionDocument): Promise<RaceSessionDocument | false> {
+    try {
+      return await RaceSession.create(sessionData);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  async getRaceSession(id: string): Promise<RaceSessionDocument | null> {
+    try {
+      return await RaceSession.findById(id);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async updateRaceSession(id: string, updateData: Partial<RaceSessionDocument>): Promise<RaceSessionDocument | null> {
+    try {
+      return await RaceSession.findByIdAndUpdate(id, updateData, { new: true });
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async getRaceById(
+    id: string,
+    projection = {}
+  ): Promise<RaceDocument | null> {
+    try {
+      return await Race.findOne({ id: id }, projection);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async getRaces(): Promise<RaceDocument[] | false> {
+    try {
+      return await Race.find(
+        { },
+        {
+          id: 1,
+          title: 1,
+          description: 1,
+          category: 1,
+          icon: 1,
+          colorScheme: 1,
+          prompt: 1,
+          reward: 1,
+          buttonText: 1,
+          stakeRequired: 1
+        }
+      );
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  // Training event methods
+  async createTrainingEvent(eventData: any): Promise<any> {
+    try {
+      return await TrainingEvent.create(eventData);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  async getTrainingEvents(sessionId: string): Promise<any[]> {
+    try {
+      return await TrainingEvent.find({ session: sessionId }).sort({ timestamp: 1 });
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return [];
     }
   }
 

@@ -7,12 +7,16 @@ import sharp from "sharp";
 import { executeComputerAction } from "../services/vnc/actions.ts";
 import OpenAI from "openai";
 import { Http2Server } from "http2";
+import { Server as HttpServer } from "http";
+import DatabaseService from "../services/db/index.ts";
+import path from "path";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const socketRoute = Router();
+
 async function generateQuest(imageBase64: string) {
   // Predefined single-step quests with hints
   const questTemplates = [
@@ -132,10 +136,16 @@ async function generateHint(
     }
 
     // Emit final hint as training event
-    socket.emit("training_event", {
+    const eventData = {
       type: "hint",
       message: hintText,
-    });
+      session: socket.handshake.query.sessionId,
+      frame: 0,
+      timestamp: Date.now()
+    };
+
+    socket.emit("training_event", eventData);
+    await DatabaseService.createTrainingEvent(eventData);
 
     return hintText;
   } catch (error) {
@@ -159,6 +169,7 @@ class Episode {
   currentQuest: string | null;
   isGeneratingHint: boolean;
   startTime: number | undefined;
+  frameCount: number;
 
   constructor(
     socket: Socket,
@@ -174,26 +185,36 @@ class Episode {
     this.isReplayingTrajectory = false;
     this.currentQuest = null;
     this.isGeneratingHint = false;
+    this.frameCount = 0;
   }
 
-  connect(host = "127.0.0.1", port = 5900, password = "abc123") {
-    this.socket.emit("training_event", {
-      type: "task",
-      message:
-        "Neural Link established. You are now part of VM-1's collective intelligence network.",
-    });
+  async connect(host = "127.0.0.1", port = 5900, password = "abc123") {
+    const initialEvents = [
+      {
+        type: "task",
+        message: "Neural Link established. You are now part of VM-1's collective intelligence network."
+      },
+      {
+        type: "task",
+        message: "As part of the swarm, your interactions teach fundamental patterns of computer control."
+      },
+      {
+        type: "task",
+        message: "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision."
+      }
+    ];
 
-    this.socket.emit("training_event", {
-      type: "task",
-      message:
-        "As part of the swarm, your interactions teach fundamental patterns of computer control.",
-    });
-
-    this.socket.emit("training_event", {
-      type: "task",
-      message:
-        "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision.",
-    });
+    // Emit and store initial events
+    for (const event of initialEvents) {
+      const eventData = {
+        ...event,
+        session: this.socket.handshake.query.sessionId,
+        frame: 0,
+        timestamp: Date.now()
+      };
+      this.socket.emit("training_event", eventData);
+      await DatabaseService.createTrainingEvent(eventData);
+    }
 
     this.client = new VncClient({
       fps: this.fps,
@@ -212,14 +233,18 @@ class Episode {
 
     this.client.on("firstFrameUpdate", async () => {
       console.log("VNC Session started, beginning recording...");
-      const sessionId = `VM1-${new Date().getFullYear()}-${String(
-        new Date().getMonth() + 1
-      ).padStart(2, "0")}`;
+      const sessionId = this.socket.handshake.query.sessionId as string;
       this.socket.emit("recording_started", { sessionId });
-      this.socket.emit("training_event", {
+      
+      const eventData = {
         type: "system",
         message: "VNC connection established. Starting session recording.",
-      });
+        session: sessionId,
+        frame: 0,
+        timestamp: Date.now()
+      };
+      this.socket.emit("training_event", eventData);
+      await DatabaseService.createTrainingEvent(eventData);
 
       // Get first frame and generate quest
       const fb = this.client.getFb();
@@ -237,17 +262,27 @@ class Episode {
       const questData = await generateQuest(jpeg.toString("base64"));
       this.currentQuest = questData.quest;
 
-      // Emit quest as training event
-      this.socket.emit("training_event", {
+      // Emit and store quest event
+      const questEvent = {
         type: "quest",
         message: questData.quest,
-      });
+        session: sessionId,
+        frame: 0,
+        timestamp: Date.now()
+      };
+      this.socket.emit("training_event", questEvent);
+      await DatabaseService.createTrainingEvent(questEvent);
 
-      // Emit initial hint as training event
-      this.socket.emit("training_event", {
+      // Emit and store hint event
+      const hintEvent = {
         type: "hint",
         message: questData.hint,
-      });
+        session: sessionId,
+        frame: 0,
+        timestamp: Date.now()
+      };
+      this.socket.emit("training_event", hintEvent);
+      await DatabaseService.createTrainingEvent(hintEvent);
 
       // Also emit quest_update for overlay
       this.socket.emit("quest_update", {
@@ -267,8 +302,15 @@ class Episode {
 
   startRecording() {
     const { clientWidth, clientHeight } = this.client;
+    const sessionId = this.socket.handshake.query.sessionId as string;
+    const videoPath = path.resolve(process.cwd(), `public/recordings/${sessionId}.mp4`);
 
-    this.ffmpeg = spawn("ffmpeg", [
+    // Update session with video path
+    DatabaseService.updateRaceSession(sessionId, {
+      video_path: videoPath
+    });
+
+    const ffmpegArgs = [
       "-loglevel",
       "error",
       "-hide_banner",
@@ -291,8 +333,18 @@ class Episode {
       `${this.fps}`,
       "-vcodec",
       "libx264rgb",
-      "session.h264",
-    ]);
+      videoPath,
+    ];
+
+    // Debug log the full command
+    console.log('Starting ffmpeg with command:', 'ffmpeg', ffmpegArgs.join(' '));
+
+    this.ffmpeg = spawn("ffmpeg", ffmpegArgs);
+
+    // Log any ffmpeg errors
+    this.ffmpeg.stderr?.on('data', (data) => {
+      console.error('FFmpeg error:', data.toString());
+    });
 
     this.recordFrame();
   }
@@ -301,6 +353,7 @@ class Episode {
     this.recordingTimer = setTimeout(() => {
       this.recordFrame();
       this.ffmpeg?.stdin?.write(this.client.getFb());
+      this.frameCount++;
     }, 1000 / this.fps);
   }
 
@@ -324,6 +377,7 @@ class Episode {
           buffer: jpeg.toString("base64"),
           width: clientWidth,
           height: clientHeight,
+          frame: this.frameCount
         });
       } catch (err) {
         console.error("Error sending frame:", err);
@@ -331,7 +385,7 @@ class Episode {
     }, this.frameInterval);
   }
 
-  close() {
+  async close() {
     if (this.recordingTimer) {
       clearTimeout(this.recordingTimer);
     }
@@ -344,10 +398,23 @@ class Episode {
     if (this.client) {
       this.client.end();
     }
+
+    // Log disconnection event
+    const sessionId = this.socket.handshake.query.sessionId;
+    if (sessionId) {
+      const eventData = {
+        type: "system",
+        message: "Disconnected from VNC server",
+        session: sessionId,
+        frame: 0,
+        timestamp: Date.now()
+      };
+      await DatabaseService.createTrainingEvent(eventData);
+    }
   }
 }
 
-export function initializeSocketIO(httpServer: Http2Server) {
+export function initializeSocketIO(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
       origin: "*",
@@ -355,13 +422,26 @@ export function initializeSocketIO(httpServer: Http2Server) {
     },
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     console.log("Socket.io connected");
 
+    const { sessionId } = socket.handshake.query;
+    if (!sessionId) {
+      console.error("No session ID provided");
+      socket.disconnect();
+      return;
+    }
+
+    // Get session details from database
+    const session = await DatabaseService.getRaceSession(sessionId as string);
+    if (!session) {
+      console.error("Session not found");
+      socket.disconnect();
+      return;
+    }
+
     const episode = new Episode(socket);
-    const host = process.env["VNC_HOST_GYMTEST"];
-    const pass = process.env["VNC_PASS_GYMTEST"];
-    episode.connect(host, 5900, pass);
+    episode.connect(session.vm_ip, session.vm_port, session.vm_password);
 
     socket.on("disconnect", () => {
       console.log("Socket.io disconnected");
@@ -405,6 +485,8 @@ export function initializeSocketIO(httpServer: Http2Server) {
     });
 
     socket.on("vnc_keypress", async (data) => {
+      console.log(data);
+
       try {
         const result = await executeComputerAction(
           "key",
@@ -412,17 +494,28 @@ export function initializeSocketIO(httpServer: Http2Server) {
           episode.client
         );
 
-        socket.emit("training_event", {
+        const eventData = {
           type: "keyboard",
           message: `Key pressed: ${data.key}`,
           result,
-        });
+          session: sessionId,
+          frame: data.frame,
+          timestamp: Date.now()
+        };
+
+        socket.emit("training_event", eventData);
+        await DatabaseService.createTrainingEvent(eventData);
       } catch (error) {
         console.error("Error handling keypress:", error);
-        socket.emit("training_event", {
+        const errorEvent = {
           type: "error",
           message: `Failed to process key: ${data.key}`,
-        });
+          session: sessionId,
+          frame: data.frame,
+          timestamp: Date.now()
+        };
+        socket.emit("training_event", errorEvent);
+        await DatabaseService.createTrainingEvent(errorEvent);
       }
     });
 
@@ -434,10 +527,17 @@ export function initializeSocketIO(httpServer: Http2Server) {
           type: string;
           coordinates: { x: number; y: number } | undefined;
           trajectory: any;
+          session: string;
+          frame: number;
+          timestamp: number;
+          message?: string;
         } = {
           type: "mouse",
           coordinates: undefined,
           trajectory: undefined,
+          session: sessionId as string,
+          frame: data.frame,
+          timestamp: Date.now()
         };
 
         if (!data.action && !data.button && episode.isReplayingTrajectory) {
@@ -501,19 +601,20 @@ export function initializeSocketIO(httpServer: Http2Server) {
           }
         }
 
-        socket.emit("training_event", {
-          ...eventData,
-          type: "mouse",
-          message: eventMessage,
-          frame: data.frame,
-          timestamp: Date.now() - (episode.startTime || 0),
-        });
+        eventData.message = eventMessage;
+        socket.emit("training_event", eventData);
+        await DatabaseService.createTrainingEvent(eventData);
       } catch (error) {
         console.error("Error handling mouse event:", error);
-        socket.emit("training_event", {
+        const errorEvent = {
           type: "error",
           message: `Failed to process mouse event: ${(error as Error).message}`,
-        });
+          session: sessionId,
+          frame: data.frame,
+          timestamp: Date.now()
+        };
+        socket.emit("training_event", errorEvent);
+        await DatabaseService.createTrainingEvent(errorEvent);
       }
     });
   });

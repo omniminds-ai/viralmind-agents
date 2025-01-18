@@ -2,10 +2,12 @@
   import { onMount } from 'svelte';
   import { 
     Trophy, Timer, MessagesSquare, ArrowRight, BellRing, 
-    Brain, DollarSign, Sparkles, Gamepad2, Book,
-    Palette, Video, FileSpreadsheet, Globe2, MousePointer,
-    Coffee, Dice5, Monitor, Crosshair, Zap, Move, TrendingUp, LineChart
+    Palette, Video, Layout, FileSpreadsheet, Globe2, 
+    MousePointer, Sparkles, Brain, DollarSign,
+    Coffee, Gamepad, Dice5, Monitor, Gamepad2,
+    Crosshair, Zap, Move, TrendingUp, LineChart
   } from 'lucide-svelte';
+  import FeaturedRace from '$lib/components/gym/FeaturedRace.svelte';
   import CategorySection from '$lib/components/gym/CategorySection.svelte';
   import SubmitRace from '$lib/components/gym/SubmitRace.svelte';
   import FeaturedCarousel from '$lib/components/gym/FeaturedCarousel.svelte';
@@ -21,108 +23,62 @@
     prompt?: string;
     reward?: number;
     buttonText: string;
-    stakeRequired?: number;
+    category: string;
+    isStaked: boolean;
     href?: string;
   }
 
-  interface Category {
-    id: string;
-    title: string;
-    icon: any;
-    races: Race[];
-  }
+  // Icon mapping for each race ID
+  const iconMap: Record<string, any> = {
+    'paint': Palette,
+    'office': FileSpreadsheet,
+    'video': Video,
+    'web': Globe2,
+    'miniwob': MousePointer,
+    'precision': Crosshair,
+    'speed': Zap,
+    'drag': Move,
+    'webgames': Gamepad,
+    'gambler': Dice5,
+    'trader': TrendingUp,
+    'hedgefund': LineChart,
+    'desktop': Monitor,
+    'wildcard': Brain,
+    'paint-pro': Palette,
+    'office-pro': FileSpreadsheet,
+    'video-pro': Video,
+    'web-pro': Globe2,
+    'miniwob-pro': MousePointer,
+    'precision-pro': Crosshair,
+    'speed-pro': Zap,
+    'drag-pro': Move,
+    'webgames-pro': Gamepad,
+    'gambler-pro': Dice5,
+    'trader-pro': TrendingUp,
+    'hedgefund-pro': LineChart,
+    'desktop-pro': Monitor,
+    'wildcard-pro': Brain
+  };
 
-  const categories: Category[] = [
-    {
-      id: 'free',
-      title: 'Free Races',
-      icon: Gamepad2,
-      races: [
-        {
-          id: 'creative-races',
-          title: 'Creative Challenges',
-          description: 'Train AI to assist with art, video editing, and web design',
-          icon: Palette,
-          iconColor: 'text-pink-400',
-          bgGradient: 'from-pink-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-pink-900/40 hover:to-purple-900/40',
-          reward: 50,
-          buttonText: 'Join Race',
-          href: '/gym/free-races'
-        },
-        {
-          id: 'productivity-races',
-          title: 'Office Skills',
-          description: 'Master spreadsheets, documents, and productivity tools',
-          icon: FileSpreadsheet,
-          iconColor: 'text-blue-400',
-          bgGradient: 'from-blue-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-blue-900/40 hover:to-purple-900/40',
-          reward: 75,
-          buttonText: 'Join Race',
-          href: '/gym/free-races'
-        },
-        {
-          id: 'mouse-races',
-          title: 'Mouse Mastery',
-          description: 'Perfect your clicking, dragging, and precision skills',
-          icon: MousePointer,
-          iconColor: 'text-purple-400',
-          bgGradient: 'from-purple-900/30 to-stone-900/30',
-          hoverGradient: 'hover:from-purple-900/40 hover:to-stone-900/40',
-          reward: 60,
-          buttonText: 'Join Race',
-          href: '/gym/free-races'
-        }
-      ]
-    },
-    {
-      id: 'staked',
-      title: 'Staked Races',
-      icon: Sparkles,
-      races: [
-        {
-          id: 'pro-creative',
-          title: 'Creative Pro League',
-          description: 'High-stakes creative challenges with bigger rewards',
-          icon: Palette,
-          iconColor: 'text-pink-400',
-          bgGradient: 'from-pink-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-pink-900/40 hover:to-purple-900/40',
-          reward: 500,
-          stakeRequired: 100,
-          buttonText: 'Join Race',
-          href: '/gym/staked-races'
-        },
-        {
-          id: 'pro-trading',
-          title: 'Trading League',
-          description: 'Master market analysis and trading strategies',
-          icon: TrendingUp,
-          iconColor: 'text-emerald-400',
-          bgGradient: 'from-emerald-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-emerald-900/40 hover:to-purple-900/40',
-          reward: 1500,
-          stakeRequired: 300,
-          buttonText: 'Join Race',
-          href: '/gym/staked-races'
-        },
-        {
-          id: 'pro-mouse',
-          title: 'Elite Mouse League',
-          description: 'Ultimate precision and speed challenges',
-          icon: Crosshair,
-          iconColor: 'text-yellow-400',
-          bgGradient: 'from-yellow-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-yellow-900/40 hover:to-purple-900/40',
-          reward: 700,
-          stakeRequired: 140,
-          buttonText: 'Join Race',
-          href: '/gym/staked-races'
-        }
-      ]
+  let featuredRaces: Race[] = [];
+  
+  async function fetchRaces() {
+    try {
+      const response = await fetch('/api/races');
+      const races: Race[] = await response.json();
+      
+      // Get a mix of free and staked races for featuring
+      featuredRaces = races
+        .filter(race => race.id === 'wildcard' || (race.reward && race.reward >= 100)) // Only high reward races
+        .map(race => ({
+          ...race,
+          icon: iconMap[race.id] || Brain
+        }))
+        .slice(0, 3); // Show top 3 races
+    } catch (error) {
+      console.error('Error fetching races:', error);
     }
-  ];
+  }
 
   let mousePosition = { x: 0, y: 0 };
 
@@ -133,6 +89,7 @@
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
+    fetchRaces();
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
@@ -149,18 +106,52 @@
 
       <!-- Subtitle -->
       <p class="mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
-        Train AI agents through desktop challenges or learn to train your own
+        Train with AI assistants and earn rewards
       </p>
 
       <!-- Featured Carousel -->
       <FeaturedCarousel />
+      
+      <!-- Featured Races -->
+      <div class="mb-16">
+        <h2 class="mb-8 text-3xl font-bold text-purple-400">Featured Races</h2>
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {#each featuredRaces as race}
+            <FeaturedRace {race} />
+          {/each}
+        </div>
+      </div>
 
-      <!-- Categories -->
-      {#each categories as category}
-        <CategorySection {category} />
-      {/each}
+      <!-- Race Categories -->
+      <div class="mb-16">
+        <h2 class="mb-8 text-3xl font-bold text-purple-400">Race Categories</h2>
+        <div class="grid gap-6 md:grid-cols-2">
+          <a href="/gym/free-races" class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8 hover:from-purple-900/40 hover:to-stone-900/40">
+            <div class="flex items-center gap-4">
+              <div class="rounded-xl bg-purple-400/20 p-4">
+                <Trophy class="h-8 w-8 text-purple-400" />
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold">Free Races</h3>
+                <p class="text-gray-300">Train AI and earn rewards</p>
+              </div>
+            </div>
+          </a>
+          <a href="/gym/staked-races" class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8 hover:from-purple-900/40 hover:to-stone-900/40">
+            <div class="flex items-center gap-4">
+              <div class="rounded-xl bg-purple-400/20 p-4">
+                <DollarSign class="h-8 w-8 text-purple-400" />
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold">Staked Races</h3>
+                <p class="text-gray-300">High stakes, high rewards</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
 
-      <!-- Submit Race Idea -->
+      <!-- Notification Sign Up -->
       <SubmitRace />
     </div>
   </div>

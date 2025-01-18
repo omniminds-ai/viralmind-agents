@@ -6,7 +6,7 @@
     {
       id: 'train-agent',
       title: 'Train Your Own Agent',
-      description: "From playing games to a capable LAM in 4 easy steps! Just one click and ~50 examples to create autonomous agents that outperform OCR by 30%",
+      description: "Convert your gameplay into state-of-the-art LAMs: 4-step guide to building better agents",
       icon: Book,
       iconColor: 'text-emerald-400',
       iconBgColor: 'bg-emerald-600/30',
@@ -70,13 +70,13 @@
   <div class="relative h-[480px]">
     {#each slides as slide, i}
       <div 
-        class="absolute w-full rounded-3xl bg-gradient-to-br {slide.bgGradient} p-12 backdrop-blur-sm {slide.hoverGradient} transition-all duration-700 ease-in-out overflow-hidden"
+        class="absolute w-full h-full rounded-3xl bg-gradient-to-br {slide.bgGradient} p-12 backdrop-blur-sm {slide.hoverGradient} transition-all duration-700 ease-in-out overflow-hidden flex items-center"
         style="opacity: {i === currentSlide ? 1 : 0}; transform: scale({i === currentSlide ? 1 : 0.98}) translateX({(i - currentSlide) * 100}%); pointer-events: {i === currentSlide ? 'auto' : 'none'}"
       >
         <div class="absolute right-0 top-0 -translate-y-1/4 translate-x-1/4 opacity-10">
           <svelte:component this={slide.icon} class="h-80 w-80 {slide.iconColor}" />
         </div>
-        <div class="relative flex flex-col items-start gap-8">
+        <div class="relative flex flex-col items-start gap-8 w-full">
           <div class="rounded-2xl {slide.iconBgColor} p-6">
             <svelte:component this={slide.icon} class="h-16 w-16 {slide.iconColor}" />
           </div>

@@ -162,3 +162,66 @@ export interface SettingsRes {
   total_payout: number;
   treasury: number;
 }
+
+
+export const colorSchemes = {
+  pink: {
+    icon: 'text-pink-400',
+    bg: 'bg-gradient-to-br from-pink-900/30 via-purple-800/20 to-purple-900/30',
+    hover: 'hover:from-pink-900/40 hover:via-purple-800/30 hover:to-purple-900/40',
+    iconBg: 'rgb(var(--pink-400))'
+  },
+  blue: {
+    icon: 'text-blue-400',
+    bg: 'bg-gradient-to-br from-blue-900/30 via-indigo-800/20 to-purple-900/30',
+    hover: 'hover:from-blue-900/40 hover:via-indigo-800/30 hover:to-purple-900/40',
+    iconBg: 'rgb(var(--blue-400))'
+  },
+  purple: {
+    icon: 'text-purple-400',
+    bg: 'bg-gradient-to-br from-purple-900/30 via-indigo-800/20 to-stone-900/30',
+    hover: 'hover:from-purple-900/40 hover:via-indigo-800/30 hover:to-stone-900/40',
+    iconBg: 'rgb(var(--purple-400))'
+  },
+  orange: {
+    icon: 'text-orange-400',
+    bg: 'bg-gradient-to-br from-orange-900/30 via-red-800/20 to-purple-900/30',
+    hover: 'hover:from-orange-900/40 hover:via-red-800/30 hover:to-purple-900/40',
+    iconBg: 'rgb(var(--orange-400))'
+  },
+  indigo: {
+    icon: 'text-indigo-400',
+    bg: 'bg-gradient-to-br from-indigo-900/30 via-blue-800/20 to-purple-900/30',
+    hover: 'hover:from-indigo-900/40 hover:via-blue-800/30 hover:to-purple-900/40',
+    iconBg: 'rgb(var(--indigo-400))'
+  },
+  emerald: {
+    icon: 'text-emerald-400',
+    bg: 'bg-gradient-to-br from-emerald-900/30 via-green-800/20 to-purple-900/30',
+    hover: 'hover:from-emerald-900/40 hover:via-green-800/30 hover:to-purple-900/40',
+    iconBg: 'rgb(var(--emerald-400))'
+  }
+} as const;
+
+export type ColorScheme = keyof typeof colorSchemes;
+
+export interface Race {
+  id: string;
+  title: string;
+  description: string;
+  category: 'creative' | 'mouse' | 'slacker' | 'gaming' | 'wildcard';
+  icon?: string;
+  colorScheme?: ColorScheme;
+  prompt?: string;
+  reward?: number;
+  buttonText: string;
+  stakeRequired?: number;
+  href?: string;
+}
+
+export interface Category {
+  id: string;
+  title: string;
+  icon: any;
+  races: Race[];
+}

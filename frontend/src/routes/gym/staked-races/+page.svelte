@@ -5,160 +5,91 @@
     Palette, Video, Layout, FileSpreadsheet, Globe2, 
     MousePointer, Sparkles, Brain, DollarSign,
     Coffee, Gamepad, Dice5, Monitor, Gamepad2,
-    Crosshair, Zap, Move, TrendingUp, LineChart
+    Crosshair, Zap, Move, TrendingUp, LineChart, Music
   } from 'lucide-svelte';
   import FeaturedRace from '$lib/components/gym/FeaturedRace.svelte';
   import CategorySection from '$lib/components/gym/CategorySection.svelte';
-  import NotificationSignup from '$lib/components/gym/NotificationSignup.svelte';
+  import SubmitRace from '$lib/components/gym/SubmitRace.svelte';
+  import type { Race, Category } from '$lib/types';
 
-  interface Race {
-    id: string;
-    title: string;
-    description: string;
-    icon: any;
-    iconColor: string;
-    bgGradient: string;
-    hoverGradient: string;
-    prompt?: string;
-    reward?: number;
-    buttonText: string;
-    stakeRequired?: number;
-  }
+  // Icon mapping for each race icon
+  const iconMap: Record<string, any> = {
+    'Palette': Palette,
+    'FileSpreadsheet': FileSpreadsheet,
+    'Video': Video,
+    'Globe2': Globe2,
+    'MousePointer': MousePointer,
+    'Crosshair': Crosshair,
+    'Zap': Zap,
+    'Move': Move,
+    'Gamepad': Gamepad,
+    'Dice5': Dice5,
+    'TrendingUp': TrendingUp,
+    'LineChart': LineChart,
+    'Monitor': Monitor,
+    'Brain': Brain,
+    'Music': Music
+  };
 
-  interface Category {
-    id: string;
-    title: string;
-    icon: any;
-    races: Race[];
-  }
-
-  const categories: Category[] = [
-    {
-      id: 'creative',
+  // Category metadata
+  const categoryMeta: Record<string, { title: string; icon: any }> = {
+    'creative': {
       title: 'Creative Chaos',
-      icon: Sparkles,
-      races: [
-        {
-          id: 'paint-pro',
-          title: 'Paint Master',
-          description: 'Advanced artistic challenges with high stakes',
-          icon: Palette,
-          iconColor: 'text-pink-400',
-          bgGradient: 'from-pink-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-pink-900/40 hover:to-purple-900/40',
-          prompt: 'Create a detailed digital artwork',
-          reward: 500,
-          stakeRequired: 100,
-          buttonText: 'Join Race'
-        },
-        {
-          id: 'office-pro',
-          title: 'Office Pro',
-          description: 'Complex spreadsheet and document challenges',
-          icon: FileSpreadsheet,
-          iconColor: 'text-blue-400',
-          bgGradient: 'from-blue-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-blue-900/40 hover:to-purple-900/40',
-          prompt: 'Build an advanced financial model',
-          reward: 750,
-          stakeRequired: 150,
-          buttonText: 'Join Race'
-        },
-        {
-          id: 'video-pro',
-          title: 'Video Producer',
-          description: 'Professional video editing challenges',
-          icon: Video,
-          iconColor: 'text-red-400',
-          bgGradient: 'from-red-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-red-900/40 hover:to-purple-900/40',
-          prompt: 'Create a professional video edit',
-          reward: 1000,
-          stakeRequired: 200,
-          buttonText: 'Join Race'
-        }
-      ]
+      icon: Sparkles
     },
-    {
-      id: 'mouse',
+    'mouse': {
       title: 'Mouse Skills',
-      icon: MousePointer,
-      races: [
-        {
-          id: 'miniwob-pro',
-          title: 'Click Master',
-          description: 'Advanced interface navigation challenges',
-          icon: MousePointer,
-          iconColor: 'text-purple-400',
-          bgGradient: 'from-stone-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-stone-900/40 hover:to-purple-900/40',
-          prompt: 'Complete complex clicking sequences',
-          reward: 600,
-          stakeRequired: 120,
-          buttonText: 'Join Race'
-        },
-        {
-          id: 'precision-pro',
-          title: 'Precision Elite',
-          description: 'Ultimate pixel-perfect accuracy tests',
-          icon: Crosshair,
-          iconColor: 'text-yellow-400',
-          bgGradient: 'from-yellow-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-yellow-900/40 hover:to-purple-900/40',
-          prompt: 'Hit microscopic targets perfectly',
-          reward: 700,
-          stakeRequired: 140,
-          buttonText: 'Join Race'
-        }
-      ]
+      icon: MousePointer
     },
-    {
-      id: 'slacker',
+    'slacker': {
       title: 'Slacker Skills',
-      icon: Coffee,
-      races: [
-        {
-          id: 'trader-pro',
-          title: 'Pro Trader',
-          description: 'High-stakes market trading simulation',
-          icon: TrendingUp,
-          iconColor: 'text-emerald-400',
-          bgGradient: 'from-emerald-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-emerald-900/40 hover:to-purple-900/40',
-          prompt: 'Execute complex trading strategies',
-          reward: 1500,
-          stakeRequired: 300,
-          buttonText: 'Join Race'
-        },
-        {
-          id: 'hedgefund-pro',
-          title: 'Hedge Fund Elite',
-          description: 'Manage multiple high-stakes portfolios',
-          icon: LineChart,
-          iconColor: 'text-teal-400',
-          bgGradient: 'from-teal-900/30 to-purple-900/30',
-          hoverGradient: 'hover:from-teal-900/40 hover:to-purple-900/40',
-          prompt: 'Optimize complex investment strategies',
-          reward: 2000,
-          stakeRequired: 400,
-          buttonText: 'Join Race'
-        }
-      ]
+      icon: Coffee
+    },
+    'gaming': {
+      title: 'Gaming',
+      icon: Gamepad2
     }
-  ];
+  };
 
-const wildcardRace: Race = {
-    id: 'wildcard-pro',
-    title: 'Elite Wildcard Challenge',
-    description: 'High-stakes random challenges with bigger rewards',
-    icon: Brain,
-    iconColor: 'text-purple-400',
-    bgGradient: 'from-purple-900/40 via-purple-800/30 to-stone-900/40',
-    hoverGradient: 'hover:from-purple-900/50 hover:via-purple-800/40 hover:to-stone-900/50',
-    prompt: 'Advanced random task generated by AI',
-    reward: 1500,
-    stakeRequired: 300,
-    buttonText: 'Join Race'
+  let categories: Category[] = [];
+  
+  async function fetchRaces() {
+    try {
+      const response = await fetch('/api/races');
+      const races: Race[] = await response.json();
+      
+      // Filter out staked races and group by category
+      const proRaces = races.filter(race => race.stakeRequired);
+      const groupedRaces: Record<string, Race[]> = proRaces.reduce((acc: Record<string, Race[]>, race) => {
+        if (!acc[race.category]) {
+          acc[race.category] = [];
+        }
+        acc[race.category].push(race);
+        return acc;
+      }, {} as Record<string, Race[]>);
+
+      // Convert grouped races to categories array
+      categories = Object.entries(groupedRaces).map(([id, races]): Category => ({
+        id,
+        title: categoryMeta[id]?.title || id,
+        icon: categoryMeta[id]?.icon || Brain,
+        races
+      }));
+    } catch (error) {
+      console.error('Error fetching races:', error);
+    }
+  }
+
+  const wildcardRace: Race = {
+    id: 'wildcard',
+    title: 'AI Wildcard Challenge',
+    description: 'Our AI guides you through random desktop tasks',
+    colorScheme: 'purple',
+    prompt: 'Random task generated by AI',
+    reward: 150,
+    buttonText: 'Join Race',
+    category: 'wildcard',
+    stakeRequired: 0
   };
 
   let mousePosition = { x: 0, y: 0 };
@@ -170,6 +101,7 @@ const wildcardRace: Race = {
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
+    fetchRaces();
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
@@ -186,19 +118,19 @@ const wildcardRace: Race = {
 
       <!-- Subtitle -->
       <p class="mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
-        High-stakes challenges with bigger rewards
+        Stake $VIRAL to earn more in fun desktop challenges
       </p>
 
       <!-- Featured Wildcard Section -->
-      <FeaturedRace race={wildcardRace} />
+      <FeaturedRace race={wildcardRace} icon={Brain} />
 
       <!-- Categories -->
       {#each categories as category}
-        <CategorySection {category} />
+        <CategorySection {category} {iconMap} />
       {/each}
 
       <!-- Notification Sign Up -->
-      <NotificationSignup />
+      <SubmitRace />
     </div>
   </div>
 

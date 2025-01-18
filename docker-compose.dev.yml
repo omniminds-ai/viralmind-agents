@@ -38,9 +38,11 @@ services:
       - "8001:8001"
     command: npm run dev
     volumes:
-      # - ./backend:/usr/src/app/backend
-      # - /usr/src/app/backend/node_modules/
+      - ./backend:/usr/src/app/backend
+      - /usr/src/app/backend/node_modules/  # This creates an anonymous volume for node_modules
+      # training data output
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
+      - ./backend/public/recordings:/usr/src/app/backend/public/recordings
     environment:
       - DB_URI=${DB_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}

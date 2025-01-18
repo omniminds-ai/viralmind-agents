@@ -9,6 +9,7 @@
 target/*
 target_*/
 public/screenshots/*
+public/recordings/*
 
 # testing
 /coverage

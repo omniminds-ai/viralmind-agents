@@ -1,0 +1,160 @@
+import express, { Request, Response } from "express";
+import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
+const router = express.Router();
+
+type RaceCategory = 'creative' | 'mouse' | 'slacker' | 'gaming' | 'wildcard';
+type RaceSessionInput = Omit<RaceSessionDocument, '_id'> & {
+  category: RaceCategory;
+};
+
+// List all available races
+router.get("/", async (_req: Request, res: Response) => {
+  try {
+    const races = await DatabaseService.getRaces();
+    if (!races) {
+      res.status(404).json({ error: "No races found" });
+      return;
+    }
+    res.json(races);
+  } catch (error) {
+    console.error("Error fetching races:", error);
+    res.status(500).json({ error: "Failed to fetch races" });
+  }
+});
+
+// Start a new race session
+router.post("/:id/start", async (req: Request, res: Response) => {
+  try {
+    console.log('starting a new race!');
+
+    const { id } = req.params;
+    const { address } = req.body;
+
+    // if (!address) {
+    //   res.status(400).json({ error: "Address is required" });
+    //   return;
+    // }
+
+    // Get the race details
+    const race = await DatabaseService.getRaceById(id);
+    if (!race) {
+      res.status(404).json({ error: "Race not found" });
+      return;
+    }
+
+    // Create a new race session
+    const now = new Date();
+    const sessionData: RaceSessionInput = {
+      address,
+      challenge: id,
+      status: "active",
+      // TODO: load an available VM from the vultr vnc pool, or launch a headless .wsb vm locally
+      vm_ip: process.env.VNC_HOST_GYMTEST || "127.0.0.1",
+      vm_port: 5900,
+      vm_password: process.env.VNC_PASS_GYMTEST || "password123",
+      vm_credentials: {
+        username: "admin",
+        password: "password123"
+      },
+      created_at: now,
+      updated_at: now,
+      category: "creative" as RaceCategory
+    };
+
+    const session = await DatabaseService.createRaceSession(sessionData);
+
+    if (!session) {
+      res.status(500).json({ error: "Failed to create race session" });
+      return;
+    }
+
+    res.json({
+      sessionId: (session as any)._id,
+      vm_ip: session.vm_ip,
+      vm_port: session.vm_port,
+      vm_password: session.vm_password,
+      vm_credentials: session.vm_credentials
+    });
+
+  } catch (error) {
+    console.error("Error starting race:", error);
+    res.status(500).json({ error: "Failed to start race" });
+  }
+});
+
+// Get race session status
+router.get("/session/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const session = await DatabaseService.getRaceSession(id);
+
+    if (!session) {
+      res.status(404).json({ error: "Session not found" });
+      return;
+    }
+
+    res.json({
+      status: session.status,
+      vm_ip: session.vm_ip,
+      vm_port: session.vm_port,
+      vm_password: session.vm_password,
+      vm_credentials: session.vm_credentials,
+      created_at: session.created_at,
+      updated_at: session.updated_at
+    });
+
+  } catch (error) {
+    console.error("Error fetching session:", error);
+    res.status(500).json({ error: "Failed to fetch session" });
+  }
+});
+
+// Stop a race session
+router.post("/session/:id/stop", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const session = await DatabaseService.updateRaceSession(id, { 
+      status: "expired",
+      updated_at: new Date()
+    });
+    
+    if (!session) {
+      res.status(404).json({ error: "Session not found" });
+      return;
+    }
+
+    res.json({ success: true });
+
+  } catch (error) {
+    console.error("Error stopping session:", error);
+    res.status(500).json({ error: "Failed to stop session" });
+  }
+});
+
+// Update race session status
+router.put("/session/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !["active", "completed", "expired"].includes(status)) {
+      res.status(400).json({ error: "Invalid status" });
+      return;
+    }
+
+    const session = await DatabaseService.updateRaceSession(id, { status });
+    if (!session) {
+      res.status(404).json({ error: "Session not found" });
+      return;
+    }
+
+    res.json(session);
+
+  } catch (error) {
+    console.error("Error updating session:", error);
+    res.status(500).json({ error: "Failed to update session" });
+  }
+});
+
+export { router as racesRoute };

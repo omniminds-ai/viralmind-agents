@@ -6,13 +6,152 @@
     import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
     import { Trophy, Users, Clock } from 'lucide-svelte';
     import { trainingEvents } from '$lib/stores/training';
+    import loadingLoop from '$lib/assets/loading_loop.mp4';
+    import loadingDone from '$lib/assets/loading_done.mp4';
+    import loadingFail from '$lib/assets/loading_fail.mp4';
 
-    let currentImage = "https://placehold.co/1280x800";
+    interface RaceSession {
+        status: string;
+        vm_ip: string;
+        vm_port: number;
+        vm_password: string;
+        vm_credentials: {
+            username: string;
+            password: string;
+        };
+        created_at: string;
+        updated_at: string;
+    }
+
+    let currentImage: string | null = null;
+    let isLoading = true;
+    let isConnected = false;
+    let showLoadingDone = false;
+    let showLoadingFail = false;
     let socket: Socket;
     let width = 1280;
     let height = 800;
-    let startTime = Date.now();
+    let startTime: number;
     let currentFrame = 0;
+    let raceSession: RaceSession | null = null;
+    let error: string | null = null;
+    let timeRemaining = "-:--";
+    let participants = "--";
+    let rewardPool = "-- --";
+
+    function handleError(message: string) {
+        error = message;
+        isLoading = false;
+        showLoadingFail = true;
+        trainingEvents.addEvent({
+            type: 'system',
+            message: `Error: ${message}`,
+            timestamp: Date.now(),
+            frame: 0
+        });
+    }
+
+    async function loadSession(sessionId: string): Promise<RaceSession> {
+        try {
+            trainingEvents.addEvent({
+                type: 'system',
+                message: `Loading session ${sessionId}...`,
+                timestamp: Date.now(),
+                frame: 0
+            });
+
+            const res = await fetch(`/api/races/session/${sessionId}`);
+            if (!res.ok) {
+                const data = await res.json();
+                const errorMsg = data.error || 'Failed to load session';
+                handleError(errorMsg);
+                throw new Error(errorMsg);
+            }
+            const session = await res.json();
+            raceSession = session;
+
+            trainingEvents.addEvent({
+                type: 'system',
+                message: `Session loaded successfully`,
+                timestamp: Date.now(),
+                frame: 0
+            });
+
+            return session;
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to load session';
+            handleError(errorMsg);
+            throw err;
+        }
+    }
+
+    function setupSocket(sessionData: RaceSession, sessionId: string) {
+            socket = io('http://localhost:8001', {
+                query: {
+                    sessionId
+                }
+            });
+
+            socket.on('connect_error', (err) => {
+                handleError(`Failed to connect to VNC: ${err.message}`);
+                console.error('Socket connection error:', err);
+            });
+
+            socket.on('error', (err) => {
+                handleError(`Socket error: ${err.message}`);
+                console.error('Socket error:', err);
+            });
+
+        socket.on('connect', () => {
+            isConnected = true;
+            isLoading = false;
+            showLoadingDone = true;
+            startTime = Date.now();
+            trainingEvents.addEvent({
+                type: 'system',
+                message: 'Connected to VNC server',
+                timestamp: Date.now(),
+                frame: 0
+            });
+        });
+
+        socket.on('frame', (data) => {
+            currentImage = `data:image/jpeg;base64,${data.buffer}`;
+            width = data.width;
+            height = data.height;
+            currentFrame = data.frame;
+            
+            if (canvas) {
+                canvas.width = width;
+                canvas.height = height;
+                ctx = canvas.getContext('2d');
+            }
+
+            // Reset showLoadingDone after first frame is recv
+            setTimeout(() => {
+                showLoadingDone = false;
+            }, 100);
+        });
+
+        socket.on('training_event', (data) => {
+            trainingEvents.addEvent({
+                ...data,
+                timestamp: Date.now() - startTime,
+                frame: currentFrame
+            });
+        });
+
+        socket.on('quest_update', (data) => {
+            currentQuest = data.quest;
+            currentHint = data.hint;
+            isHintActive = true;
+        });
+
+        socket.on('hint_update', (data) => {
+            currentHint = data.hint;
+            isHintActive = true;
+        });
+    }
     
     // Quest state
     let currentQuest = '';
@@ -52,12 +191,6 @@
     let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D | null = null;
     let fadeTimeout: NodeJS.Timeout;
-
-    const session = {
-        timeRemaining: "-:--",
-        participants: 8,
-        rewardPool: 500
-    };
 
     // Convert client coordinates to VNC coordinates
     function getVNCCoordinates(e: MouseEvent & { currentTarget: HTMLImageElement }) {
@@ -269,42 +402,103 @@
         refreshHint(); // only refresh hint on user input
     }
 
-    onMount(() => {
-        socket = io('http://localhost:8001');
-        
-        socket.on('frame', (data) => {
-            currentImage = `data:image/jpeg;base64,${data.buffer}`;
-            width = data.width;
-            height = data.height;
-            currentFrame = data.frame;
-            
-            if (canvas) {
-                canvas.width = width;
-                canvas.height = height;
-                ctx = canvas.getContext('2d');
+    async function initializeRace() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const raceId = urlParams.get('id');
+        const sessionId = urlParams.get('s');
+
+        if (!raceId) {
+            handleError('No race ID provided');
+            return;
+        }
+
+        // If no session ID, start a new race session
+        if (!sessionId) {
+            try {
+                trainingEvents.addEvent({
+                    type: 'system',
+                    message: `Starting race ${raceId}...`,
+                    timestamp: Date.now(),
+                    frame: 0
+                });
+
+                const res = await fetch(`/api/races/${raceId}/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        address: window.location.origin
+                    })
+                });
+
+                if (!res.ok) {
+                    const data = await res.json();
+                    const errorMsg = data.error || 'Failed to start race';
+                    handleError(errorMsg);
+                    throw new Error(errorMsg);
+                }
+
+                const data = await res.json();
+                
+                trainingEvents.addEvent({
+                    type: 'system',
+                    message: `Race started successfully`,
+                    timestamp: Date.now(),
+                    frame: 0
+                });
+                
+                // Update URL with session ID
+                urlParams.set('s', data.sessionId);
+                window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+                
+                // Load the new session
+                const sessionData = await loadSession(data.sessionId);
+                if (sessionData.status !== 'active') {
+                    handleError('Session is not active');
+                    return;
+                }
+                setupSocket(sessionData, data.sessionId);
+            } catch (err) {
+                handleError(err instanceof Error ? err.message : 'Failed to start race');
             }
-        });
+        } else {
+            try {
+                // Load existing session
+                const sessionData = await loadSession(sessionId);
+                if (sessionData.status !== 'active') {
+                    handleError('Session is not active');
+                    return;
+                }
+                setupSocket(sessionData, sessionId);
+            } catch (err) {
+                handleError(err instanceof Error ? err.message : 'Failed to load session');
+            }
+        }
+    }
 
-        socket.on('training_event', (data) => {
-            trainingEvents.addEvent({
-                ...data,
-                timestamp: Date.now() - startTime,
-                frame: currentFrame
-            });
-        });
+    function stopRace() {
+        if (socket) {
+            socket.disconnect();
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('s');
+            if (sessionId) {
+                fetch(`/api/races/session/${sessionId}/stop`, {
+                    method: 'POST'
+                }).catch(console.error);
+            }
+            window.location.href = '/gym';
+        }
+    }
 
-        socket.on('quest_update', (data) => {
-            currentQuest = data.quest;
-            currentHint = data.hint;
-            isHintActive = true;
-        });
+    onMount(() => {
+        // Add beforeunload handler
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
 
-        socket.on('hint_update', (data) => {
-            currentHint = data.hint;
-            isHintActive = true;
-        });
-
-        // Handle keyboard events
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.ctrlKey || e.altKey || e.metaKey) {
                 e.preventDefault();
@@ -350,14 +544,24 @@
             ctx = canvas.getContext('2d');
         }
 
+        // Initialize the race
+        initializeRace();
+
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     });
     
     onDestroy(() => {
         if (socket) {
             socket.disconnect();
+            trainingEvents.addEvent({
+                type: 'system',
+                message: 'Disconnected from VNC server',
+                timestamp: Date.now(),
+                frame: currentFrame
+            });
         }
         if (fadeTimeout) {
             clearTimeout(fadeTimeout);
@@ -376,17 +580,44 @@
             >
                 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                 <div class="relative w-full h-full">
-                    <img
-                        src={currentImage}
-                        alt="VNC stream"
-                        class="absolute inset-0 w-full h-full object-cover cursor-crosshair select-none"
-                        on:mousemove={handleMouseMove}
-                        on:mousedown={handleMouseDown}
-                        on:mouseup={handleMouseUp}
-                        on:wheel={handleWheel}
-                        on:contextmenu|preventDefault
-                        draggable="false"
-                    />
+                    {#if isLoading}
+                        <video
+                            src={loadingLoop}
+                            autoplay
+                            loop
+                            muted
+                            class="absolute inset-0 w-full h-full object-cover"
+                        />
+                    {/if}
+                    {#if showLoadingDone}
+                        <video
+                            src={loadingDone}
+                            autoplay
+                            muted
+                            class="absolute inset-0 w-full h-full object-cover"
+                        />
+                    {/if}
+                    {#if showLoadingFail}
+                        <video
+                            src={loadingFail}
+                            autoplay
+                            muted
+                            class="absolute inset-0 w-full h-full object-cover"
+                        />
+                    {/if}
+                    {#if currentImage}
+                        <img
+                            src={currentImage}
+                            alt="VNC stream"
+                            class="absolute inset-0 w-full h-full object-cover cursor-crosshair select-none"
+                            on:mousemove={handleMouseMove}
+                            on:mousedown={handleMouseDown}
+                            on:mouseup={handleMouseUp}
+                            on:wheel={handleWheel}
+                            on:contextmenu|preventDefault
+                            draggable="false"
+                        />
+                    {/if}
                     <canvas
                         bind:this={canvas}
                         width={width}
@@ -404,16 +635,24 @@
             </div>
         </div>
 
-        <Timeline {startTime} />
+        {#if isConnected}
+            <Timeline {startTime} />
+        {/if}
         
-        <div class="p-4">
+        <div class="p-4 space-y-4">
+            <button
+                class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-xl transition-colors"
+                on:click={stopRace}
+            >
+                Stop Race
+            </button>
             <div class="grid grid-cols-3 gap-4">
                 <div class="bg-purple-950/30 rounded-xl p-4 border border-purple-500/20">
                     <div class="flex items-center gap-2 text-purple-400 mb-2">
                         <Clock size={20} />
                         <span>Time Remaining</span>
                     </div>
-                    <span class="text-2xl text-white font-medium">{session.timeRemaining}</span>
+                    <span class="text-2xl text-white font-medium">{timeRemaining}</span>
                 </div>
                 
                 <div class="bg-purple-950/30 rounded-xl p-4 border border-purple-500/20">
@@ -421,7 +660,7 @@
                         <Users size={20} />
                         <span>Participants</span>
                     </div>
-                    <span class="text-2xl text-white font-medium">--</span>
+                    <span class="text-2xl text-white font-medium">{participants}</span>
                 </div>
                 
                 <div class="bg-purple-950/30 rounded-xl p-4 border border-purple-500/20">
@@ -429,7 +668,7 @@
                         <Trophy size={20} />
                         <span>Reward Pool</span>
                     </div>
-                    <span class="text-2xl text-white font-medium">-- --</span>
+                    <span class="text-2xl text-white font-medium">{rewardPool}</span>
                 </div>
             </div>
         </div>

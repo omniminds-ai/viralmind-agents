@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
 
+import { raceSessionSchema, RaceSession } from "./RaceSession.ts";
+export { RaceSession, raceSessionSchema };
+
+import { Race, raceSchema } from "./Race.ts";
+export { Race, raceSchema };
+
 export const challengeSchema = new mongoose.Schema(
   {
     _id: String,
@@ -113,3 +119,4 @@ export const pageSchema = new mongoose.Schema(
 );
 
 export const Pages = mongoose.model("Pages", pageSchema);
+
