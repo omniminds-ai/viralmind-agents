@@ -5,7 +5,7 @@ export const trainingEventSchema = new mongoose.Schema(
     session: { type: String, ref: "RaceSession", required: true },
     type: { 
       type: String, 
-      enum: ["task", "mouse", "keyboard", "scroll", "system", "hint", "quest", "error"],
+      enum: ["task", "mouse", "keyboard", "scroll", "system", "hint", "quest", "error", "reasoning"],
       required: true 
     },
     message: { type: String, required: true },
@@ -30,7 +30,8 @@ export const trainingEventSchema = new mongoose.Schema(
         magnitude: { type: Number }
       }
     }],
-    created_at: { type: Date, default: Date.now }
+    created_at: { type: Date, default: Date.now },
+    metadata: { type: mongoose.Schema.Types.Mixed }
   },
   { collection: "training_events" }
 );

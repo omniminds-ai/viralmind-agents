@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Brain, Mouse, Keyboard, Terminal, HelpCircle, Trophy } from 'lucide-svelte';
+    import { Brain, Mouse, Keyboard, Terminal, HelpCircle, Trophy, Scale } from 'lucide-svelte';
     import { eventColors, type TrainingEvent } from '$lib/stores/training';
 
     export let id: string;
@@ -103,6 +103,7 @@
             case 'system': return Terminal;
             case 'hint': return HelpCircle;
             case 'quest': return Trophy;
+            case 'reasoning': return Scale;
             default: return Terminal;
         }
     }

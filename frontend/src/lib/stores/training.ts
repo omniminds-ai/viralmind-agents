@@ -2,7 +2,7 @@ import { writable } from 'svelte/store';
 
 export interface TrainingEvent {
     id: string;
-    type: 'task' | 'mouse' | 'keyboard' | 'scroll' | 'system' | 'hint' | 'quest';
+    type: 'task' | 'mouse' | 'keyboard' | 'scroll' | 'system' | 'hint' | 'quest' | 'reasoning';
     message: string;
     timestamp: number; // Unix timestamp in ms
     frame: number; // VNC frame number
@@ -17,6 +17,7 @@ export interface EventColors {
     system: string;
     hint: string;
     quest: string;
+    reasoning: string;
 }
 
 export const eventColors: EventColors = {
@@ -26,7 +27,8 @@ export const eventColors: EventColors = {
     scroll: 'rgb(234, 179, 8)',   // Yellow
     system: 'rgb(239, 68, 68)',   // Red
     hint: 'rgb(14, 165, 233)',    // Sky blue
-    quest: 'rgb(217, 119, 6)'     // Amber
+    quest: 'rgb(217, 119, 6)',    // Amber
+    reasoning: 'rgb(251, 146, 60)'  // Orange
 };
 
 function createTrainingStore() {

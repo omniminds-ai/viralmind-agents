@@ -101,7 +101,8 @@ async function generateQuest(imageBase64: string) {
 async function generateHint(
   imageBase64: string,
   currentQuest: string,
-  socket: Socket
+  socket: Socket,
+  hintHistory: string[] = []
 ) {
   try {
     const response = await openai.chat.completions.create({
@@ -112,7 +113,35 @@ async function generateHint(
           content: [
             {
               type: "text",
-              text: `Current quest: ${currentQuest}\nProvide a single actionable hint that includes one of these patterns if applicable:\n- Type 'x[TAB]' to autocomplete\n- Scroll in [area] to find [target]\n- Click the [specific element]\n- Move cursor to [exact location]\nKeep it to one sentence.`,
+              text: `Current quest: ${currentQuest}
+Previous hints: ${hintHistory.slice(-3).join(', ')}
+
+First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
+
+Then provide a single actionable hint (if needed) that includes one of these patterns if applicable:
+- Type 'x[TAB]' to autocomplete
+- Scroll in [area] to find [target]
+- Click the [specific element]
+- Move cursor to [exact location]
+
+Output as JSON with three fields:
+1. "reasoning": Your analysis of what's been accomplished vs core requirements (ignore artistic details)
+2. "isCompleted": Boolean based on basic task completion
+3. "hint": A single sentence hint if not completed
+
+Example format:
+{
+  "reasoning": "Basic planet circle is drawn and has some kind of ring shape around it. While colors aren't perfect, the core task of drawing a ringed planet is done.",
+  "isCompleted": true,
+  "hint": ""
+}
+
+Or if incomplete:
+{
+  "reasoning": "Window is open but no drawing started yet. Core task requires a basic planet shape and rings.",
+  "isCompleted": false,
+  "hint": "Click and drag to draw a circle for the planet body"
+}`,
             },
             {
               type: "image_url",
@@ -123,37 +152,109 @@ async function generateHint(
           ],
         },
       ],
-      max_tokens: 60,
+      max_tokens: 250,
       stream: true,
     });
 
-    let hintText = "";
+    let fullResponse = "";
+    let partialHint = "";
+    const hintRegex = /"hint":\s*"([^"]*)/;
+    
     for await (const chunk of response) {
       if (chunk.choices[0]?.delta?.content) {
-        hintText += chunk.choices[0].delta.content;
-        socket.emit("hint_update", { hint: hintText });
+        fullResponse += chunk.choices[0]?.delta?.content;
+        
+        // Try to extract hint from partial JSON
+        const hintMatch = fullResponse.match(hintRegex);
+        if (hintMatch && hintMatch[1]) {
+          const newHint = hintMatch[1];
+          if (newHint !== partialHint) {
+            partialHint = newHint;
+            socket.emit("hint_update", { hint: partialHint });
+          }
+        }
       }
     }
 
-    // Emit final hint as training event
-    const eventData = {
+    // Parse the JSON response
+    const jsonMatch = fullResponse.match(/{[\s\S]*}/);
+    let parsedResponse = { hint: "", reasoning: "", isCompleted: false };
+    if (jsonMatch) {
+      try {
+        parsedResponse = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error("Error parsing JSON from response:", e);
+      }
+    }
+
+    console.log(parsedResponse);
+
+    // Emit final hint and reasoning as training events
+    const hintEvent = {
       type: "hint",
-      message: hintText,
+      message: parsedResponse.hint,
+      session: socket.handshake.query.sessionId,
+      frame: 0,
+      timestamp: Date.now(),
+      // metadata: {
+      //   reasoning: parsedResponse.reasoning
+      // }
+    };
+
+    socket.emit("training_event", hintEvent);
+    await DatabaseService.createTrainingEvent(hintEvent);
+
+    const reasoningEvent = {
+      type: "reasoning",
+      message: parsedResponse.reasoning,
       session: socket.handshake.query.sessionId,
       frame: 0,
       timestamp: Date.now()
     };
+    socket.emit("training_event", reasoningEvent);
+    await DatabaseService.createTrainingEvent(reasoningEvent);
 
-    socket.emit("training_event", eventData);
-    await DatabaseService.createTrainingEvent(eventData);
+    // If quest is completed, generate new quest
+    if (parsedResponse.isCompleted) {
+      const questData = await generateQuest(imageBase64);
+      const questEvent = {
+        type: "quest",
+        message: questData.quest,
+        session: socket.handshake.query.sessionId,
+        frame: 0,
+        timestamp: Date.now()
+      };
+      
+      socket.emit("training_event", questEvent);
+      await DatabaseService.createTrainingEvent(questEvent);
+      
+      socket.emit("quest_update", {
+        quest: questData.quest,
+        hint: questData.hint,
+      });
 
-    return hintText;
+      return {
+        hint: parsedResponse.hint,
+        reasoning: parsedResponse.reasoning,
+        isCompleted: true,
+        newQuest: questData.quest
+      };
+    }
+
+    return {
+      hint: parsedResponse.hint,
+      reasoning: parsedResponse.reasoning,
+      isCompleted: false
+    };
   } catch (error) {
     console.error("Error generating hint:", error);
-    const fallbackHint =
-      "Scroll in the environments list to explore available tasks";
+    const fallbackHint = "Scroll in the environments list to explore available tasks";
     socket.emit("hint_update", { hint: fallbackHint });
-    return fallbackHint;
+    return {
+      hint: fallbackHint,
+      reasoning: "Error occurred during analysis",
+      isCompleted: false
+    };
   }
 }
 
@@ -170,13 +271,14 @@ class Episode {
   isGeneratingHint: boolean;
   startTime: number | undefined;
   frameCount: number;
+  hintHistory: string[];
 
   constructor(
     socket: Socket,
     options: { fps?: number; frameInterval?: number } = {}
   ) {
     this.socket = socket;
-    this.fps = options.fps || 15;
+    this.fps = options.fps || 10;
     this.frameInterval = options.frameInterval || 1000; // 1 second for sending frames to client
     this.client = null;
     this.ffmpeg = null;
@@ -186,6 +288,7 @@ class Episode {
     this.currentQuest = null;
     this.isGeneratingHint = false;
     this.frameCount = 0;
+    this.hintHistory = [];
   }
 
   async connect(host = "127.0.0.1", port = 5900, password = "abc123") {
@@ -341,6 +444,18 @@ class Episode {
 
     this.ffmpeg = spawn("ffmpeg", ffmpegArgs);
 
+    this.ffmpeg.on('error', (err) => {
+      console.error('FFmpeg process error:', err);
+    });
+    
+    this.ffmpeg?.stdin?.on('error', (err) => {
+      console.error('FFmpeg stdin error:', err);
+    });
+    
+    this.ffmpeg?.stdout?.on('error', (err) => {
+      console.error('FFmpeg stdout error:', err);
+    });
+
     // Log any ffmpeg errors
     this.ffmpeg.stderr?.on('data', (data) => {
       console.error('FFmpeg error:', data.toString());
@@ -351,9 +466,16 @@ class Episode {
 
   recordFrame() {
     this.recordingTimer = setTimeout(() => {
-      this.recordFrame();
-      this.ffmpeg?.stdin?.write(this.client.getFb());
+      if (this.ffmpeg?.stdin?.writable) {
+        const writeResult = this.ffmpeg.stdin.write(this.client.getFb());
+        if (!writeResult) {
+          // Handle backpressure
+          this.ffmpeg.stdin.once('drain', () => this.recordFrame());
+          return;
+        }
+      }
       this.frameCount++;
+      this.recordFrame();
     }, 1000 / this.fps);
   }
 
@@ -392,11 +514,15 @@ class Episode {
     if (this.frameTimer) {
       clearInterval(this.frameTimer);
     }
+    if (this.ffmpeg?.stdin) {
+      this.ffmpeg.stdin.end();  // End the stream properly
+      await new Promise(resolve => this.ffmpeg?.stdin?.once('finish', resolve));
+    }
     if (this.ffmpeg) {
       this.ffmpeg.kill("SIGINT");
     }
     if (this.client) {
-      this.client.end();
+      this.client.disconnect();
     }
 
     // Log disconnection event
@@ -412,6 +538,13 @@ class Episode {
       await DatabaseService.createTrainingEvent(eventData);
     }
   }
+}
+
+// Track active episodes
+const activeEpisodes = new Map<string, Episode>();
+
+export function getEpisode(sessionId: string): Episode | undefined {
+  return activeEpisodes.get(sessionId);
 }
 
 export function initializeSocketIO(httpServer: HttpServer) {
@@ -441,11 +574,27 @@ export function initializeSocketIO(httpServer: HttpServer) {
     }
 
     const episode = new Episode(socket);
+    activeEpisodes.set(sessionId as string, episode);
     episode.connect(session.vm_ip, session.vm_port, session.vm_password);
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("Socket.io disconnected");
       episode.close();
+      
+      // End the race session
+      const sessionId = socket.handshake.query.sessionId as string;
+      if (sessionId) {
+        try {
+          await DatabaseService.updateRaceSession(sessionId, {
+            status: "expired",
+            updated_at: new Date()
+          });
+          console.log(`Race session ${sessionId} marked as expired`);
+          activeEpisodes.delete(sessionId);
+        } catch (error) {
+          console.error("Error ending race session:", error);
+        }
+      }
     });
 
     socket.on("request_hint", async () => {
@@ -453,12 +602,12 @@ export function initializeSocketIO(httpServer: HttpServer) {
         console.log("Hint generation already in progress");
         return;
       }
-
+    
       try {
         episode.isGeneratingHint = true;
         const fb = episode.client.getFb();
         const { clientWidth, clientHeight } = episode.client;
-
+    
         const jpeg = await sharp(fb, {
           raw: {
             width: clientWidth,
@@ -468,12 +617,22 @@ export function initializeSocketIO(httpServer: HttpServer) {
         })
           .jpeg()
           .toBuffer();
-
-        await generateHint(
+    
+        const result = await generateHint(
           jpeg.toString("base64"),
           episode.currentQuest || "",
-          socket
+          socket,
+          episode.hintHistory
         );
+    
+        // Add new hint to history
+        episode.hintHistory.push(result.hint);
+    
+        // If quest is completed, update current quest and reset hint history
+        if (result.isCompleted && result.newQuest) {
+          episode.currentQuest = result.newQuest;
+          episode.hintHistory = [];
+        }
       } catch (error) {
         console.error("Error generating hint:", error);
         socket.emit("hint_update", {
