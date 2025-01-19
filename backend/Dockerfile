@@ -9,7 +9,8 @@ COPY jailbreak-pool/target ./target
 RUN apt update \
     && apt install --assume-yes --no-install-recommends \
     build-essential \
-    python3
+    python3 \
+    ffmpeg
 RUN npm ci --include=dev
 
 COPY . .

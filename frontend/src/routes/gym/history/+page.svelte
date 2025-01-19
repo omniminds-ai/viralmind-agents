@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Shapes, Zap, Brain, Coins, BicepsFlexed, Download, BrainCircuit } from 'lucide-svelte';
-  import ButtonCTA from '$lib/components/ButtonCTA.svelte';
+  import { Coins, Download, BrainCircuit } from 'lucide-svelte';
+  import { walletStore } from '$lib/walletStore';
   import TrainDialog from '$lib/components/gym/TrainDialog.svelte';
+  import ExportDialog from '$lib/components/gym/ExportDialog.svelte';
   import SkillNetwork from '$lib/components/gym/SkillNetwork.svelte';
   import RaceHistoryGrid from '$lib/components/gym/RaceHistoryGrid.svelte';
 
@@ -10,83 +11,47 @@
   let showTrainDialog = false;
   let showActionsMenu = false;
 
-  let races = [
-    {
-      id: 1,
-      name: "System Root Protocol",
-      actionTokens: 124,
-      grade: "A",
-      earnings: 150,
-      selected: false,
-      timestamp: "2024-01-15T14:30:00Z",
-      skills: ["Terminal Navigation", "Package Management", "System Configuration"]
-    },
-    {
-      id: 2, 
-      name: "Interface Synapse",
-      actionTokens: 128,
-      grade: "B+",
-      earnings: 120,
-      selected: false,
-      timestamp: "2024-01-14T16:45:00Z",
-      skills: ["Desktop Navigation", "Application Control", "Window Management"]
-    },
-    {
-      id: 3,
-      name: "Creative Cortex",
-      actionTokens: 132,
-      grade: "A+",
-      earnings: 200,
-      selected: false,
-      timestamp: "2024-01-13T09:15:00Z",
-      skills: ["Digital Art", "Visual Design", "Tool Control"]
-    },
-    {
-      id: 4,
-      name: "Code Neural Stream",
-      actionTokens: 128,
-      grade: "A",
-      earnings: 180,
-      selected: false,
-      timestamp: "2024-01-12T11:20:00Z",
-      skills: ["IDE Navigation", "Code Completion", "Git Operations"]
-    },
-    {
-      id: 5,
-      name: "Swarm Builder",
-      actionTokens: 130,
-      grade: "A-",
-      earnings: 175,
-      selected: false,
-      timestamp: "2024-01-11T13:40:00Z",
-      skills: ["Minecraft Construction", "Resource Gathering", "3D Navigation"]
-    },
-    {
-      id: 6,
-      name: "Data Nexus",
-      actionTokens: 126,
-      grade: "A",
-      earnings: 160,
-      selected: false,
-      timestamp: "2024-01-10T15:55:00Z",
-      skills: ["Spreadsheet Mastery", "Data Entry", "Formula Construction"]
-    },
-    {
-      id: 7,
-      name: "Media Synthesis",
-      actionTokens: 135,
-      grade: "A+",
-      earnings: 220,
-      selected: false,
-      timestamp: "2024-01-09T10:25:00Z",
-      skills: ["Video Timeline Control", "Effect Application", "Output Management"]
-    }
-  ];
+  interface Race {
+    id: string;
+    name: string;
+    actionTokens: number;
+    earnings: number;
+    selected: boolean;
+    status: string;
+    skills: string[];
+  }
 
-  let exportFormat = "openai";
+  let races: Race[] = [];
+  let showExportDialog = false;
   let selectedCount = 0;
   let selectedSkills: Set<string> = new Set();
   let allSelected = false;
+
+  async function loadRaceSessions() {
+    try {
+      const response = await fetch('/api/races/history', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Wallet-Address': $walletStore.publicKey?.toString() || ''
+        }
+      });
+      const data = await response.json();
+      
+      // Transform API data to match the Race interface
+      races = data.map((session: any, index: number) => ({
+        id: session._id,
+        name: session.title || `Race ${session.challenge}`,
+        selected: false,
+        status: session.status || 'active',
+        skills: session.category ? [session.category] : [],
+        actionTokens: session.actionTokens || 0,
+        earnings: Number((session.earnings || 0).toFixed(2))
+      }));
+    } catch (error) {
+      console.error('Error loading race sessions:', error);
+    }
+  }
 
   $: {
     selectedCount = races.filter(r => r.selected).length;
@@ -94,7 +59,6 @@
     races.filter(r => r.selected).forEach(race => {
       race.skills.forEach(skill => selectedSkills.add(skill));
     });
-    // Update allSelected based on whether all races are selected
     allSelected = races.length > 0 && races.every(r => r.selected);
   }
 
@@ -110,9 +74,66 @@
     }));
   }
 
-  function handleExport() {
-    // TODO: Implement actual export functionality
-    console.log(`Exporting ${selectedCount} races in ${exportFormat} format`);
+  async function handleExport(type: 'raw' | 'full') {
+    if (type === 'raw') {
+      try {
+        const selectedIds = races.filter(r => r.selected).map(r => r.id);
+        const response = await fetch('/api/races/export', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sessionIds: selectedIds })
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const data = await response.json();
+        
+        // Create and download the JSON file
+        const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const jsonUrl = window.URL.createObjectURL(jsonBlob);
+        const jsonLink = document.createElement('a');
+        jsonLink.href = jsonUrl;
+        jsonLink.download = `race-sessions-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(jsonLink);
+        jsonLink.click();
+        window.URL.revokeObjectURL(jsonUrl);
+        document.body.removeChild(jsonLink);
+
+        // Download videos for each session
+        for (const session of data) {
+          if (session.video_path) {
+            try {
+              const videoResponse = await fetch(session.video_path);
+              if (!videoResponse.ok) {
+                console.error(`Failed to fetch video for session ${session.session_id}`);
+                continue;
+              }
+
+              const videoBlob = await videoResponse.blob();
+              const videoUrl = window.URL.createObjectURL(videoBlob);
+              const videoLink = document.createElement('a');
+              videoLink.href = videoUrl;
+              
+              // Extract filename from path or use session ID
+              const filename = session.video_path.split('/').pop() || `session-${session.session_id}.mp4`;
+              videoLink.download = filename;
+              
+              document.body.appendChild(videoLink);
+              videoLink.click();
+              window.URL.revokeObjectURL(videoUrl);
+              document.body.removeChild(videoLink);
+            } catch (error) {
+              console.error(`Error downloading video for session ${session.session_id}:`, error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error exporting data:', error);
+      }
+    }
+    showExportDialog = false;
   }
 
   function handleTrain() {
@@ -127,26 +148,25 @@
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
+    loadRaceSessions();
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   });
 </script>
 
 <div class="min-h-screen bg-black pb-24 text-white">
   <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
     <!-- Content Container -->
-    <div class="relative z-10 mx-auto w-full max-w-6xl px-4">
-      <!-- Title Section -->
-      <div class="my-12 text-center">
-        <h1 class="mb-6 text-5xl font-bold drop-shadow-lg md:text-7xl">Training History</h1>
-        <p class="mx-auto max-w-2xl text-xl text-gray-400 md:text-2xl">
-          Your race history and training data marketplace.
-        </p>
-      </div>
+    <div class="relative z-10 mx-auto w-full max-w-[1400px] px-8">
+      <!-- Main Title -->
+      <h1 class="my-6 text-5xl font-bold drop-shadow-lg md:text-7xl">Training History</h1>
+
+      <!-- Subtitle -->
+      <p class="mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
+        Your recorded computer-use demonstrations for training AI agents, ready to be used as behavioral datasets.
+      </p>
 
       <!-- Info Section -->
-      <div class="mt-8 mb-2 grid gap-2 text-sm text-gray-400 md:grid-cols-2">
+      <div class="mb-12 grid gap-4 text-sm text-gray-400 md:grid-cols-2">
         <div class="rounded-xl bg-stone-900/25 p-4 backdrop-blur-sm">
           <div class="flex items-center gap-2 text-purple-400">
             <BrainCircuit class="h-4 w-4" />
@@ -168,31 +188,15 @@
       </div>
 
       <!-- Action Menu Bar -->
-      <div class="mb-2 flex items-center justify-between rounded-xl bg-stone-900/25 px-4 py-3 backdrop-blur-sm">
-        <div class="flex items-center gap-4">
-          
-          <span class="text-sm text-gray-400">
-            Build your own agent:
-          </span>
-
-          <select 
-            bind:value={exportFormat}
-            class="rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm text-white focus:outline-none"
-          >
-            <option value="openai">GPT-4o Fine-tuning</option>
-            <option value="anthropic">Anthropic Format</option>
-            <option value="raw">Raw Data</option>
-          </select>
-          
-          <button 
-            on:click={handleExport}
-            class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50 disabled:opacity-50"
-            disabled={selectedCount === 0}
-          >
-            <Download class="h-4 w-4" />
-            Export dataset
-          </button>
-        </div>
+      <div class="mb-8 flex items-center justify-between rounded-xl bg-stone-900/25 px-4 py-3 backdrop-blur-sm">
+        <button 
+          on:click={() => showExportDialog = true}
+          class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50 disabled:opacity-50"
+          disabled={selectedCount === 0}
+        >
+          <Download class="h-4 w-4" />
+          Export Dataset
+        </button>
 
         <div class="flex items-center gap-2">
           <button 
@@ -221,7 +225,7 @@
       />
 
       <!-- Neural Network Visualization -->
-      <div class="my-6">
+      <div class="mt-12">
         <div class="flex items-center gap-2 mb-4">
           <BrainCircuit class="h-5 w-5 text-purple-400" />
           <span class="text-lg font-semibold">Neural Skill Network</span>
@@ -248,4 +252,11 @@
   bind:show={showTrainDialog}
   {selectedCount}
   onClose={() => showTrainDialog = false}
+/>
+
+<ExportDialog
+  bind:show={showExportDialog}
+  {selectedCount}
+  onClose={() => showExportDialog = false}
+  onExport={handleExport}
 />

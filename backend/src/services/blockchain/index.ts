@@ -6,9 +6,12 @@ import {
   SystemProgram,
   Keypair,
   LAMPORTS_PER_SOL,
+  sendAndConfirmTransaction,
 } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, createTransferInstruction, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { createHash } from "crypto";
 import { readFileSync } from "fs";
+import { token } from "@coral-xyz/anchor/dist/cjs/utils/index.js";
 
 class BlockchainService {
   connection: Connection;
@@ -18,6 +21,211 @@ class BlockchainService {
     this.programId = programId;
   }
 
+  async getTokenBalance(tokenMint: string, walletAddress: string): Promise<number> {
+    try {
+      console.log('token mint:', tokenMint)
+      console.log('treasury:', walletAddress)
+      
+      const filters = [
+        { dataSize: 165 },
+        {
+          memcmp: {
+            offset: 32,
+            bytes: walletAddress,
+          },
+        },
+        {
+          memcmp: {
+            offset: 0,
+            bytes: tokenMint,
+          },
+        },
+      ];
+
+      const accounts = await this.connection.getProgramAccounts(
+        TOKEN_PROGRAM_ID,
+        { filters }
+      );
+
+      if (accounts.length > 0) {
+        const info = await this.connection.getTokenAccountBalance(
+          accounts[0].pubkey
+        );
+        return info.value.uiAmount || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.error("Error getting token balance:", error);
+      return 0;
+    }
+  }
+
+  async transferToken(
+    tokenMint: string, 
+    amount: number,
+    fromWallet: Keypair,
+    toAddress: string
+  ): Promise<string | false> {
+    try {
+      console.log(`Initiating transfer of ${amount} tokens from ${fromWallet.publicKey.toString()} to ${toAddress}`);
+      console.log('Token mint:', tokenMint);
+
+      const fromPublicKey = fromWallet.publicKey;
+      const toPublicKey = new PublicKey(toAddress);
+      const mintPubkey = new PublicKey(tokenMint);
+
+      // Get ATAs
+      const fromAta = await getAssociatedTokenAddressSync(
+        mintPubkey,
+        fromPublicKey
+      );
+      console.log('Source ATA:', fromAta.toString());
+
+      // Debug source token account
+      console.log('Debugging source token account...');
+      const accountInfo = await this.connection.getAccountInfo(fromAta);
+      console.log('Raw account info:', {
+        exists: !!accountInfo,
+        size: accountInfo?.data.length,
+        owner: accountInfo?.owner.toString()
+      });
+
+      // Get token balance direct check
+      try {
+        const tokenBalance = await this.connection.getTokenAccountBalance(fromAta);
+        console.log('Token balance direct check:', {
+          amount: tokenBalance?.value?.amount,
+          decimals: tokenBalance?.value?.decimals,
+          uiAmount: tokenBalance?.value?.uiAmount
+        });
+      } catch (e) {
+        console.log('Failed to get token balance:', e);
+      }
+
+      // Get all token accounts for this owner/mint
+      console.log('Checking all token accounts for owner...');
+      const tokenAccounts = await this.connection.getTokenAccountsByOwner(
+        fromPublicKey,
+        { mint: mintPubkey }
+      );
+      console.log('All token accounts for this owner/mint:', 
+        tokenAccounts.value.map(acc => ({
+          pubkey: acc.pubkey.toString(),
+          data: acc.account.data
+        }))
+      );
+
+      // Check if source ATA exists and has sufficient balance
+      if (!accountInfo) {
+        console.error('Source token account does not exist');
+        return false;
+      }
+
+      const toAta = await getAssociatedTokenAddressSync(
+        mintPubkey,
+        toPublicKey
+      );
+      console.log('Destination ATA:', toAta.toString());
+
+      // Check destination ATA
+      const destinationAccount = await this.connection.getAccountInfo(toAta);
+      console.log('Destination account exists:', !!destinationAccount);
+      
+      // Create transaction
+      const transaction = new Transaction();
+      
+      // Create destination ATA if needed
+      if (!destinationAccount) {
+        console.log('Creating destination ATA...');
+        transaction.add(
+          createAssociatedTokenAccountInstruction(
+            fromPublicKey,
+            toAta,
+            toPublicKey,
+            mintPubkey
+          )
+        );
+      }
+
+      // Add transfer instruction
+      // Get token decimals from the balance info
+      const tokenInfo = await this.connection.getTokenAccountBalance(fromAta);
+      const decimals = tokenInfo.value.decimals;
+      const amountInSmallestUnit = amount * (10 ** decimals);
+      console.log('Transfer amount in smallest unit:', amountInSmallestUnit);
+      
+      transaction.add(
+        createTransferInstruction(
+          fromAta,
+          toAta,
+          fromPublicKey,
+          amountInSmallestUnit
+        )
+      );
+
+      // Get latest blockhash
+      const latestBlockhash = await this.connection.getLatestBlockhash();
+      transaction.recentBlockhash = latestBlockhash.blockhash;
+      transaction.feePayer = fromPublicKey;
+
+      console.log('Transaction details:', {
+        numInstructions: transaction.instructions.length,
+        recentBlockhash: latestBlockhash.blockhash,
+        feePayer: transaction.feePayer.toString()
+      });
+
+      console.log('Sending transaction...');
+      const signature = await sendAndConfirmTransaction(
+        this.connection,
+        transaction,
+        [fromWallet]
+      );
+      
+      console.log('Transaction successful:', signature);
+
+      // Log final balances
+      try {
+        const [sourceBalance, destBalance] = await Promise.all([
+          this.connection.getTokenAccountBalance(fromAta),
+          this.connection.getTokenAccountBalance(toAta)
+        ]);
+        
+        console.log('Final balances:', {
+          source: sourceBalance?.value?.uiAmount ?? 'unknown',
+          destination: destBalance?.value?.uiAmount ?? 'unknown'
+        });
+      } catch (e) {
+        console.warn('Failed to fetch final balances:', e);
+      }
+
+      return signature;
+
+    } catch (error: any) {
+      console.error('Transfer failed:', {
+        message: error.message,
+        logs: error?.logs,
+        details: error
+      });
+
+      // Additional error context
+      if (error.name === 'TokenAccountNotFoundError') {
+        console.error('Detailed error: Token account not found');
+      }
+      
+      // Try to get transaction logs if available
+      if (error.signature) {
+        try {
+          const logs = await this.connection.getTransaction(error.signature);
+          console.log('Transaction logs:', logs);
+        } catch (e) {
+          console.warn('Could not fetch transaction logs:', e);
+        }
+      }
+
+      return false;
+    }
+  }
+  
   // Utility to calculate the discriminator
   calculateDiscriminator(instructionName: string) {
     const hash = createHash("sha256")

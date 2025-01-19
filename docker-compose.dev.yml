@@ -38,9 +38,11 @@ services:
       - "8001:8001"
     command: npm run dev
     volumes:
-      # - ./backend:/usr/src/app/backend
-      # - /usr/src/app/backend/node_modules/
+      - ./backend:/usr/src/app/backend
+      - /usr/src/app/backend/node_modules/  # This creates an anonymous volume for node_modules
+      # training data output
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
+      - ./backend/public/recordings:/usr/src/app/backend/public/recordings
     environment:
       - DB_URI=${DB_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -49,6 +51,7 @@ services:
       - RPC_URL=${RPC_URL}
       - ANCHOR_PROVIDER_URL=${ANCHOR_PROVIDER_URL}
       - IPC_SECRET=${IPC_SECRET}
+      - FEEDBACK_WEBHOOK=${FEEDBACK_WEBHOOK}
       # Hardcoded gym vnc config
       - VNC_HOST_GYMTEST=${VNC_HOST_GYMTEST}
       - VNC_PASS_GYMTEST=${VNC_PASS_GYMTEST}
@@ -61,6 +64,9 @@ services:
       - VNC_PASSWORD=admin
       - SERVICE_HOST=windows
       - SERVICE_PORT=6950
+      - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
+      - VIRAL_TOKEN=${VIRAL_TOKEN}
+      - DIGITALOCEAN_API_KEY=${DIGITALOCEAN_API_KEY}
     depends_on:
       - mongodb
       # - windows

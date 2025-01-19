@@ -5,7 +5,7 @@ import mongoose, { ConnectOptions } from "mongoose";
 import { catchErrors } from "./hooks/errors.ts";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer } from "http2";
+import { createServer } from "http";
 import { initializeSocketIO } from "./routes/socket.ts";
 
 dotenv.config();
@@ -47,7 +47,7 @@ app.use(function (req, res, next) {
   }
 
   // Request methods
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
   // Request headers
   res.setHeader("Access-Control-Expose-Headers", "auth-token, x-forwarded-for");
   res.setHeader(
@@ -80,12 +80,17 @@ app.use(
   "/api/screenshots",
   express.static(path.join(__dirname, "public", "screenshots"))
 );
+app.use(
+  "/api/recordings",
+  express.static(path.join(__dirname, "public", "recordings"))
+);
 
 // UI:
 import { challengesRoute } from "./routes/challenges.ts";
 import { conversationRoute } from "./routes/conversation.ts";
 import { settingsRoute } from "./routes/settings.ts";
 import { minecraftRoute } from "./routes/minecraft.ts";
+import { racesRoute } from "./routes/races.ts";
 
 // TEST:
 // import { testRoute } from "./test/conversation.ts";
@@ -98,6 +103,7 @@ app.use("/api/challenges", challengesRoute);
 app.use("/api/conversation", conversationRoute);
 app.use("/api/settings", settingsRoute);
 app.use("/api/minecraft", minecraftRoute);
+app.use("/api/races", racesRoute);
 app.use("/api/json/v1/tournaments", tournamentsAPI);
 app.use("/api/json/v1/conversations", conversationsAPI);
 

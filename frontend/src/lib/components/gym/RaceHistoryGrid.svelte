@@ -1,15 +1,14 @@
 <script lang="ts">
-  import { Shapes, Trophy, Calendar } from 'lucide-svelte';
+  import { Shapes, Trophy, CircleDot } from 'lucide-svelte';
   import CustomCheckbox from './CustomCheckbox.svelte';
 
   interface Race {
-    id: number;
+    id: string;
     name: string;
     actionTokens: number;
-    grade: string;
     earnings: number;
     selected: boolean;
-    timestamp: string;
+    status: string;
     skills: string[];
   }
 
@@ -52,67 +51,58 @@
   }
 </script>
 
-<div class="w-full bg-[#0C0C0D] rounded-lg overflow-hidden">
+<div class="w-full rounded-lg overflow-hidden bg-stone-900/25 backdrop-blur-sm">
   <div class="overflow-x-auto">
     <table class="w-full">
-      <thead class="bg-[#2A0F45] text-white">
+      <thead class="bg-stone-900/50 text-gray-400 text-sm">
         <tr>
-          <th class="p-4">
+          <th class="p-3 w-12">
             <CustomCheckbox
               checked={races.every(r => r.selected)}
               onChange={toggleAll}
             />
           </th>
-          <th class="p-4 text-left">Title</th>
-          <th class="p-4 text-left">Skills</th>
-          <th class="p-4 text-left">Tokens</th>
-          <th class="p-4 text-left">Grade</th>
-          <th class="p-4 text-left">Earnings</th>
-          <th class="p-4 text-left">Date</th>
+          <th class="p-3 text-left font-medium w-1/2">Race</th>
+          <th class="p-3 text-left font-medium w-24">Training Tokens</th>
+          <th class="p-3 text-left font-medium w-24">Earnings</th>
+          <th class="p-3 text-left font-medium w-24">Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-800">
+      <tbody class="divide-y divide-stone-800/50">
         {#each races as race}
-          <tr class="hover:bg-gray-900/50">
-            <td class="p-4">
+          <tr class="hover:bg-stone-800/25">
+            <td class="p-3">
               <CustomCheckbox
                 checked={race.selected}
                 onChange={() => toggleSelection(race)}
               />
             </td>
-            <td class="p-4 text-gray-300">{race.name}</td>
-            <td class="p-4">
-              <div class="flex flex-wrap gap-1">
-                {#each race.skills as skill}
-                  {@const color = getSkillColor(skill)}
-                  <span class="rounded-lg {color.bg} {color.text} px-2 py-0.5 text-xs">
-                    {skill}
-                  </span>
-                {/each}
-              </div>
+            <td class="p-3">
+              <div class="text-white font-medium">{race.name}</div>
             </td>
-            <td class="p-4">
-              <div class="flex items-center gap-1 text-gray-300">
-                <Shapes class="h-4 w-4 text-stone-400" />
+            <td class="p-3">
+              <div class="flex items-center gap-1 text-gray-400">
+                <Shapes class="h-4 w-4 text-stone-500" />
                 {race.actionTokens}
               </div>
             </td>
-            <td class="p-4">
-              <span class="rounded px-2 py-1 {race.grade.startsWith('A') ? 'bg-green-600/20 text-green-400' : 'bg-yellow-600/20 text-yellow-400'}">
-                {race.grade}
-              </span>
-            </td>
-            <td class="p-4">
-              <div class="flex items-center gap-1 text-gray-300">
-                <Trophy class="h-4 w-4 text-stone-400" />
+            <td class="p-3">
+              <div class="flex items-center gap-1 text-gray-400">
+                <Trophy class="h-4 w-4 text-stone-500" />
                 {race.earnings}
               </div>
             </td>
-            <td class="p-4">
-              <div class="flex items-center gap-1 text-gray-300">
-                <Calendar class="h-4 w-4 text-stone-400" />
-                {new Date(race.timestamp).toLocaleDateString()}
-              </div>
+            <td class="p-3">
+              <span class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-sm {
+                race.status === 'expired' ? 'bg-green-600/20 text-green-400' :
+                race.status === 'processing' ? 'bg-purple-600/20 text-purple-400' :
+                'bg-yellow-600/20 text-yellow-400'
+              }">
+                <CircleDot class="h-3 w-3" />
+                {race.status === 'expired' ? 'Ready' :
+                 race.status === 'processing' ? 'Processing' :
+                 'Active'}
+              </span>
             </td>
           </tr>
         {/each}

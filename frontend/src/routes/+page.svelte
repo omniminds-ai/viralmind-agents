@@ -30,6 +30,7 @@
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
   import ContractInfo from '$lib/components/ContractInfo.svelte';
   import TournamentCountdown from '$lib/components/tournaments/TournamentCountdown.svelte';
+  import GymCountdown from '$lib/components/gym/GymCountdown.svelte';
   import TournamentStream from '$lib/components/tournaments/TournamentStream.svelte';
   import type { SettingsRes } from '$lib/types';
   import TournamentActiveCard from '$lib/components/tournaments/TournamentActiveCard.svelte';
@@ -84,6 +85,16 @@
     <!-- Main Content -->
     <div class="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4">
       <div class="text-center">
+        <!-- Gym Launch Countdown -->
+        <!-- <div class="absolute top-48 left-1/2 -translate-x-1/2 transform space-y-6">
+          <div class="rounded-xl bg-black/50 pt-4 pb-8 px-8 backdrop-blur-sm border border-purple-500/20 shadow-2xl">
+            <div class="text-center">
+              <h3 class="text-xl font-bold text-purple-300/50 mb-1">Training Gym Launch</h3>
+            </div>
+            <GymCountdown />
+          </div>
+        </div> -->
+
         <h1 class="mb-8 text-6xl font-bold md:text-7xl lg:text-8xl">
           <span class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
             We Build LAMs
@@ -118,9 +129,6 @@
         {/if}
 
         <div class="relative mb-2">
-          <span class="absolute -top-8 left-1/2 -translate-x-1/2 transform rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300">
-            <Clock class="inline-block h-3 w-3 mr-1"/> Training Gym Coming Soon
-          </span>
           <div class="flex justify-center gap-4">
             <ButtonCTA href="/gym">
               Build Your Agent
@@ -750,4 +758,3 @@
     style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.1), transparent 100%)"
   ></div>
 </div>
-

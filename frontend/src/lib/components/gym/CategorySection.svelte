@@ -1,25 +1,10 @@
 <script lang="ts">
-  import { ArrowRight } from 'lucide-svelte';
+  import { ArrowRight, Brain } from 'lucide-svelte';
   import RaceCard from './RaceCard.svelte';
+  import type { Category } from '$lib/types';
 
-  export let category: {
-    id: string;
-    title: string;
-    icon: any;
-    races: Array<{
-      id: string;
-      title: string;
-      description: string;
-      icon: any;
-      iconColor: string;
-      bgGradient: string;
-      hoverGradient: string;
-      prompt?: string;
-      reward?: number;
-      buttonText: string;
-      stakeRequired?: number;
-    }>;
-  };
+  export let category: Category;
+  export let iconMap: Record<string, any>;
 </script>
 
 <div class="mb-16">
@@ -36,7 +21,7 @@
   
   <div class="flex space-x-6 overflow-x-auto pb-4 hide-scrollbar">
     {#each category.races as race}
-      <RaceCard {race} />
+      <RaceCard {race} icon={iconMap[race.icon || 'Brain'] || Brain} />
     {/each}
   </div>
 </div>

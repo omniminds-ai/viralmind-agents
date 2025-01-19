@@ -3,10 +3,15 @@ import {
   Chat,
   Challenge,
   Pages,
+  RaceSession,
+  Race,
   chatSchema,
   challengeSchema,
   pageSchema,
+  raceSessionSchema,
+  raceSchema,
 } from "../../models/Models.ts";
+import { TrainingEvent } from "../../models/TrainingEvent.ts";
 import dotenv from "dotenv";
 import {
   Document,
@@ -17,10 +22,14 @@ import {
   SortValues,
   UpdateWriteOpResult,
 } from "mongoose";
+import { GymVPS, gymVPSSchema } from "../../models/GymVPS.ts";
 
 export type ChallengeDocument = InferSchemaType<typeof challengeSchema>;
 export type ChatDocument = InferSchemaType<typeof chatSchema>;
 export type PageDocument = InferSchemaType<typeof pageSchema>;
+export type RaceSessionDocument = InferSchemaType<typeof raceSessionSchema>;
+export type RaceDocument = InferSchemaType<typeof raceSchema>;
+export type GymVPSDocument = InferSchemaType<typeof gymVPSSchema>;
 
 dotenv.config();
 
@@ -285,6 +294,152 @@ class DataBaseService extends EventEmitter {
     }
   }
 
+  // Race session methods
+  async createRaceSession(
+    sessionData: RaceSessionDocument
+  ): Promise<RaceSessionDocument | false> {
+    try {
+      return await RaceSession.create(sessionData);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  async getRaceSession(id: string): Promise<RaceSessionDocument | null> {
+    try {
+      return await RaceSession.findById(id);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async updateRaceSession(
+    id: string,
+    updateData: Partial<RaceSessionDocument>
+  ): Promise<RaceSessionDocument | null> {
+    try {
+      return await RaceSession.findByIdAndUpdate(id, updateData, { new: true });
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async getRaceById(id: string, projection = {}): Promise<RaceDocument | null> {
+    try {
+      return await Race.findOne({ id: id }, projection);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async getRaces(): Promise<RaceDocument[] | false> {
+    try {
+      return await Race.find(
+        {},
+        {
+          id: 1,
+          title: 1,
+          description: 1,
+          category: 1,
+          icon: 1,
+          colorScheme: 1,
+          prompt: 1,
+          reward: 1,
+          buttonText: 1,
+          stakeRequired: 1,
+        }
+      );
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+
+  async getRaceSessions(filter?: { address?: string }): Promise<RaceSessionDocument[] | false> {
+    try {
+      return await RaceSession.find(
+        filter || {},
+        {
+          // id: "$_id",
+          _id: 1,
+          status: 1,
+          challenge: 1,
+          category: 1,
+          video_path: 1,
+          created_at: 1
+        }
+      )
+      .sort({ created_at: -1 }); // Sort by newest first
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  async getRaceSessionsByIds(ids: string[]): Promise<RaceSessionDocument[] | false> {
+    try {
+
+      
+      console.log('Getting race sessions for IDs:', ids);
+      const mongoose = await import('mongoose');
+      const objectIds = ids.map(id => new mongoose.Types.ObjectId(id));
+      console.log('Converted to ObjectIds:', objectIds);
+      return await RaceSession.find(
+        { _id: { $in: objectIds } },
+        {
+          _id: 1,
+          status: 1,
+          challenge: 1,
+          category: 1,
+          video_path: 1,
+          created_at: 1
+        }
+      ).sort({ created_at: -1 });
+
+      // console.log('Getting race sessions for IDs:', ids);
+      // const allSessions = await this.getRaceSessions();
+      // if (!allSessions) return false;
+
+      // // Filter sessions by ID
+      // const filteredSessions = allSessions.filter(session => {
+      //   const sessionDoc = session as any;
+      //   return ids.includes(sessionDoc._id?.toString());
+      // });
+
+      // console.log(`Found ${filteredSessions.length} matching sessions`);
+      // return filteredSessions;
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  // Training event methods
+  async createTrainingEvent(eventData: any): Promise<any> {
+    try {
+      return await TrainingEvent.create(eventData);
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return false;
+    }
+  }
+
+  async getTrainingEvents(sessionId: string): Promise<any[]> {
+    try {
+      return await TrainingEvent.find({ session: sessionId }).sort({
+        timestamp: 1,
+      });
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return [];
+    }
+  }
+
   async getTournamentById(id: string): Promise<ChallengeDocument | false> {
     try {
       return (
@@ -351,6 +506,48 @@ class DataBaseService extends EventEmitter {
       });
 
       return sortedScores;
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  // gym VPS stuff
+
+  async saveGymVPS(data: GymVPSDocument): Promise<GymVPSDocument | void> {
+    try {
+      const res = await GymVPS.create(data);
+      return res;
+    } catch (error) {
+      console.error("Database Service ERror:", error);
+    }
+  }
+
+  async getOpenGymVPS(): Promise<GymVPSDocument | null> {
+    try {
+      const vps = await GymVPS.findOne({ status: "open" });
+      return vps;
+    } catch (error) {
+      console.error("Database Service Error:", error);
+      return null;
+    }
+  }
+
+  async assignGymVPS(id: string, address: string): Promise<void> {
+    try {
+      await GymVPS.updateOne(
+        { id: id },
+        { $set: { address, status: "assigned" } }
+      );
+    } catch (error) {
+      console.error("Database Service Error:", error);
+    }
+  }
+
+  async getGymVPSByIP(ip: string): Promise<GymVPSDocument | null> {
+    try {
+      const vps = await GymVPS.findOne({ ip });
+      return vps;
     } catch (error) {
       console.error("Database Service Error:", error);
       return null;
