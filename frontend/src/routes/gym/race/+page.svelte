@@ -76,7 +76,8 @@
   }
 
   function setupSocket(sessionData: RaceSession, sessionId: string) {
-    socket = io('http://localhost:8001', {
+    socket = io({
+      path: '/socket.io',
       query: {
         sessionId
       }
