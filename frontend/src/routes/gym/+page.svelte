@@ -12,6 +12,7 @@
   import CategorySection from '$lib/components/gym/CategorySection.svelte';
   import SubmitRace from '$lib/components/gym/SubmitRace.svelte';
   import FeaturedCarousel from '$lib/components/gym/FeaturedCarousel.svelte';
+  import RaceWarningModal from '$lib/components/gym/RaceWarningModal.svelte';
 
   import type { Race, ColorScheme } from '$lib/types';
 
@@ -226,6 +227,9 @@
       <SubmitRace />
 
     </div>
+    
+    <!-- Single modal instance for the entire page -->
+    <RaceWarningModal />
   </div>
 
   <!-- Background effects -->
