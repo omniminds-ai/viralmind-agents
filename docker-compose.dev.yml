@@ -66,6 +66,7 @@ services:
       - SERVICE_PORT=6950
       - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
       - VIRAL_TOKEN=${VIRAL_TOKEN}
+      - DIGITALOCEAN_API_KEY=${DIGITALOCEAN_API_KEY}
     depends_on:
       - mongodb
       # - windows
