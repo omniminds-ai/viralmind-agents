@@ -32,7 +32,7 @@ export class GymVPSService {
 
     // create new open instance
     console.log("Creating new open instance for the future.");
-    await this.createInstance();
+    this.createInstance();
 
     return {
       id: vpsInfo.id,
@@ -130,7 +130,7 @@ export class GymVPSService {
       const ssh = new NodeSSH();
       while (true) {
         try {
-          await wait(5000);
+          await wait(60000);
           await ssh.connect({
             host: vps.ip,
             username: "root",
