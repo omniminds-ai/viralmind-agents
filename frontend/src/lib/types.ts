@@ -11,6 +11,17 @@ export interface TournamentMessage {
   screenshot?: { url: string };
 }
 
+export interface RaceSession {
+  status: string;
+  vm_credentials: {
+    username: string;
+    password: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+
 interface WhitelistEntry {
   username: string;
   address: string;

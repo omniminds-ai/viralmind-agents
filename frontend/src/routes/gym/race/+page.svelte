@@ -10,16 +10,7 @@
   import loadingLoop from '$lib/assets/loading_loop.mp4';
   import loadingDone from '$lib/assets/loading_done.mp4';
   import loadingFail from '$lib/assets/loading_fail.mp4';
-
-  interface RaceSession {
-    status: string;
-    vm_credentials: {
-      username: string;
-      password: string;
-    };
-    created_at: string;
-    updated_at: string;
-  }
+  import type { RaceSession } from '$lib/types';
 
   let currentImage: string | null = null;
   let isLoading = true;
@@ -421,7 +412,7 @@
 
   async function initializeRace() {
     // Wait a bit for wallet to initialize
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const { connected, publicKey } = $walletStore;
     if (!connected || !publicKey) {
@@ -613,7 +604,7 @@
               loop
               muted
               class="absolute inset-0 h-full w-full object-cover"
-            />
+            ></video>
           {/if}
           {#if showLoadingDone}
             <video
@@ -621,7 +612,7 @@
               autoplay
               muted
               class="absolute inset-0 h-full w-full object-cover"
-            />
+            ></video>
           {/if}
           {#if showLoadingFail}
             <video
@@ -629,7 +620,7 @@
               autoplay
               muted
               class="absolute inset-0 h-full w-full object-cover"
-            />
+            ></video>
           {/if}
           {#if currentImage}
             <img
@@ -702,5 +693,5 @@
   </div>
 
   <!-- Right Sidebar (Training Log) -->
-  <TrainingLog {startTime} />
+  <TrainingLog {startTime} race={raceSession} />
 </div>
