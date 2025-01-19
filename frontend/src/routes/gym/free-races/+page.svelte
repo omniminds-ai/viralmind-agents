@@ -76,7 +76,6 @@
   async function fetchRaces() {
     try {
       const response = await fetch('/api/races');
-      console.log(await response.text());
       const races: Race[] = await response.json();
 
       // Filter out staked races and group by category
