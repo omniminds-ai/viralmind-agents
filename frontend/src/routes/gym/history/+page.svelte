@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Coins, Download, BrainCircuit } from 'lucide-svelte';
+  import { walletStore } from '$lib/walletStore';
   import TrainDialog from '$lib/components/gym/TrainDialog.svelte';
   import ExportDialog from '$lib/components/gym/ExportDialog.svelte';
   import SkillNetwork from '$lib/components/gym/SkillNetwork.svelte';
@@ -28,7 +29,13 @@
 
   async function loadRaceSessions() {
     try {
-      const response = await fetch('/api/races/history');
+      const response = await fetch('/api/races/history', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Wallet-Address': $walletStore.publicKey?.toString() || ''
+        }
+      });
       const data = await response.json();
       
       // Transform API data to match the Race interface

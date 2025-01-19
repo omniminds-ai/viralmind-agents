@@ -360,10 +360,10 @@ class DataBaseService extends EventEmitter {
   }
 
 
-  async getRaceSessions(): Promise<RaceSessionDocument[] | false> {
+  async getRaceSessions(filter?: { address?: string }): Promise<RaceSessionDocument[] | false> {
     try {
       return await RaceSession.find(
-        { },
+        filter || {},
         {
           // id: "$_id",
           _id: 1,
