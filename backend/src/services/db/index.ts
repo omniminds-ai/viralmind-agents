@@ -359,36 +359,33 @@ class DataBaseService extends EventEmitter {
     }
   }
 
-
-  async getRaceSessions(filter?: { address?: string }): Promise<RaceSessionDocument[] | false> {
+  async getRaceSessions(filter?: {
+    address?: string;
+  }): Promise<RaceSessionDocument[] | false> {
     try {
-      return await RaceSession.find(
-        filter || {},
-        {
-          // id: "$_id",
-          _id: 1,
-          status: 1,
-          challenge: 1,
-          category: 1,
-          video_path: 1,
-          created_at: 1
-        }
-      )
-      .sort({ created_at: -1 }); // Sort by newest first
+      return await RaceSession.find(filter || {}, {
+        // id: "$_id",
+        _id: 1,
+        status: 1,
+        challenge: 1,
+        category: 1,
+        video_path: 1,
+        created_at: 1,
+      }).sort({ created_at: -1 }); // Sort by newest first
     } catch (error) {
       console.error("Database Service Error:", error);
       return false;
     }
   }
 
-  async getRaceSessionsByIds(ids: string[]): Promise<RaceSessionDocument[] | false> {
+  async getRaceSessionsByIds(
+    ids: string[]
+  ): Promise<RaceSessionDocument[] | false> {
     try {
-
-      
-      console.log('Getting race sessions for IDs:', ids);
-      const mongoose = await import('mongoose');
-      const objectIds = ids.map(id => new mongoose.Types.ObjectId(id));
-      console.log('Converted to ObjectIds:', objectIds);
+      console.log("Getting race sessions for IDs:", ids);
+      const mongoose = await import("mongoose");
+      const objectIds = ids.map((id) => new mongoose.Types.ObjectId(id));
+      console.log("Converted to ObjectIds:", objectIds);
       return await RaceSession.find(
         { _id: { $in: objectIds } },
         {
@@ -397,7 +394,7 @@ class DataBaseService extends EventEmitter {
           challenge: 1,
           category: 1,
           video_path: 1,
-          created_at: 1
+          created_at: 1,
         }
       ).sort({ created_at: -1 });
 
@@ -514,43 +511,26 @@ class DataBaseService extends EventEmitter {
 
   // gym VPS stuff
 
-  async saveGymVPS(data: GymVPSDocument): Promise<GymVPSDocument | void> {
+  async removeGymVPSUser(ip: string, username: string): Promise<void> {
     try {
-      const res = await GymVPS.create(data);
-      return res;
-    } catch (error) {
-      console.error("Database Service ERror:", error);
-    }
-  }
-
-  async getOpenGymVPS(): Promise<GymVPSDocument | null> {
-    try {
-      const vps = await GymVPS.findOne({ status: "open" });
-      return vps;
+      await GymVPS.updateOne({ ip }, { $pull: { users: { username } } });
     } catch (error) {
       console.error("Database Service Error:", error);
-      return null;
     }
   }
 
-  async assignGymVPS(id: string, address: string): Promise<void> {
+  async addGymVPSUser(
+    ip: string,
+    username: string,
+    password: string
+  ): Promise<void> {
     try {
       await GymVPS.updateOne(
-        { id: id },
-        { $set: { address, status: "assigned" } }
+        { ip },
+        { $push: { users: { username, password } } }
       );
     } catch (error) {
       console.error("Database Service Error:", error);
-    }
-  }
-
-  async getGymVPSByIP(ip: string): Promise<GymVPSDocument | null> {
-    try {
-      const vps = await GymVPS.findOne({ ip });
-      return vps;
-    } catch (error) {
-      console.error("Database Service Error:", error);
-      return null;
     }
   }
 }

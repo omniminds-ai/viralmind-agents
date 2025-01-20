@@ -15,8 +15,6 @@ type RaceSessionInput = Omit<RaceSessionDocument, "_id"> & {
   category: RaceCategory;
 };
 
-const vpsService = new GymVPSService();
-
 const solanaRpc = process.env.RPC_URL!;
 const viralToken = process.env.VIRAL_TOKEN!;
 const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
@@ -26,9 +24,8 @@ const blockchainService = new BlockchainService(solanaRpc, "");
 
 // Load treasury wallet
 const treasuryKeypair = Keypair.fromSecretKey(
-  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
+  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, "utf-8")))
 );
-
 
 // Get treasury balance endpoint
 router.get("/treasury-balance", async (req, res) => {
@@ -81,19 +78,36 @@ router.post("/:id/start", async (req: Request, res: Response) => {
 
     // Get an open vps instance
     console.log("Joining a Race");
-    const vps = await vpsService.assignOpenInstance(address);
+
+    // NOTE: in the future, we should be grabbing the ip and private keys from the database based upon the user's region
+    const vpsService = new GymVPSService({
+      ip: process.env.GYM_VPS_IP!,
+      username: "ubuntu", // default sudo user
+      privateKey: process.env.GYM_VPS_PRIVATE_KEY!,
+    });
+    const vps = await vpsService.initNewTrainer(address);
 
     // Create a new race session
     const now = new Date();
+    //todo: convert RaceSessionInput to work with RDP.
+    /* 
+      vm_ip: process.env.GYM_VPS_IP!,
+      vm_port: 3389,
+      vm_private_key: process.env.GYP_VPS_PRIVATE_KEY!,
+    */
     const sessionData: RaceSessionInput = {
       address,
       challenge: id,
       prompt: race.prompt,
       status: "active",
-      vm_ip: process.env.VNC_HOST_GYMTEST || vps.ip,
+      vm_ip: process.env.VNC_HOST_GYMTEST || process.env.GYM_VPS_IP!,
       vm_port: 5900,
-      vm_password: process.env.VNC_PASS_GYMTEST || vps.vnc.password,
-      vm_credentials: vps.login,
+      vm_password:
+        process.env.VNC_PASS_GYMTEST || process.env.GYP_VPS_PRIVATE_KEY!,
+      vm_credentials: {
+        username: vps.username,
+        password: vps.password,
+      },
       created_at: now,
       updated_at: now,
       category: "creative" as RaceCategory,
@@ -192,9 +206,8 @@ router.put("/session/:id", async (req: Request, res: Response) => {
       status: session.status,
       vm_credentials: session.vm_credentials,
       created_at: session.created_at,
-      updated_at: session.updated_at
+      updated_at: session.updated_at,
     });
-
   } catch (error) {
     console.error("Error updating session:", error);
     res.status(500).json({ error: "Failed to update session" });
@@ -243,33 +256,41 @@ router.get("/history", async (_req: Request, res: Response) => {
     }
 
     // Get training events for all sessions
-    const enrichedRaces = await Promise.all(races.map(async (race) => {
-      // Get all training events for this session
-      const events = await TrainingEvent.find({ session: race._id });
-      const actionTokens = events.length; // Total number of events
+    const enrichedRaces = await Promise.all(
+      races.map(async (race) => {
+        // Get all training events for this session
+        const events = await TrainingEvent.find({ session: race._id });
+        const actionTokens = events.length; // Total number of events
 
-      // Get reward events with metadata
-      const rewardEvents = events.filter(event => 
-        event.type === 'reward' && 
-        event.metadata && 
-        typeof event.metadata.rewardValue === 'number' &&
-        typeof event.metadata.scoreValue === 'number'
-      );
+        // Get reward events with metadata
+        const rewardEvents = events.filter(
+          (event) =>
+            event.type === "reward" &&
+            event.metadata &&
+            typeof event.metadata.rewardValue === "number" &&
+            typeof event.metadata.scoreValue === "number"
+        );
 
-      // Find first quest event for title
-      const questEvent = events.find(event => event.type === 'quest');
-      const title = questEvent ? questEvent.message : `Race ${race.challenge}`;
+        // Find first quest event for title
+        const questEvent = events.find((event) => event.type === "quest");
+        const title = questEvent
+          ? questEvent.message
+          : `Race ${race.challenge}`;
 
-      // Calculate earnings
-      const earnings = rewardEvents.reduce((sum, event) => sum + event.metadata.rewardValue, 0);
+        // Calculate earnings
+        const earnings = rewardEvents.reduce(
+          (sum, event) => sum + event.metadata.rewardValue,
+          0
+        );
 
-      return {
-        ...(race as any).toObject(),
-        actionTokens,
-        earnings,
-        title
-      };
-    }));
+        return {
+          ...(race as any).toObject(),
+          actionTokens,
+          earnings,
+          title,
+        };
+      })
+    );
 
     res.json(enrichedRaces);
   } catch (error) {
@@ -287,7 +308,10 @@ router.post("/export", async (req: Request, res: Response) => {
       return;
     }
 
-    console.log(`Exporting data for ${sessionIds.length} sessions:`, sessionIds);
+    console.log(
+      `Exporting data for ${sessionIds.length} sessions:`,
+      sessionIds
+    );
 
     // Get all sessions first
     const sessions = await DatabaseService.getRaceSessionsByIds(sessionIds);
@@ -299,37 +323,44 @@ router.post("/export", async (req: Request, res: Response) => {
     console.log(`Found ${sessions.length} sessions`);
 
     // Get all training events for the selected sessions
-    const events = await Promise.all(sessions.map(async (session) => {
-      console.log(`Processing session ${session._id}...`);
+    const events = await Promise.all(
+      sessions.map(async (session) => {
+        console.log(`Processing session ${session._id}...`);
 
-      const sessionEvents = await TrainingEvent.find({ session: session._id })
-        .sort({ timestamp: 1 }); // Sort by timestamp ascending
-      
-      console.log(`Found ${sessionEvents.length} events for session ${session._id}`);
+        const sessionEvents = await TrainingEvent.find({
+          session: session._id,
+        }).sort({ timestamp: 1 }); // Sort by timestamp ascending
 
-      // Transform events into a more readable format
-      const events = sessionEvents.map(event => ({
-        session_id: session._id,
-        challenge: session.challenge,
-        category: session.category,
-        type: event.type,
-        message: event.message,
-        timestamp: event.timestamp,
-        frame: event.frame,
-        coordinates: event.coordinates,
-        trajectory: event.trajectory,
-        metadata: event.metadata
-      }));
+        console.log(
+          `Found ${sessionEvents.length} events for session ${session._id}`
+        );
 
-      // Add session metadata including video path
-      return {
-        session_id: session._id,
-        challenge: session.challenge,
-        category: session.category,
-        video_path: session.video_path ? '/api/recordings/' + session.video_path.split('/').pop() : null,
-        events
-      };
-    }));
+        // Transform events into a more readable format
+        const events = sessionEvents.map((event) => ({
+          session_id: session._id,
+          challenge: session.challenge,
+          category: session.category,
+          type: event.type,
+          message: event.message,
+          timestamp: event.timestamp,
+          frame: event.frame,
+          coordinates: event.coordinates,
+          trajectory: event.trajectory,
+          metadata: event.metadata,
+        }));
+
+        // Add session metadata including video path
+        return {
+          session_id: session._id,
+          challenge: session.challenge,
+          category: session.category,
+          video_path: session.video_path
+            ? "/api/recordings/" + session.video_path.split("/").pop()
+            : null,
+          events,
+        };
+      })
+    );
 
     // Flatten the array of arrays
     const flatEvents = events.flat();
