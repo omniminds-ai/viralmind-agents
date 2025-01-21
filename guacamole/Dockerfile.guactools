@@ -1,0 +1,41 @@
+# Dockerfile.guactools
+FROM ubuntu:22.04
+
+# Install build dependencies
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    build-essential \
+    autoconf \
+    libtool \
+    libcairo2-dev \
+    libjpeg-turbo8-dev \
+    libpng-dev \
+    libossp-uuid-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswscale-dev \
+    freerdp2-dev \
+    libpango1.0-dev \
+    libssh2-1-dev \
+    libtelnet-dev \
+    libvncserver-dev \
+    libwebsockets-dev \
+    libpulse-dev \
+    libssl-dev \
+    libvorbis-dev \
+    libwebp-dev \
+    git
+
+# Clone and build guacamole-server
+RUN git clone https://github.com/apache/guacamole-server.git && \
+    cd guacamole-server && \
+    autoreconf -fi && \
+    ./configure --with-init-dir=/etc/init.d && \
+    make && \
+    make install && \
+    ldconfig
+
+WORKDIR /recordings
+
+ENTRYPOINT ["/bin/bash"]

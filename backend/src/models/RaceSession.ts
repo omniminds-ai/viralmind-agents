@@ -15,6 +15,9 @@ export const raceSessionSchema = new mongoose.Schema(
     vm_port: { type: Number, required: true },
     vm_password: { type: String, required: true },
     vm_credentials: {
+      guacToken: { type: String, required: false },
+      guacConnectionId: { type: String, required: false },
+      guacClientId: { type: String, required: false },
       username: { type: String, required: true },
       password: { type: String, required: true }
     },

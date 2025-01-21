@@ -1,6 +1,6 @@
 <script lang="ts">
   import logo from '$lib/assets/logoTransparent.png';
-  import { Dumbbell, ChevronLeft, BellRing, Trophy, History } from 'lucide-svelte';
+  import { Dumbbell, ChevronLeft, AlertCircle, Trophy, History } from 'lucide-svelte';
   import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
   import { onMount } from 'svelte';
 
@@ -96,6 +96,22 @@
   </div>
 </div>
 
-<!-- Spacer to prevent content from going under fixed navbar -->
-<div class="h-16"></div>
+<!-- Alert Banner -->
+<div class="fixed top-16 left-0 right-0 z-40 bg-purple-900/60 backdrop-blur-sm border-b border-purple-500/30">
+  <div class="mx-auto max-w-7xl px-6 py-2">
+    <div class="flex items-center justify-center gap-2 text-sm text-purple-200">
+      <AlertCircle class="h-4 w-4" />
+      <span>Due to unexpected demand, VM availability may be impacted —</span>
+      <a 
+        href="https://twitter.com/ViralMindAI" 
+        target="_blank" 
+        class="text-purple-400 hover:text-purple-300 underline underline-offset-2"
+      >
+        check our Twitter for updates
+      </a>
+    </div>
+  </div>
+</div>
 
+<!-- Spacer to prevent content from going under fixed navbar + banner -->
+<div class="h-24"></div>

@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/viralmind-ai/viralmind-agents/issues"
   },
-  "homepage": "https://github.com/viralmind-ai/viralmind-agents#readme"
+  "homepage": "https://github.com/viralmind-ai/viralmind-agents#readme",
+  "dependencies": {
+    "node-rdpjs": "^0.3.0"
+  }
 }

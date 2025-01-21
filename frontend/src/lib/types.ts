@@ -16,6 +16,10 @@ export interface RaceSession {
   vm_credentials: {
     username: string;
     password: string;
+    guacToken?: string;
+    guacConnectionId?: string;
+    guacURL?: string;
+    guacClientId?: string;
   };
   created_at: string;
   updated_at: string;

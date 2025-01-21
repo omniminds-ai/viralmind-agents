@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
 import { GymVPSService } from "../services/gym-vps/index.ts";
 import { getEpisode } from "./socket.ts";
+import GuacamoleService from '../services/guacamole/index.ts';
 
 import { TrainingEvent } from "../models/TrainingEvent.ts";
 import { Keypair } from "@solana/web3.js";
@@ -21,6 +22,7 @@ const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
 
 // Initialize blockchain service
 const blockchainService = new BlockchainService(solanaRpc, "");
+const guacService = new GuacamoleService();
 
 // Load treasury wallet
 const treasuryKeypair = Keypair.fromSecretKey(
@@ -87,7 +89,14 @@ router.post("/:id/start", async (req: Request, res: Response) => {
     });
     const vps = await vpsService.initNewTrainer(address);
 
-    // Create a new race session
+    // Create Guacamole session with RDP connection
+    const { token: authToken, connectionId, clientId } = await guacService.createSession(
+      vps.ip, 
+      vps.username, 
+      vps.password
+    );
+
+    // Create race session
     const now = new Date();
     //todo: convert RaceSessionInput to work with RDP.
     /* 
@@ -107,6 +116,9 @@ router.post("/:id/start", async (req: Request, res: Response) => {
       vm_credentials: {
         username: vps.username,
         password: vps.password,
+        guacToken: authToken,
+        guacConnectionId: connectionId,
+        guacClientId: clientId
       },
       created_at: now,
       updated_at: now,
@@ -116,16 +128,21 @@ router.post("/:id/start", async (req: Request, res: Response) => {
     const session = await DatabaseService.createRaceSession(sessionData);
 
     if (!session) {
+      // Clean up Guacamole resources on failure
+      await guacService.cleanupSession(authToken, connectionId);
       res.status(500).json({ error: "Failed to create race session" });
       return;
     }
+
+    // Construct Guacamole URL with encoded client ID
+    const guacURL = `${process.env.GUACAMOLE_URL || 'http://localhost/guacamole'}/#/client/${clientId}?token=${authToken}`;
 
     res.json({
       sessionId: (session as any)._id,
       vm_ip: session.vm_ip,
       vm_port: session.vm_port,
-      vm_password: session.vm_password,
       vm_credentials: session.vm_credentials,
+      guacURL,
     });
   } catch (error) {
     console.error("Error starting race:", error);
@@ -247,9 +264,15 @@ router.post("/feedback", async (req: Request, res: Response) => {
 });
 
 // List all race sessions
-router.get("/history", async (_req: Request, res: Response) => {
+router.get("/history", async (req: Request, res: Response) => {
   try {
-    const races = await DatabaseService.getRaceSessions();
+    const walletAddress = req.headers['x-wallet-address'] as string;
+    if (!walletAddress) {
+      res.status(400).json({ error: "Wallet address is required" });
+      return;
+    }
+
+    const races = await DatabaseService.getRaceSessions({ address: walletAddress });
     if (!races) {
       res.status(404).json({ error: "No races found" });
       return;

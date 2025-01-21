@@ -11,7 +11,8 @@ RUN apt update \
     build-essential \
     python3 \
     ffmpeg
-RUN npm ci --include=dev
+# RUN npm ci --include=dev
+RUN npm install
 
 COPY . .
 

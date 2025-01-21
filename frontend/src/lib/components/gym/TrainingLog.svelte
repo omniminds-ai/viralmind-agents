@@ -218,17 +218,6 @@
       Neural Link
     </div>
     <div class="ml-7 mt-0.5 text-xs text-white/60">Live Training Session</div>
-    {#if race?.vm_credentials}
-      <div class="py-2">
-        <div class="ml-7 mt-0.5 w-fit border-b border-white text-xs text-white">VM Information</div>
-        <div class="ml-7 mt-0.5 text-xs text-white/60">
-          Username: {race?.vm_credentials.username}
-        </div>
-        <div class="ml-7 mt-0.5 text-xs text-white/60">
-          Password: {race?.vm_credentials.password}
-        </div>
-      </div>
-    {/if}
   </div>
 
   <div

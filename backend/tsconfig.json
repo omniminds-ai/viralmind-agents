@@ -14,7 +14,10 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "isolatedModules": true,
-    "outDir": "build"
+    "outDir": "build",
+    "paths": {
+      "freerdp-node": ["./freerdp-node"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
