@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import TrainingLog from '$lib/components/gym/TrainingLog.svelte';
   import Timeline from '$lib/components/gym/Timeline.svelte';
+  import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
   import { walletStore } from '$lib/walletStore';
   import { trainingEvents } from '$lib/stores/training';
   import type { RaceSession } from '$lib/types';
@@ -32,8 +33,44 @@
     if (!sessionId || !raceSession?.vm_credentials) return;
 
     try {
+      // Get screenshot from canvas
+      const outerIframe = document.querySelector('iframe[title="Guacamole Remote Desktop"]') as HTMLIFrameElement;
+      if (!outerIframe) {
+        console.error('Outer iframe not found');
+        return;
+      }
+
+      // Access the outer iframe's document
+      const outerIframeDocument = outerIframe.contentDocument || outerIframe.contentWindow?.document;
+      if (!outerIframeDocument) {
+        console.error('Could not access iframe document');
+        return;
+      }
+
+      // Locate the canvas element inside the iframe
+      const canvas = outerIframeDocument.querySelector('canvas') as HTMLCanvasElement;
+      if (!canvas) {
+        console.error('Canvas element not found inside iframe');
+        return;
+      }
+
+      // Get the canvas context and extract as image
+      let imageData;
+      try {
+        imageData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG with 70% quality
+      } catch (err) {
+        console.error('Error capturing canvas content:', err);
+        return;
+      }
+
       const res = await fetch(`/api/races/session/${sessionId}/hint`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          screenshot: imageData
+        })
       });
 
       if (!res.ok) {
@@ -69,8 +106,44 @@
 
   async function generateInitialQuest(sessionId: string) {
     try {
+      // Get screenshot from canvas
+      const outerIframe = document.querySelector('iframe[title="Guacamole Remote Desktop"]') as HTMLIFrameElement;
+      if (!outerIframe) {
+        console.error('Outer iframe not found');
+        return;
+      }
+
+      // Access the outer iframe's document
+      const outerIframeDocument = outerIframe.contentDocument || outerIframe.contentWindow?.document;
+      if (!outerIframeDocument) {
+        console.error('Could not access iframe document');
+        return;
+      }
+
+      // Locate the canvas element inside the iframe
+      const canvas = outerIframeDocument.querySelector('canvas') as HTMLCanvasElement;
+      if (!canvas) {
+        console.error('Canvas element not found inside iframe');
+        return;
+      }
+
+      // Get the canvas context and extract as image
+      let imageData;
+      try {
+        imageData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG with 70% quality
+      } catch (err) {
+        console.error('Error capturing canvas content:', err);
+        return;
+      }
+
       const res = await fetch(`/api/races/session/${sessionId}/quest`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          screenshot: imageData
+        })
       });
 
       if (!res.ok) {
@@ -133,6 +206,9 @@
         const data = await res.json();
         raceSession = data;
         startTime = new Date(data.created_at).getTime();
+
+        // Wait for iframe and canvas to load
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Generate initial quest
         await generateInitialQuest(sessionId);
@@ -210,6 +286,9 @@
           return;
         }
 
+        // Wait for iframe and canvas to load
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
         // Generate initial quest
         await generateInitialQuest(data.sessionId);
 
@@ -234,6 +313,21 @@
     window.location.href = '/gym';
   }
 
+  // Function to refocus Guacamole iframe
+  function refocusGuacamole() {
+    // Do not refocus if focus is on an input field
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.tagName !== 'IFRAME') {
+      return;
+    }
+
+    // Get iframe and focus it
+    const iframe = document.querySelector('iframe[title="Guacamole Remote Desktop"]') as HTMLIFrameElement;
+    if (iframe) {
+      iframe.focus();
+    }
+  }
+
   onMount(() => {
     // Add beforeunload handler
     handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -245,12 +339,26 @@
     // Initialize the race
     initializeRace();
 
-    // Set up interval for hint requests
-    const hintInterval = setInterval(requestHint, 5000);
+    // Set up interval for hint requests after a delay
+    setTimeout(() => {
+      const hintInterval = setInterval(requestHint, 10000); // Increased to 10 seconds
+      return () => {
+        if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+        clearInterval(hintInterval);
+      };
+    }, 5000); // Wait 5 seconds before starting hint requests
+
+    // Add aggressive refocus handlers
+    document.addEventListener('click', refocusGuacamole);
+    document.addEventListener('keydown', refocusGuacamole);
+    
+    // Set up interval to constantly try to refocus
+    const focusInterval = setInterval(refocusGuacamole, 100);
 
     return () => {
-      if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
-      clearInterval(hintInterval);
+      document.removeEventListener('click', refocusGuacamole);
+      document.removeEventListener('keydown', refocusGuacamole);
+      clearInterval(focusInterval);
     };
   });
 
@@ -275,36 +383,25 @@
       >
         <div class="relative h-full w-full">
           {#if raceSession?.vm_credentials?.guacToken}
-            <iframe
-              src={`/guacamole/#/client/${raceSession.vm_credentials.guacClientId}?token=${raceSession.vm_credentials.guacToken}`}
-              title="Guacamole Remote Desktop"
-              class="absolute inset-0 h-full w-full border-0"
-              allow="clipboard-read; clipboard-write"
-            ></iframe>
+            <div class="absolute inset-0 focus-within:ring-2 focus-within:ring-blue-500 rounded-sm">
+              <iframe
+                src={`/guacamole/#/client/${raceSession.vm_credentials.guacClientId}?token=${raceSession.vm_credentials.guacToken}`}
+                title="Guacamole Remote Desktop"
+                class="h-full w-full border-0"
+                allow="clipboard-read; clipboard-write"
+                tabindex="0"
+              ></iframe>
+            </div>
           {/if}
 
           <!-- Quest Overlay -->
           {#if currentQuest}
-            <div
-              class="absolute bottom-4 left-4 right-4 flex flex-col gap-2 rounded-lg bg-black/80 p-4 text-white"
-            >
-              <div class="flex items-center justify-between">
-                <div class="font-medium">Current Quest:</div>
-                <div class="text-yellow-400">{maxReward} $VIRAL</div>
-              </div>
-              <div class="text-lg">{currentQuest}</div>
-              <div class="flex items-center justify-between">
-                {#if currentHint}
-                  <div class="text-sm text-blue-400">{currentHint}</div>
-                {/if}
-                <button
-                  class="ml-auto rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
-                  on:click={requestHint}
-                >
-                  Request Hint
-                </button>
-              </div>
-            </div>
+            <QuestOverlay
+              quest={currentQuest}
+              hint={currentHint}
+              {maxReward}
+              isHintActive={true}
+            />
           {/if}
         </div>
       </div>
