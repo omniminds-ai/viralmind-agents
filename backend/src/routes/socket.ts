@@ -1,25 +1,26 @@
-import { Router } from "express";
-import { Server, Socket } from "socket.io";
+import { Router } from 'express';
+import { Server, Socket } from 'socket.io';
 // @ts-ignore
-import VncClient from "vnc-rfb-client";
-import { GymVPSService } from "../services/gym-vps/index.ts";
-import { ChildProcess, spawn } from "child_process";
-import sharp from "sharp";
-import { executeComputerAction } from "../services/vnc/actions.ts";
-import OpenAI from "openai";
-import { Http2Server } from "http2";
-import { Server as HttpServer } from "http";
-import DatabaseService, { RaceSessionDocument } from "../services/db/index.ts";
-import path from "path";
-import { Keypair } from "@solana/web3.js";
-import { readFileSync } from "fs";
-import BlockchainService from "../services/blockchain/index.ts";
-import dotenv from "dotenv";
+import VncClient from 'vnc-rfb-client';
+import { GymVPSService } from '../services/gym-vps/index.ts';
+import { ChildProcess, spawn } from 'child_process';
+import sharp from 'sharp';
+import { executeComputerAction } from '../services/vnc/actions.ts';
+import OpenAI from 'openai';
+import { Http2Server } from 'http2';
+import { Server as HttpServer } from 'http';
+import DatabaseService, { RaceSessionDocument } from '../services/db/index.ts';
+import path from 'path';
+import { Keypair } from '@solana/web3.js';
+import { readFileSync } from 'fs';
+import BlockchainService from '../services/blockchain/index.ts';
+import dotenv from 'dotenv';
+import { VPSRegion } from '../services/gym-vps/types.ts';
 
 dotenv.config();
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 const solanaRpc = process.env.RPC_URL!;
@@ -27,18 +28,14 @@ const viralToken = process.env.VIRAL_TOKEN!;
 const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
 
 // Initialize blockchain service
-const blockchainService = new BlockchainService(solanaRpc, "");
+const blockchainService = new BlockchainService(solanaRpc, '');
 
 // Load treasury wallet
 const treasuryKeypair = Keypair.fromSecretKey(
-  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, "utf-8")))
+  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
 );
 
-async function generateQuest(
-  imageBase64: string,
-  prompt: string,
-  session: RaceSessionDocument
-) {
+async function generateQuest(imageBase64: string, prompt: string, session: RaceSessionDocument) {
   try {
     // Get treasury balance
     const treasuryBalance = await blockchainService.getTokenBalance(
@@ -57,13 +54,13 @@ async function generateQuest(
     );
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: 'gpt-4o',
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `You are an AI assistant that needs to propose a new Ubuntu desktop quest based on the theme: "${prompt}". 
               
 First, analyze the current screen state to understand what task the user has already completed. Then, propose a DIFFERENT task that fits the same theme but isn't repetitive.
@@ -73,16 +70,16 @@ For example, if the theme is "Draw cartoon characters in jspaint" and they drew 
 Return as JSON with these keys:
 - reasoning: Analyze what's on screen and explain why you're choosing a different task within the same theme
 - quest: The new specific task to complete (should match the theme but be distinct from what's visible)
-- hint: Helpful tip for completing the new task`,
+- hint: Helpful tip for completing the new task`
             },
             {
-              type: "image_url",
-              image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
-            },
-          ],
-        },
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${imageBase64}` }
+            }
+          ]
+        }
       ],
-      max_tokens: 250,
+      max_tokens: 250
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
@@ -90,20 +87,19 @@ Return as JSON with these keys:
       const questData = JSON.parse(jsonMatch[0]);
       return {
         ...questData,
-        maxReward,
+        maxReward
       };
     }
 
-    throw new Error("No valid JSON found in response");
+    throw new Error('No valid JSON found in response');
   } catch (error) {
-    console.error("Error generating quest:", error);
+    console.error('Error generating quest:', error);
 
     return {
-      reasoning:
-        "Failed to analyze screen, providing a generic task within theme",
-      quest: "Open the Activities overview and launch a relevant application",
-      hint: "Press the Super (Windows) key or click Activities in the top-left corner",
-      maxReward: 0,
+      reasoning: 'Failed to analyze screen, providing a generic task within theme',
+      quest: 'Open the Activities overview and launch a relevant application',
+      hint: 'Press the Super (Windows) key or click Activities in the top-left corner',
+      maxReward: 0
     };
   }
 }
@@ -119,15 +115,15 @@ async function generateHint(
 ) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: 'gpt-4o',
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `Current quest: ${currentQuest}
-Previous hints: ${hintHistory.slice(-3).join(", ")}
+Previous hints: ${hintHistory.slice(-3).join(', ')}
 
 First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
 
@@ -154,23 +150,23 @@ Or if incomplete:
   "reasoning": "Window is open but no drawing started yet. Core task requires a basic planet shape and rings.",
   "isCompleted": false,
   "hint": "Click and drag to draw a circle for the planet body"
-}`,
+}`
             },
             {
-              type: "image_url",
+              type: 'image_url',
               image_url: {
-                url: `data:image/jpeg;base64,${imageBase64}`,
-              },
-            },
-          ],
-        },
+                url: `data:image/jpeg;base64,${imageBase64}`
+              }
+            }
+          ]
+        }
       ],
       max_tokens: 250,
-      stream: true,
+      stream: true
     });
 
-    let fullResponse = "";
-    let partialHint = "";
+    let fullResponse = '';
+    let partialHint = '';
     const hintRegex = /"hint":\s*"([^"]*)/;
 
     for await (const chunk of response) {
@@ -183,7 +179,7 @@ Or if incomplete:
           const newHint = hintMatch[1];
           if (newHint !== partialHint) {
             partialHint = newHint;
-            socket.emit("hint_update", { hint: partialHint });
+            socket.emit('hint_update', { hint: partialHint });
           }
         }
       }
@@ -191,12 +187,12 @@ Or if incomplete:
 
     // Parse the JSON response
     const jsonMatch = fullResponse.match(/{[\s\S]*}/);
-    let parsedResponse = { hint: "", reasoning: "", isCompleted: false };
+    let parsedResponse = { hint: '', reasoning: '', isCompleted: false };
     if (jsonMatch) {
       try {
         parsedResponse = JSON.parse(jsonMatch[0]);
       } catch (e) {
-        console.error("Error parsing JSON from response:", e);
+        console.error('Error parsing JSON from response:', e);
       }
     }
 
@@ -204,24 +200,24 @@ Or if incomplete:
 
     // Emit final hint and reasoning as training events
     const hintEvent = {
-      type: "hint",
-      message: parsedResponse.hint || "(empty)",
+      type: 'hint',
+      message: parsedResponse.hint || '(empty)',
       session: socket.handshake.query.sessionId,
       frame: 0,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
 
-    socket.emit("training_event", hintEvent);
+    socket.emit('training_event', hintEvent);
     await DatabaseService.createTrainingEvent(hintEvent);
 
     const reasoningEvent = {
-      type: "reasoning",
-      message: parsedResponse.reasoning || "(empty)",
+      type: 'reasoning',
+      message: parsedResponse.reasoning || '(empty)',
       session: socket.handshake.query.sessionId,
       frame: 0,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
-    socket.emit("training_event", reasoningEvent);
+    socket.emit('training_event', reasoningEvent);
     await DatabaseService.createTrainingEvent(reasoningEvent);
 
     // If quest is completed, calculate reward and generate new quest
@@ -243,44 +239,44 @@ Or if incomplete:
 
       // Emit reward event
       const rewardEvent = {
-        type: "reward",
-        message: `The judge rewarded you ${actualReward.toFixed(
-          2
-        )} $VIRAL for this (${(score * 100).toFixed(0)}% of ${maxReward.toFixed(
-          2
-        )})${signature ? `\nTransaction: ${signature}` : ""}`,
+        type: 'reward',
+        message: `The judge rewarded you ${actualReward.toFixed(2)} $VIRAL for this (${(
+          score * 100
+        ).toFixed(0)}% of ${maxReward.toFixed(2)})${
+          signature ? `\nTransaction: ${signature}` : ''
+        }`,
         session: socket.handshake.query.sessionId,
         frame: 0,
         timestamp: Date.now(),
         metadata: {
           scoreValue: score,
           rewardValue: actualReward,
-          transaction: signature,
-        },
+          transaction: signature
+        }
       };
-      socket.emit("training_event", rewardEvent);
+      socket.emit('training_event', rewardEvent);
       await DatabaseService.createTrainingEvent(rewardEvent);
 
       // Generate new quest
       const questData = await generateQuest(imageBase64, prompt, session);
       const questEvent = {
-        type: "quest",
+        type: 'quest',
         message: questData.quest,
         session: socket.handshake.query.sessionId,
         frame: 0,
         timestamp: Date.now(),
         metadata: {
-          maxReward: questData.maxReward,
-        },
+          maxReward: questData.maxReward
+        }
       };
 
-      socket.emit("training_event", questEvent);
+      socket.emit('training_event', questEvent);
       await DatabaseService.createTrainingEvent(questEvent);
 
-      socket.emit("quest_update", {
+      socket.emit('quest_update', {
         quest: questData.quest,
         hint: questData.hint,
-        maxReward: questData.maxReward,
+        maxReward: questData.maxReward
       });
 
       return {
@@ -288,24 +284,23 @@ Or if incomplete:
         reasoning: parsedResponse.reasoning,
         isCompleted: true,
         newQuest: questData.quest,
-        maxReward: questData.maxReward,
+        maxReward: questData.maxReward
       };
     }
 
     return {
       hint: parsedResponse.hint,
       reasoning: parsedResponse.reasoning,
-      isCompleted: false,
+      isCompleted: false
     };
   } catch (error) {
-    console.error("Error generating hint:", error);
-    const fallbackHint =
-      "Scroll in the environments list to explore available tasks";
-    socket.emit("hint_update", { hint: fallbackHint });
+    console.error('Error generating hint:', error);
+    const fallbackHint = 'Scroll in the environments list to explore available tasks';
+    socket.emit('hint_update', { hint: fallbackHint });
     return {
       hint: fallbackHint,
-      reasoning: "Error occurred during analysis",
-      isCompleted: false,
+      reasoning: 'Error occurred during analysis',
+      isCompleted: false
     };
   }
 }
@@ -361,17 +356,17 @@ class Episode {
 
     // Set new 5 minute expiry timer
     this.expiryTimer = setTimeout(async () => {
-      console.log("Episode expired due to time limit");
+      console.log('Episode expired due to time limit');
 
       // Emit expiry event
       const expiryEvent = {
-        type: "system",
-        message: "Session expired due to 5 minute limit",
+        type: 'system',
+        message: 'Session expired due to 5 minute limit',
         session: this.socket.handshake.query.sessionId,
         frame: this.frameCount,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
-      this.socket.emit("training_event", expiryEvent);
+      this.socket.emit('training_event', expiryEvent);
       await DatabaseService.createTrainingEvent(expiryEvent);
 
       // Close episode
@@ -382,13 +377,13 @@ class Episode {
       if (sessionId) {
         try {
           await DatabaseService.updateRaceSession(sessionId, {
-            status: "expired",
-            updated_at: new Date(),
+            status: 'expired',
+            updated_at: new Date()
           });
           console.log(`Race session ${sessionId} marked as expired`);
           activeEpisodes.delete(sessionId);
         } catch (error) {
-          console.error("Error ending expired race session:", error);
+          console.error('Error ending expired race session:', error);
         }
       }
 
@@ -397,23 +392,23 @@ class Episode {
     }, 5 * 60 * 1000); // 5 minutes in milliseconds
   }
 
-  async connect(host = "127.0.0.1", port = 5900, password = "abc123") {
+  async connect(host = '127.0.0.1', port = 5900, password = 'abc123') {
     const initialEvents = [
       {
-        type: "task",
+        type: 'task',
         message:
-          "Neural Link established. You are now part of VM-1's collective intelligence network.",
+          "Neural Link established. You are now part of VM-1's collective intelligence network."
       },
       {
-        type: "task",
+        type: 'task',
         message:
-          "As part of the swarm, your interactions teach fundamental patterns of computer control.",
+          'As part of the swarm, your interactions teach fundamental patterns of computer control.'
       },
       {
-        type: "task",
+        type: 'task',
         message:
-          "At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision.",
-      },
+          'At scale, simple demonstrations combine into sophisticated patterns, emerging minds that navigate digital worlds with purpose and precision.'
+      }
     ];
 
     // Emit and store initial events
@@ -422,9 +417,9 @@ class Episode {
         ...event,
         session: this.socket.handshake.query.sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
-      this.socket.emit("training_event", eventData);
+      this.socket.emit('training_event', eventData);
       await DatabaseService.createTrainingEvent(eventData);
     }
 
@@ -437,25 +432,25 @@ class Episode {
         VncClient.consts.encodings.zrle,
         VncClient.consts.encodings.hextile,
         VncClient.consts.encodings.raw,
-        VncClient.consts.encodings.pseudoDesktopSize,
-      ],
+        VncClient.consts.encodings.pseudoDesktopSize
+      ]
     });
 
     this.client.connect({ host, port, password });
 
-    this.client.on("firstFrameUpdate", async () => {
-      console.log("VNC Session started, beginning recording...");
+    this.client.on('firstFrameUpdate', async () => {
+      console.log('VNC Session started, beginning recording...');
       const sessionId = this.socket.handshake.query.sessionId as string;
-      this.socket.emit("recording_started", { sessionId });
+      this.socket.emit('recording_started', { sessionId });
 
       const eventData = {
-        type: "system",
-        message: "VNC connection established. Starting session recording.",
+        type: 'system',
+        message: 'VNC connection established. Starting session recording.',
         session: sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
-      this.socket.emit("training_event", eventData);
+      this.socket.emit('training_event', eventData);
       await DatabaseService.createTrainingEvent(eventData);
 
       // Get first frame and generate quest
@@ -465,18 +460,14 @@ class Episode {
         raw: {
           width: clientWidth,
           height: clientHeight,
-          channels: 4,
-        },
+          channels: 4
+        }
       })
         .jpeg()
         .toBuffer();
 
       // no quest yet, lets create one
-      const questData = await generateQuest(
-        jpeg.toString("base64"),
-        this.prompt,
-        this.session
-      );
+      const questData = await generateQuest(jpeg.toString('base64'), this.prompt, this.session);
       this.currentQuest = questData.quest;
       this.currentMaxReward = questData.maxReward;
 
@@ -485,42 +476,42 @@ class Episode {
 
       // Emit and store quest event
       const questEvent = {
-        type: "quest",
+        type: 'quest',
         message: questData.quest,
         session: sessionId,
         frame: 0,
         timestamp: Date.now(),
         metadata: {
-          maxReward: questData.maxReward,
-        },
+          maxReward: questData.maxReward
+        }
       };
-      this.socket.emit("training_event", questEvent);
+      this.socket.emit('training_event', questEvent);
       await DatabaseService.createTrainingEvent(questEvent);
 
       // Emit and store hint event
       const hintEvent = {
-        type: "hint",
+        type: 'hint',
         message: questData.hint,
         session: sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
-      this.socket.emit("training_event", hintEvent);
+      this.socket.emit('training_event', hintEvent);
       await DatabaseService.createTrainingEvent(hintEvent);
 
       // Also emit quest_update for overlay
-      this.socket.emit("quest_update", {
+      this.socket.emit('quest_update', {
         quest: questData.quest,
         hint: questData.hint,
-        maxReward: questData.maxReward,
+        maxReward: questData.maxReward
       });
 
       this.startRecording();
       this.startFrameSending();
     });
 
-    this.client.on("disconnect", () => {
-      console.log("VNC session disconnected.");
+    this.client.on('disconnect', () => {
+      console.log('VNC session disconnected.');
       this.close();
     });
   }
@@ -528,66 +519,59 @@ class Episode {
   startRecording() {
     const { clientWidth, clientHeight } = this.client;
     const sessionId = this.socket.handshake.query.sessionId as string;
-    const videoPath = path.resolve(
-      process.cwd(),
-      `public/recordings/${sessionId}.mp4`
-    );
+    const videoPath = path.resolve(process.cwd(), `public/recordings/${sessionId}.mp4`);
 
     // Update session with video path
     DatabaseService.updateRaceSession(sessionId, {
-      video_path: videoPath,
+      video_path: videoPath
     });
 
     const ffmpegArgs = [
-      "-loglevel",
-      "error",
-      "-hide_banner",
-      "-y",
-      "-f",
-      "rawvideo",
-      "-vcodec",
-      "rawvideo",
-      "-an",
-      "-pix_fmt",
-      "rgba",
-      "-s",
+      '-loglevel',
+      'error',
+      '-hide_banner',
+      '-y',
+      '-f',
+      'rawvideo',
+      '-vcodec',
+      'rawvideo',
+      '-an',
+      '-pix_fmt',
+      'rgba',
+      '-s',
       `${clientWidth}x${clientHeight}`,
-      "-r",
+      '-r',
       `${this.fps}`,
-      "-i",
-      "-",
-      "-an",
-      "-r",
+      '-i',
+      '-',
+      '-an',
+      '-r',
       `${this.fps}`,
-      "-vcodec",
-      "libx264rgb",
-      videoPath,
+      '-vcodec',
+      'libx264rgb',
+      videoPath
     ];
 
     // Debug log the full command
-    console.log(
-      "Starting ffmpeg with command:",
-      "ffmpeg",
-      ffmpegArgs.join(" ")
-    );
+    console.log('Starting ffmpeg with command:', 'ffmpeg', ffmpegArgs.join(' '));
 
-    this.ffmpeg = spawn("ffmpeg", ffmpegArgs);
+    this.ffmpeg = spawn('ffmpeg', ffmpegArgs);
 
-    this.ffmpeg.on("error", (err) => {
-      console.error("FFmpeg process error:", err);
+    this.ffmpeg.on('error', (err) => {
+      console.error('FFmpeg process error:', err);
     });
 
-    this.ffmpeg?.stdin?.on("error", (err) => {
-      console.error("FFmpeg stdin error:", err);
+    this.ffmpeg?.stdin?.on('error', (err) => {
+      console.error('FFmpeg stdin error:', err);
     });
 
-    this.ffmpeg?.stdout?.on("error", (err) => {
-      console.error("FFmpeg stdout error:", err);
+    this.ffmpeg?.stdout?.on('error', (err) => {
+      console.error('FFmpeg stdout error:', err);
     });
 
     // Log any ffmpeg errors
-    this.ffmpeg.stderr?.on("data", (data) => {
-      console.error("FFmpeg error:", data.toString());
+    this.ffmpeg.stderr?.on('data', (data) => {
+      console.error('FFmpeg error:', data.toString());
     });
 
     this.recordFrame();
@@ -599,7 +583,7 @@ class Episode {
         const writeResult = this.ffmpeg.stdin.write(this.client.getFb());
         if (!writeResult) {
           // Handle backpressure
-          this.ffmpeg.stdin.once("drain", () => this.recordFrame());
+          this.ffmpeg.stdin.once('drain', () => this.recordFrame());
           return;
         }
       }
@@ -618,20 +602,20 @@ class Episode {
           raw: {
             width: clientWidth,
             height: clientHeight,
-            channels: 4,
-          },
+            channels: 4
+          }
         })
           .jpeg()
           .toBuffer();
 
-        this.socket.emit("frame", {
-          buffer: jpeg.toString("base64"),
+        this.socket.emit('frame', {
+          buffer: jpeg.toString('base64'),
           width: clientWidth,
           height: clientHeight,
-          frame: this.frameCount,
+          frame: this.frameCount
         });
       } catch (err) {
-        console.error("Error sending frame:", err);
+        console.error('Error sending frame:', err);
       }
     }, this.frameInterval);
   }
@@ -645,12 +629,10 @@ class Episode {
     }
     if (this.ffmpeg?.stdin) {
       this.ffmpeg.stdin.end(); // End the stream properly
-      await new Promise((resolve) =>
-        this.ffmpeg?.stdin?.once("finish", resolve)
-      );
+      await new Promise((resolve) => this.ffmpeg?.stdin?.once('finish', resolve));
     }
     if (this.ffmpeg) {
-      this.ffmpeg.kill("SIGINT");
+      this.ffmpeg.kill('SIGINT');
     }
     if (this.expiryTimer) {
       clearTimeout(this.expiryTimer);
@@ -660,11 +642,12 @@ class Episode {
       this.client.disconnect();
     }
 
-    // NOTE: in the future, we should be grabbing the ip and private keys from the database based upon the user's region
+    // TODO: get vps region programatically
+    const instance = await DatabaseService.getGymVPS(VPSRegion.us_east);
     const vpsService = new GymVPSService({
-      ip: process.env.GYM_VPS_IP!,
-      username: "ubuntu", // default sudo user
-      privateKey: process.env.GYM_VPS_PRIVATE_KEY!,
+      ip: instance.ip,
+      username: instance.username,
+      privateKey: instance.ssh_keypair.private
     });
 
     // remove the trainer from the vps
@@ -674,11 +657,11 @@ class Episode {
     const sessionId = this.socket.handshake.query.sessionId;
     if (sessionId) {
       const eventData = {
-        type: "system",
-        message: "Disconnected from VNC server",
+        type: 'system',
+        message: 'Disconnected from VNC server',
         session: sessionId,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
       await DatabaseService.createTrainingEvent(eventData);
     }
@@ -695,17 +678,17 @@ export function getEpisode(sessionId: string): Episode | undefined {
 export function initializeSocketIO(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
-    },
+      origin: '*',
+      methods: ['GET', 'POST']
+    }
   });
 
-  io.on("connection", async (socket) => {
-    console.log("Socket.io connected");
+  io.on('connection', async (socket) => {
+    console.log('Socket.io connected');
 
     const { sessionId } = socket.handshake.query;
     if (!sessionId) {
-      console.error("No session ID provided");
+      console.error('No session ID provided');
       socket.disconnect();
       return;
     }
@@ -713,7 +696,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
     // Get session details from database
     const session = await DatabaseService.getRaceSession(sessionId as string);
     if (!session) {
-      console.error("Session not found");
+      console.error('Session not found');
       socket.disconnect();
       return;
     }
@@ -722,8 +705,8 @@ export function initializeSocketIO(httpServer: HttpServer) {
     activeEpisodes.set(sessionId as string, episode);
     episode.connect(session.vm_ip, session.vm_port, session.vm_password);
 
-    socket.on("disconnect", async () => {
-      console.log("Socket.io disconnected");
+    socket.on('disconnect', async () => {
+      console.log('Socket.io disconnected');
       episode.close();
 
       // End the race session
@@ -731,20 +714,20 @@ export function initializeSocketIO(httpServer: HttpServer) {
       if (sessionId) {
         try {
           await DatabaseService.updateRaceSession(sessionId, {
-            status: "expired",
-            updated_at: new Date(),
+            status: 'expired',
+            updated_at: new Date()
           });
           console.log(`Race session ${sessionId} marked as expired`);
           activeEpisodes.delete(sessionId);
         } catch (error) {
-          console.error("Error ending race session:", error);
+          console.error('Error ending race session:', error);
         }
       }
     });
 
-    socket.on("request_hint", async () => {
+    socket.on('request_hint', async () => {
       if (episode.isGeneratingHint) {
-        console.log("Hint generation already in progress");
+        console.log('Hint generation already in progress');
         return;
       }
 
@@ -757,15 +740,15 @@ export function initializeSocketIO(httpServer: HttpServer) {
           raw: {
             width: clientWidth,
             height: clientHeight,
-            channels: 4,
-          },
+            channels: 4
+          }
         })
           .jpeg()
           .toBuffer();
 
         const result = await generateHint(
-          jpeg.toString("base64"),
-          episode.currentQuest || "",
+          jpeg.toString('base64'),
+          episode.currentQuest || '',
           socket,
           episode.prompt,
           episode.session,
@@ -785,51 +768,47 @@ export function initializeSocketIO(httpServer: HttpServer) {
           episode.resetExpiryTimer();
         }
       } catch (error) {
-        console.error("Error generating hint:", error);
-        socket.emit("hint_update", {
-          hint: "Try exploring the visible interface elements",
+        console.error('Error generating hint:', error);
+        socket.emit('hint_update', {
+          hint: 'Try exploring the visible interface elements'
         });
       } finally {
         episode.isGeneratingHint = false;
       }
     });
 
-    socket.on("vnc_keypress", async (data) => {
+    socket.on('vnc_keypress', async (data) => {
       console.log(data);
 
       try {
-        const result = await executeComputerAction(
-          "key",
-          { text: data.key },
-          episode.client
-        );
+        const result = await executeComputerAction('key', { text: data.key }, episode.client);
 
         const eventData = {
-          type: "keyboard",
+          type: 'keyboard',
           message: `Key pressed: ${data.key}`,
           result,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
 
-        socket.emit("training_event", eventData);
+        socket.emit('training_event', eventData);
         await DatabaseService.createTrainingEvent(eventData);
       } catch (error) {
-        console.error("Error handling keypress:", error);
+        console.error('Error handling keypress:', error);
         const errorEvent = {
-          type: "error",
+          type: 'error',
           message: `Failed to process key: ${data.key}`,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
-        socket.emit("training_event", errorEvent);
+        socket.emit('training_event', errorEvent);
         await DatabaseService.createTrainingEvent(errorEvent);
       }
     });
 
-    socket.on("vnc_mouse", async (data) => {
+    socket.on('vnc_mouse', async (data) => {
       try {
         let result;
         let eventMessage;
@@ -842,64 +821,49 @@ export function initializeSocketIO(httpServer: HttpServer) {
           timestamp: number;
           message?: string;
         } = {
-          type: "mouse",
+          type: 'mouse',
           coordinates: undefined,
           trajectory: undefined,
           session: sessionId as string,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
 
         if (episode.isReplayingTrajectory) return;
 
-        if (data.action?.endsWith("_drag")) {
+        if (data.action?.endsWith('_drag')) {
           // console.log('started trajectory');
           episode.isReplayingTrajectory = true;
           result = await executeComputerAction(
             data.action,
             {
-              trajectory: data.trajectory,
+              trajectory: data.trajectory
             },
             episode.client
           );
           episode.isReplayingTrajectory = false;
           // console.log('stoppped trajectory');
 
-          eventMessage = `Mouse ${data.action.replace("_", " ")}`;
+          eventMessage = `Mouse ${data.action.replace('_', ' ')}`;
           eventData.trajectory = data.trajectory;
-        } else if (
-          data.action === "scroll_up" ||
-          data.action === "scroll_down"
-        ) {
+        } else if (data.action === 'scroll_up' || data.action === 'scroll_down') {
           result = await executeComputerAction(data.action, {}, episode.client);
-          eventMessage = `Mouse ${data.action.replace("_", " ")}`;
+          eventMessage = `Mouse ${data.action.replace('_', ' ')}`;
         } else {
           if (data.button === 1) {
-            result = await executeComputerAction(
-              "left_click",
-              {},
-              episode.client
-            );
-            eventMessage = "Left click";
+            result = await executeComputerAction('left_click', {}, episode.client);
+            eventMessage = 'Left click';
           } else if (data.button === 2) {
-            result = await executeComputerAction(
-              "right_click",
-              {},
-              episode.client
-            );
-            eventMessage = "Right click";
+            result = await executeComputerAction('right_click', {}, episode.client);
+            eventMessage = 'Right click';
           } else if (data.button === 3) {
-            result = await executeComputerAction(
-              "middle_click",
-              {},
-              episode.client
-            );
-            eventMessage = "Middle click";
+            result = await executeComputerAction('middle_click', {}, episode.client);
+            eventMessage = 'Middle click';
           } else {
             result = await executeComputerAction(
-              "mouse_move",
+              'mouse_move',
               {
-                coordinate: [data.x, data.y],
+                coordinate: [data.x, data.y]
               },
               episode.client
             );
@@ -912,18 +876,18 @@ export function initializeSocketIO(httpServer: HttpServer) {
         }
 
         eventData.message = eventMessage;
-        socket.emit("training_event", eventData);
+        socket.emit('training_event', eventData);
         await DatabaseService.createTrainingEvent(eventData);
       } catch (error) {
-        console.error("Error handling mouse event:", error);
+        console.error('Error handling mouse event:', error);
         const errorEvent = {
-          type: "error",
+          type: 'error',
           message: `Failed to process mouse event: ${(error as Error).message}`,
           session: sessionId,
           frame: data.frame,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
-        socket.emit("training_event", errorEvent);
+        socket.emit('training_event', errorEvent);
         await DatabaseService.createTrainingEvent(errorEvent);
       }
     });

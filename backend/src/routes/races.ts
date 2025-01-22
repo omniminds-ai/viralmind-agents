@@ -9,19 +9,16 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 import { TrainingEvent } from '../models/TrainingEvent.ts';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
+import { VPSRegion } from '../services/gym-vps/types.ts';
 
-async function generateQuest(
-  imageBuffer: Buffer,
-  prompt: string,
-  session: RaceSessionDocument
-) {
+async function generateQuest(imageBuffer: Buffer, prompt: string, session: RaceSessionDocument) {
   try {
     // Get treasury balance
     const treasuryBalance = await blockchainService.getTokenBalance(
@@ -31,21 +28,16 @@ async function generateQuest(
 
     // Calculate max reward
     const rng = Math.random();
-    const maxReward = Math.ceil(
-      Math.min(
-        1 / rng,
-        treasuryBalance / 128
-      )
-    );
+    const maxReward = Math.ceil(Math.min(1 / rng, treasuryBalance / 128));
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: 'gpt-4o',
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `You are an AI assistant that needs to propose a new Ubuntu desktop quest based on the theme: "${prompt}". 
               
 First, analyze the current screen state to understand what task the user has already completed. Then, propose a DIFFERENT task that fits the same theme but isn't repetitive.
@@ -55,16 +47,16 @@ For example, if the theme is "Draw cartoon characters in jspaint" and they drew 
 Return as JSON with these keys:
 - reasoning: Analyze what's on screen and explain why you're choosing a different task within the same theme
 - quest: The new specific task to complete (should match the theme but be distinct from what's visible)
-- hint: Helpful tip for completing the new task`,
+- hint: Helpful tip for completing the new task`
             },
             {
-              type: "image_url",
-              image_url: { url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}` },
-            },
-          ],
-        },
+              type: 'image_url',
+              image_url: { url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}` }
+            }
+          ]
+        }
       ],
-      max_tokens: 250,
+      max_tokens: 250
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
@@ -72,20 +64,19 @@ Return as JSON with these keys:
       const questData = JSON.parse(jsonMatch[0]);
       return {
         ...questData,
-        maxReward,
+        maxReward
       };
     }
 
-    throw new Error("No valid JSON found in response");
+    throw new Error('No valid JSON found in response');
   } catch (error) {
-    console.error("Error generating quest:", error);
+    console.error('Error generating quest:', error);
 
     return {
-      reasoning:
-        "Failed to analyze screen, providing a generic task within theme",
-      quest: "Open the Activities overview and launch a relevant application",
-      hint: "Press the Super (Windows) key or click Activities in the top-left corner",
-      maxReward: 0,
+      reasoning: 'Failed to analyze screen, providing a generic task within theme',
+      quest: 'Open the Activities overview and launch a relevant application',
+      hint: 'Press the Super (Windows) key or click Activities in the top-left corner',
+      maxReward: 0
     };
   }
 }
@@ -100,15 +91,15 @@ async function generateHint(
 ) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: 'gpt-4o',
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `Current quest: ${currentQuest}
-Previous hints: ${hintHistory.slice(-3).join(", ")}
+Previous hints: ${hintHistory.slice(-3).join(', ')}
 
 First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
 
@@ -121,27 +112,27 @@ Then provide a single actionable hint (if needed) that includes one of these pat
 Output as JSON with three fields:
 1. "reasoning": Your analysis of what's been accomplished vs core requirements (ignore artistic details)
 2. "isCompleted": Boolean based on basic task completion
-3. "hint": A single sentence hint if not completed`,
+3. "hint": A single sentence hint if not completed`
             },
             {
-              type: "image_url",
+              type: 'image_url',
               image_url: {
-                url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
-              },
-            },
-          ],
-        },
+                url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`
+              }
+            }
+          ]
+        }
       ],
-      max_tokens: 250,
+      max_tokens: 250
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
-    let parsedResponse = { hint: "", reasoning: "", isCompleted: false };
+    let parsedResponse = { hint: '', reasoning: '', isCompleted: false };
     if (jsonMatch) {
       try {
         parsedResponse = JSON.parse(jsonMatch[0]);
       } catch (e) {
-        console.error("Error parsing JSON from response:", e);
+        console.error('Error parsing JSON from response:', e);
       }
     }
 
@@ -161,34 +152,34 @@ Output as JSON with three fields:
 
       // Create reward event
       const rewardEvent = {
-        type: "reward",
-        message: `The judge rewarded you ${actualReward.toFixed(
-          2
-        )} $VIRAL for this (${(score * 100).toFixed(0)}% of ${maxReward.toFixed(
-          2
-        )})${signature ? `\nTransaction: ${signature}` : ""}`,
+        type: 'reward',
+        message: `The judge rewarded you ${actualReward.toFixed(2)} $VIRAL for this (${(
+          score * 100
+        ).toFixed(0)}% of ${maxReward.toFixed(2)})${
+          signature ? `\nTransaction: ${signature}` : ''
+        }`,
         session: session._id,
         frame: 0,
         timestamp: Date.now(),
         metadata: {
           scoreValue: score,
           rewardValue: actualReward,
-          transaction: signature,
-        },
+          transaction: signature
+        }
       };
       await DatabaseService.createTrainingEvent(rewardEvent);
 
       // Generate new quest
       const questData = await generateQuest(imageBuffer, prompt, session);
       const questEvent = {
-        type: "quest",
+        type: 'quest',
         message: questData.quest,
         session: session._id,
         frame: 0,
         timestamp: Date.now(),
         metadata: {
-          maxReward: questData.maxReward,
-        },
+          maxReward: questData.maxReward
+        }
       };
       await DatabaseService.createTrainingEvent(questEvent);
 
@@ -204,20 +195,20 @@ Output as JSON with three fields:
 
     // Create hint and reasoning events
     const hintEvent = {
-      type: "hint",
-      message: parsedResponse.hint || "(empty)",
+      type: 'hint',
+      message: parsedResponse.hint || '(empty)',
       session: session._id,
       frame: 0,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
     await DatabaseService.createTrainingEvent(hintEvent);
 
     const reasoningEvent = {
-      type: "reasoning",
-      message: parsedResponse.reasoning || "(empty)",
+      type: 'reasoning',
+      message: parsedResponse.reasoning || '(empty)',
       session: session._id,
       frame: 0,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
     await DatabaseService.createTrainingEvent(reasoningEvent);
 
@@ -228,21 +219,21 @@ Output as JSON with three fields:
       events: [hintEvent, reasoningEvent]
     };
   } catch (error) {
-    console.error("Error generating hint:", error);
-    const fallbackHint = "Scroll in the environments list to explore available tasks";
-    
+    console.error('Error generating hint:', error);
+    const fallbackHint = 'Scroll in the environments list to explore available tasks';
+
     const errorEvent = {
-      type: "hint",
+      type: 'hint',
       message: fallbackHint,
       session: session._id,
       frame: 0,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
     await DatabaseService.createTrainingEvent(errorEvent);
-    
+
     return {
       hint: fallbackHint,
-      reasoning: "Error occurred during analysis",
+      reasoning: 'Error occurred during analysis',
       isCompleted: false,
       events: [errorEvent]
     };
@@ -321,18 +312,14 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     // Get an open vps instance
     console.log('Joining a Race');
 
-    // NOTE: in the future, we should be grabbing the ip and private keys from the database based upon the user's region
-    // const vpsService = new GymVPSService({
-    //   ip: process.env.GYM_VPS_IP!,
-    //   username: 'ubuntu', // default sudo user
-    //   privateKey: process.env.GYM_VPS_PRIVATE_KEY!
-    // });
-    // const vps = await vpsService.initNewTrainer(address);
-    const vps = {
-      ip: '18.119.106.179',
-      username: 'user',
-      password: 'password'
-    }
+    // TODO: get vps region programatically
+    const instance = await DatabaseService.getGymVPS(VPSRegion.us_east);
+    const vpsService = new GymVPSService({
+      ip: instance.ip,
+      username: instance.username,
+      privateKey: instance.ssh_keypair.private
+    });
+    const vps = await vpsService.initNewTrainer(address);
 
     // Create Guacamole session with RDP connection
     const {
@@ -343,20 +330,14 @@ router.post('/:id/start', async (req: Request, res: Response) => {
 
     // Create race session
     const now = new Date();
-    //todo: convert RaceSessionInput to work with RDP.
-    /* 
-      vm_ip: process.env.GYM_VPS_IP!,
-      vm_port: 3389,
-      vm_private_key: process.env.GYP_VPS_PRIVATE_KEY!,
-    */
     const sessionData: RaceSessionInput = {
       address,
       challenge: id,
       prompt: race.prompt,
       status: 'active',
-      vm_ip: process.env.VNC_HOST_GYMTEST || process.env.GYM_VPS_IP!,
-      vm_port: 5900,
-      vm_password: process.env.VNC_PASS_GYMTEST || process.env.GYP_VPS_PRIVATE_KEY!,
+      vm_ip: instance.ip,
+      vm_port: 3389,
+      vm_password: instance.ssh_keypair.private,
       vm_credentials: {
         username: vps.username,
         password: vps.password,
@@ -568,7 +549,7 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const session = await DatabaseService.getRaceSession(id);
-    
+
     if (!session) {
       res.status(404).json({ error: 'Session not found' });
       return;
@@ -589,7 +570,7 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       );
     } catch (error) {
       console.log('Screenshot not available, instance may not be ready:', error);
-      res.status(202).json({ 
+      res.status(202).json({
         message: 'Instance not ready yet. Please wait a moment and try again.',
         retryAfter: 5
       });
@@ -609,7 +590,7 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       { message: 1 },
       { sort: { timestamp: -1 }, limit: 3 }
     );
-    const hintHistory = hintEvents.map(e => e.message);
+    const hintHistory = hintEvents.map((e) => e.message);
 
     // Get current max reward from latest quest event
     const maxReward = latestQuestEvent?.metadata?.maxReward || 0;
@@ -636,7 +617,7 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const session = await DatabaseService.getRaceSession(id);
-    
+
     if (!session) {
       res.status(404).json({ error: 'Session not found' });
       return;
@@ -657,7 +638,7 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
       );
     } catch (error) {
       console.log('Screenshot not available, instance may not be ready:', error);
-      res.status(202).json({ 
+      res.status(202).json({
         message: 'Instance not ready yet. Please wait a moment and try again.',
         retryAfter: 5
       });
@@ -665,27 +646,27 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
     }
 
     const questData = await generateQuest(screenshot, session.prompt, session);
-    
+
     // Create quest event
     const questEvent = {
-      type: "quest",
+      type: 'quest',
       message: questData.quest,
       session: id,
       frame: 0,
       timestamp: Date.now(),
       metadata: {
-        maxReward: questData.maxReward,
-      },
+        maxReward: questData.maxReward
+      }
     };
     await DatabaseService.createTrainingEvent(questEvent);
 
     // Create hint event
     const hintEvent = {
-      type: "hint",
+      type: 'hint',
       message: questData.hint,
       session: id,
       frame: 0,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
     await DatabaseService.createTrainingEvent(hintEvent);
 

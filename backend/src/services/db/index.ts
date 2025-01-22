@@ -1,4 +1,4 @@
-import EventEmitter from "node:events";
+import EventEmitter from 'node:events';
 import {
   Chat,
   Challenge,
@@ -9,20 +9,13 @@ import {
   challengeSchema,
   pageSchema,
   raceSessionSchema,
-  raceSchema,
-} from "../../models/Models.ts";
-import { TrainingEvent } from "../../models/TrainingEvent.ts";
-import dotenv from "dotenv";
-import {
-  Document,
-  InferSchemaType,
-  Query,
-  QueryOptions,
-  SortOrder,
-  SortValues,
-  UpdateWriteOpResult,
-} from "mongoose";
-import { GymVPS, gymVPSSchema } from "../../models/GymVPS.ts";
+  raceSchema
+} from '../../models/Models.ts';
+import { TrainingEvent } from '../../models/TrainingEvent.ts';
+import dotenv from 'dotenv';
+import { InferSchemaType, QueryOptions, SortOrder, UpdateWriteOpResult } from 'mongoose';
+import { GymVPS, gymVPSSchema } from '../../models/GymVPS.ts';
+import { VPSRegion } from '../gym-vps/types.ts';
 
 export type ChallengeDocument = InferSchemaType<typeof challengeSchema>;
 export type ChatDocument = InferSchemaType<typeof chatSchema>;
@@ -40,9 +33,7 @@ class DataBaseService extends EventEmitter {
   }
 
   // Challenge-related methods
-  async getAllChallenges(): Promise<
-    InferSchemaType<typeof challengeSchema>[] | false
-  > {
+  async getAllChallenges(): Promise<InferSchemaType<typeof challengeSchema>[] | false> {
     try {
       return (
         (await Challenge.find(
@@ -67,49 +58,40 @@ class DataBaseService extends EventEmitter {
             chatLimit: 1,
             initial_pool_size: 1,
             expiry: 1,
-            developer_fee: 1,
+            developer_fee: 1
           }
         )) || false
       );
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
 
-  async getChallengeById(
-    id: string,
-    projection = {}
-  ): Promise<ChallengeDocument | null> {
+  async getChallengeById(id: string, projection = {}): Promise<ChallengeDocument | null> {
     try {
       return await Challenge.findOne({ _id: id }, projection);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return null;
     }
   }
 
-  async getChallengeByName(
-    name: string,
-    projection = {}
-  ): Promise<ChallengeDocument | false> {
-    const nameReg = { $regex: name, $options: "i" };
+  async getChallengeByName(name: string, projection = {}): Promise<ChallengeDocument | false> {
+    const nameReg = { $regex: name, $options: 'i' };
     try {
       return (await Challenge.findOne({ name: nameReg }, projection)) || false;
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
 
-  async updateChallenge(
-    id: string,
-    updateData: object
-  ): Promise<UpdateWriteOpResult | false> {
+  async updateChallenge(id: string, updateData: object): Promise<UpdateWriteOpResult | false> {
     try {
       return await Challenge.updateOne({ _id: id }, { $set: updateData });
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -117,10 +99,10 @@ class DataBaseService extends EventEmitter {
   // Chat-related methods
   async createChat(chatData: ChatDocument): Promise<ChatDocument | false> {
     try {
-      this.emit("new-chat", chatData);
+      this.emit('new-chat', chatData);
       return await Chat.create(chatData);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -134,9 +116,9 @@ class DataBaseService extends EventEmitter {
       return await Chat.find(query)
         .sort(sort)
         .limit(limit)
-        .select("role content screenshot date address -_id");
+        .select('role content screenshot date address -_id');
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -150,7 +132,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await Chat.find(query, projection).sort(sort).limit(limit);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -159,7 +141,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await Chat.countDocuments(query);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -168,7 +150,7 @@ class DataBaseService extends EventEmitter {
     try {
       return (await Chat.findOne(query)) || false;
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -176,7 +158,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await Pages.find(query);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
     }
   }
   // Settings-related methods
@@ -186,7 +168,7 @@ class DataBaseService extends EventEmitter {
         {},
         {
           _id: 0,
-          id: "$_id",
+          id: '$_id',
           name: 1,
           title: 1,
           image: 1,
@@ -200,13 +182,13 @@ class DataBaseService extends EventEmitter {
           developer_fee: 1,
           start_date: 1,
           winning_address: 1,
-          winning_txn: 1,
+          winning_txn: 1
         }
       );
 
       return challenge;
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
     }
   }
 
@@ -220,19 +202,19 @@ class DataBaseService extends EventEmitter {
       return await Chat.find(
         { address },
         {
-          id: "$_id",
+          id: '$_id',
           content: 1,
           role: 1,
           address: 1,
           challenge: 1,
           date: 1,
-          screenshot: 1,
+          screenshot: 1
         }
       )
         .skip(skip)
         .limit(limit);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -253,13 +235,13 @@ class DataBaseService extends EventEmitter {
           address: 1,
           challenge: 1,
           date: 1,
-          screenshot: 1,
+          screenshot: 1
         }
       )
         .skip(skip)
         .limit(limit);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -270,7 +252,7 @@ class DataBaseService extends EventEmitter {
         {},
         {
           _id: 0,
-          id: "$_id",
+          id: '$_id',
           title: 1,
           name: 1,
           description: 1,
@@ -285,23 +267,21 @@ class DataBaseService extends EventEmitter {
           entryFee: 1,
           developer_fee: 1,
           // tools: 0,
-          idl: 1,
+          idl: 1
         }
       );
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
 
   // Race session methods
-  async createRaceSession(
-    sessionData: RaceSessionDocument
-  ): Promise<RaceSessionDocument | false> {
+  async createRaceSession(sessionData: RaceSessionDocument): Promise<RaceSessionDocument | false> {
     try {
       return await RaceSession.create(sessionData);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -310,7 +290,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await RaceSession.findById(id);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return null;
     }
   }
@@ -322,7 +302,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await RaceSession.findByIdAndUpdate(id, updateData, { new: true });
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return null;
     }
   }
@@ -331,7 +311,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await Race.findOne({ id: id }, projection);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return null;
     }
   }
@@ -350,18 +330,16 @@ class DataBaseService extends EventEmitter {
           prompt: 1,
           reward: 1,
           buttonText: 1,
-          stakeRequired: 1,
+          stakeRequired: 1
         }
       );
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
 
-  async getRaceSessions(filter?: {
-    address?: string;
-  }): Promise<RaceSessionDocument[] | false> {
+  async getRaceSessions(filter?: { address?: string }): Promise<RaceSessionDocument[] | false> {
     try {
       return await RaceSession.find(filter || {}, {
         // id: "$_id",
@@ -370,22 +348,20 @@ class DataBaseService extends EventEmitter {
         challenge: 1,
         category: 1,
         video_path: 1,
-        created_at: 1,
+        created_at: 1
       }).sort({ created_at: -1 }); // Sort by newest first
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
 
-  async getRaceSessionsByIds(
-    ids: string[]
-  ): Promise<RaceSessionDocument[] | false> {
+  async getRaceSessionsByIds(ids: string[]): Promise<RaceSessionDocument[] | false> {
     try {
-      console.log("Getting race sessions for IDs:", ids);
-      const mongoose = await import("mongoose");
+      console.log('Getting race sessions for IDs:', ids);
+      const mongoose = await import('mongoose');
       const objectIds = ids.map((id) => new mongoose.Types.ObjectId(id));
-      console.log("Converted to ObjectIds:", objectIds);
+      console.log('Converted to ObjectIds:', objectIds);
       return await RaceSession.find(
         { _id: { $in: objectIds } },
         {
@@ -394,7 +370,7 @@ class DataBaseService extends EventEmitter {
           challenge: 1,
           category: 1,
           video_path: 1,
-          created_at: 1,
+          created_at: 1
         }
       ).sort({ created_at: -1 });
 
@@ -411,7 +387,7 @@ class DataBaseService extends EventEmitter {
       // console.log(`Found ${filteredSessions.length} matching sessions`);
       // return filteredSessions;
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -421,7 +397,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await TrainingEvent.create(eventData);
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
@@ -429,10 +405,10 @@ class DataBaseService extends EventEmitter {
   async getTrainingEvents(sessionId: string): Promise<any[]> {
     try {
       return await TrainingEvent.find({ session: sessionId }).sort({
-        timestamp: 1,
+        timestamp: 1
       });
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return [];
     }
   }
@@ -444,7 +420,7 @@ class DataBaseService extends EventEmitter {
           { _id: id },
           {
             _id: 0,
-            id: "$_id",
+            id: '$_id',
             title: 1,
             name: 1,
             description: 1,
@@ -459,35 +435,33 @@ class DataBaseService extends EventEmitter {
             entryFee: 1,
             developer_fee: 1,
             // tools: 0,
-            idl: 1,
+            idl: 1
           }
         )) || false
       );
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
 
-  async createTournament(
-    tournamentData: ChallengeDocument
-  ): Promise<ChallengeDocument | false> {
+  async createTournament(tournamentData: ChallengeDocument): Promise<ChallengeDocument | false> {
     try {
       const savedChallenge = new Challenge(tournamentData);
       await savedChallenge.save();
       return savedChallenge;
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return false;
     }
   }
 
   async getHighestAndLatestScore(
     challengeName: string
-  ): Promise<ChallengeDocument["scores"] | null> {
+  ): Promise<ChallengeDocument['scores'] | null> {
     try {
       const challenge = await Challenge.findOne({
-        name: { $regex: challengeName, $options: "i" },
+        name: { $regex: challengeName, $options: 'i' }
       });
 
       if (!challenge || !challenge.scores || challenge.scores.length === 0) {
@@ -504,7 +478,7 @@ class DataBaseService extends EventEmitter {
 
       return sortedScores;
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
       return null;
     }
   }
@@ -515,23 +489,27 @@ class DataBaseService extends EventEmitter {
     try {
       await GymVPS.updateOne({ ip }, { $pull: { users: { username } } });
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
     }
   }
 
-  async addGymVPSUser(
-    ip: string,
-    username: string,
-    password: string
-  ): Promise<void> {
+  async addGymVPSUser(ip: string, username: string, password: string): Promise<void> {
     try {
-      await GymVPS.updateOne(
-        { ip },
-        { $push: { users: { username, password } } }
-      );
+      const exists = await GymVPS.findOne({
+        ip: ip,
+        'users.username': username
+      });
+      // don't add a new user if we are already connected to the rdp
+      if (!exists) await GymVPS.updateOne({ ip }, { $addToSet: { users: { username, password } } });
     } catch (error) {
-      console.error("Database Service Error:", error);
+      console.error('Database Service Error:', error);
     }
+  }
+
+  async getGymVPS(region: VPSRegion): Promise<GymVPSDocument> {
+    const vps = await GymVPS.findOne({ region });
+    if (!vps) throw Error('Could not find a VPS for region ' + region);
+    return vps;
   }
 }
 
