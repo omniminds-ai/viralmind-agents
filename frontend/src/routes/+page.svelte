@@ -80,16 +80,19 @@
       <video autoplay loop muted playsinline class="h-full w-full object-cover opacity-20">
         <source src={demoVideo} type="video/mp4" />
       </video>
-      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black"></div>
+      <div
+        class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-purple-900"
+      ></div>
     </div>
 
     <!-- Main Content -->
-    <div
-      class="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4"
-    >
-      <div class="text-center">
-        <!-- Gym Launch Countdown -->
-        <!-- <div class="absolute top-48 left-1/2 -translate-x-1/2 transform space-y-6">
+    <div class="bg-gradient-to-b from-black via-black to-purple-900">
+      <div
+        class="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4"
+      >
+        <div class="text-center">
+          <!-- Gym Launch Countdown -->
+          <!-- <div class="absolute top-48 left-1/2 -translate-x-1/2 transform space-y-6">
           <div class="rounded-xl bg-black/50 pt-4 pb-8 px-8 backdrop-blur-sm border border-purple-500/20 shadow-2xl">
             <div class="text-center">
               <h3 class="text-xl font-bold text-purple-300/50 mb-1">Training Gym Launch</h3>
@@ -98,196 +101,209 @@
           </div>
         </div> -->
 
-        <h1 class="mb-8 text-6xl font-bold md:text-7xl lg:text-8xl">
-          <span class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            We Build LAMs
-          </span>
-        </h1>
-        <p class="mx-auto mb-4 max-w-3xl text-xl text-gray-300 md:text-2xl">
-          Trained directly on human behavior. No OCR - our agents natively learn the screen,
-          keyboard, and mouse just like you do.
-        </p>
-        <p class="mx-auto mb-12 max-w-2xl text-lg text-gray-400">
-          From gaming to productivity, if you can do it, they can learn it.
-        </p>
+          <h1 class="mb-8 text-6xl font-bold md:text-7xl lg:text-8xl">
+            <span
+              class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent"
+            >
+              We Build LAMs
+            </span>
+          </h1>
+          <p class="mx-auto mb-4 max-w-3xl text-xl text-gray-300 md:text-2xl">
+            Trained directly on human behavior. No OCR - our agents natively learn the screen,
+            keyboard, and mouse just like you do.
+          </p>
+          <p class="mx-auto mb-12 max-w-2xl text-lg text-gray-400">
+            From gaming to productivity, if you can do it, they can learn it.
+          </p>
 
-        {#if settings?.activeChallenge}
-          <!-- Tournament Section -->
-          <div class="mb-12">
-            {#if settings.activeChallenge.status === 'upcoming'}
-              <TournamentCountdown
-                start_date={settings.activeChallenge.start_date}
-                title={settings.activeChallenge.title}
-                prize={settings.activeChallenge.prize}
-                name={settings.activeChallenge.name}
-              />
-            {:else}
-              <TournamentStream
-                challenge={settings.activeChallenge}
-                prize={settings.activeChallenge.prize || 0}
-                breakAttempts={settings.breakAttempts}
-                streamUrl={settings.activeChallenge.stream_url || ''}
-              />
-            {/if}
-          </div>
-        {/if}
+          {#if settings?.activeChallenge}
+            <!-- Tournament Section -->
+            <div class="mb-12">
+              {#if settings.activeChallenge.status === 'upcoming'}
+                <TournamentCountdown
+                  start_date={settings.activeChallenge.start_date}
+                  title={settings.activeChallenge.title}
+                  prize={settings.activeChallenge.prize}
+                  name={settings.activeChallenge.name}
+                />
+              {:else}
+                <TournamentStream
+                  challenge={settings.activeChallenge}
+                  prize={settings.activeChallenge.prize || 0}
+                  breakAttempts={settings.breakAttempts}
+                  streamUrl={settings.activeChallenge.stream_url || ''}
+                />
+              {/if}
+            </div>
+          {/if}
 
-        <div class="relative mb-2">
-          <div class="flex justify-center gap-4">
-            <ButtonCTA href="/gym">
-              Build Your Agent
-              <ArrowRight class="h-5 w-5" />
-            </ButtonCTA>
-            <ButtonCTA href="/tournaments" variant="secondary">
-              <Gamepad2 class="h-5 w-5" />
-              Play Against AI
-            </ButtonCTA>
+          <div class="relative mb-2">
+            <div class="flex justify-center gap-4">
+              <ButtonCTA href="/gym">
+                Build Your Agent
+                <ArrowRight class="h-5 w-5" />
+              </ButtonCTA>
+              <ButtonCTA href="/tournaments" variant="secondary">
+                <Gamepad2 class="h-5 w-5" />
+                Play Against AI
+              </ButtonCTA>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- VM-1 Chat Demo Section -->
-  <div class="relative overflow-hidden bg-gradient-to-b from-black to-purple-900">
-    <!-- Decorative Elements -->
-    <div class="bg-grid-black/[0.02] absolute inset-0"></div>
-    <div
-      class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent"
-    ></div>
+      <!-- VM-1 Chat Demo Section -->
+      <div class="relative overflow-hidden bg-transparent">
+        <!-- Decorative Elements -->
+        <div class="bg-grid-black/[0.02] absolute inset-0"></div>
+        <div
+          class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent"
+        ></div>
 
-    <div class="relative z-10 mx-auto max-w-6xl px-4 py-24">
-      <div class="rounded-3xl bg-white/60 p-8 shadow-2xl backdrop-blur-sm">
-        <div class="grid gap-8 md:grid-cols-2">
-          <!-- Left Content -->
-          <div class="flex flex-col justify-center">
-            <h2
-              class="mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-4xl font-bold text-transparent"
-            >
-              Your Ultimate<br />AI Companion
-            </h2>
-            <p class="mb-6 text-xl text-gray-900">
-              VM-1 agents that play your games, analyze your data, and handle your tasks - just like
-              a human would.
-            </p>
-            <ButtonCTA href="https://t.me/viralmind" target="_blank">
-              <MessageCircle class="h-5 w-5" />
-              Join Our Community
-            </ButtonCTA>
-          </div>
-
-          <!-- Right Chat Demo -->
-          <div class="space-y-3">
-            <!-- Bot Welcome -->
-            <div class="flex items-start gap-2">
-              <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-                <Bot class="h-4 w-4 text-purple-600" />
-              </div>
-              <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
-                <p>Ready to help! What are we playing today? 🎮</p>
-              </div>
-            </div>
-
-            <!-- User CSGO Request -->
-            <div class="flex flex-row-reverse items-start gap-2">
-              <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
-                <User class="h-4 w-4 text-blue-600" />
-              </div>
-              <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
-                <p>
-                  Join my CS:GO match <span class="font-mono text-gray-600">192.168.1.1:27015</span>
+        <div class="relative z-10 mx-auto max-w-6xl px-4 py-24">
+          <div class="rounded-3xl bg-white/60 p-8 shadow-2xl backdrop-blur-sm">
+            <div class="grid gap-8 md:grid-cols-2">
+              <!-- Left Content -->
+              <div class="flex flex-col justify-center">
+                <h2
+                  class="mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-4xl font-bold text-transparent"
+                >
+                  Your Ultimate<br />AI Companion
+                </h2>
+                <p class="mb-6 text-xl text-gray-900">
+                  VM-1 agents that play your games, analyze your data, and handle your tasks - just
+                  like a human would.
                 </p>
-                <p>Play like Gold Nova 1 so I can practice!</p>
+                <ButtonCTA href="https://t.me/viralmind" target="_blank">
+                  <MessageCircle class="h-5 w-5" />
+                  Join Our Community
+                </ButtonCTA>
               </div>
-            </div>
 
-            <!-- Bot Response -->
-            <div class="flex items-start gap-2">
-              <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-                <Bot class="h-4 w-4 text-purple-600" />
-              </div>
-              <div class="space-y-2">
-                <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
-                  <p>Let's crush it! 🎯</p>
+              <!-- Right Chat Demo -->
+              <div class="space-y-3">
+                <!-- Bot Welcome -->
+                <div class="flex items-start gap-2">
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20"
+                  >
+                    <Bot class="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                    <p>Ready to help! What are we playing today? 🎮</p>
+                  </div>
                 </div>
-                <div
-                  class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600"
-                >
-                  <MonitorPlay class="h-4 w-4 animate-pulse" />
-                  Launching csgo.exe
+
+                <!-- User CSGO Request -->
+                <div class="flex flex-row-reverse items-start gap-2">
+                  <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
+                    <User class="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
+                    <p>
+                      Join my CS:GO match <span class="font-mono text-gray-600"
+                        >192.168.1.1:27015</span
+                      >
+                    </p>
+                    <p>Play like Gold Nova 1 so I can practice!</p>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Game Preview -->
-            <div class="relative ml-8 aspect-video overflow-hidden rounded-lg bg-black/5">
-              <img
-                src={demoGif}
-                alt="CSGO Gameplay"
-                class="absolute inset-0 h-full w-full object-cover blur-[2px]"
-              />
-              <div class="absolute inset-0 flex items-center justify-center bg-black/10">
-                <Gamepad2 class="h-8 w-8 animate-pulse text-white" />
-              </div>
-            </div>
-
-            <!-- User Research Request -->
-            <div class="flex flex-row-reverse items-start gap-2">
-              <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
-                <User class="h-4 w-4 text-blue-600" />
-              </div>
-              <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
-                <div class="flex items-center gap-2">
-                  <FileText class="h-4 w-4 text-blue-600" />
-                  <p>Check traders.txt - need research on these profiles</p>
+                <!-- Bot Response -->
+                <div class="flex items-start gap-2">
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20"
+                  >
+                    <Bot class="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div class="space-y-2">
+                    <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                      <p>Let's crush it! 🎯</p>
+                    </div>
+                    <div
+                      class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600"
+                    >
+                      <MonitorPlay class="h-4 w-4 animate-pulse" />
+                      Launching csgo.exe
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Bot Final Response -->
-            <div class="flex items-start gap-2">
-              <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-                <Bot class="h-4 w-4 text-purple-600" />
-              </div>
-              <div class="space-y-2">
-                <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
-                  <p>Split the profits and it's a deal 😏</p>
+                <!-- Game Preview -->
+                <div class="relative ml-8 aspect-video overflow-hidden rounded-lg bg-black/5">
+                  <img
+                    src={demoGif}
+                    alt="CSGO Gameplay"
+                    class="absolute inset-0 h-full w-full object-cover blur-[2px]"
+                  />
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <Gamepad2 class="h-8 w-8 animate-pulse text-white" />
+                  </div>
                 </div>
-                <div
-                  class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600"
-                >
-                  <ScanSearch class="h-4 w-4 animate-pulse" />
-                  Analyzing trader profiles...
+
+                <!-- User Research Request -->
+                <div class="flex flex-row-reverse items-start gap-2">
+                  <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
+                    <User class="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
+                    <div class="flex items-center gap-2">
+                      <FileText class="h-4 w-4 text-blue-600" />
+                      <p>Check traders.txt - need research on these profiles</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Research Preview -->
-            <div class="relative ml-8 aspect-video overflow-hidden rounded-lg bg-black/5">
-              <video
-                autoplay
-                loop
-                muted
-                playsinline
-                class="absolute inset-0 h-full w-full object-cover blur-[2px]"
-              >
-                <source src={demoVideo} type="video/mp4" />
-              </video>
-              <div class="absolute inset-0 flex items-center justify-center bg-black/10">
-                <MousePointer class="h-8 w-8 animate-pulse text-white" />
-              </div>
-            </div>
+                <!-- Bot Final Response -->
+                <div class="flex items-start gap-2">
+                  <div
+                    class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20"
+                  >
+                    <Bot class="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div class="space-y-2">
+                    <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                      <p>Split the profits and it's a deal 😏</p>
+                    </div>
+                    <div
+                      class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600"
+                    >
+                      <ScanSearch class="h-4 w-4 animate-pulse" />
+                      Analyzing trader profiles...
+                    </div>
+                  </div>
+                </div>
 
-            <!-- Disabled Input -->
-            <div class="mt-4 flex items-center gap-2 rounded-lg bg-gray-100 p-2">
-              <input
-                type="text"
-                disabled
-                placeholder="Coming soon..."
-                class="w-full bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-400"
-              />
-              <div class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20">
-                <Send class="h-4 w-4 text-purple-600" />
+                <!-- Research Preview -->
+                <div class="relative ml-8 aspect-video overflow-hidden rounded-lg bg-black/5">
+                  <video
+                    autoplay
+                    loop
+                    muted
+                    playsinline
+                    class="absolute inset-0 h-full w-full object-cover blur-[2px]"
+                  >
+                    <source src={demoVideo} type="video/mp4" />
+                  </video>
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <MousePointer class="h-8 w-8 animate-pulse text-white" />
+                  </div>
+                </div>
+
+                <!-- Disabled Input -->
+                <div class="mt-4 flex items-center gap-2 rounded-lg bg-gray-100 p-2">
+                  <input
+                    type="text"
+                    disabled
+                    placeholder="Coming soon..."
+                    class="w-full bg-transparent px-3 py-1 text-sm text-gray-600 placeholder-gray-400"
+                  />
+                  <div
+                    class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20"
+                  >
+                    <Send class="h-4 w-4 text-purple-600" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -668,7 +684,7 @@
           <div class="mb-12 rounded-xl bg-black/40 p-8">
             <h3 class="mb-4 text-2xl font-bold text-purple-400">Next Tournament Loading...</h3>
             <p class="mb-6 text-gray-400">Don't miss out on the next chance to win big!</p>
-            <ButtonCTA href="https://t.me/viralmind">
+            <ButtonCTA class="mx-auto w-1/3" href="https://t.me/viralmind">
               <MessageCircle class="h-5 w-5" />
               Get Notified
             </ButtonCTA>
