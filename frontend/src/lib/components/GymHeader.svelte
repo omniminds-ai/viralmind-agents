@@ -21,7 +21,9 @@
   });
 </script>
 
-<div class="fixed left-0 right-0 top-0 z-50 transition-all duration-300 border-b border-purple-500/30 shadow-[-4px_0_20px_rgba(149,117,205,0.1)]">
+<div
+  class="fixed left-0 right-0 top-0 z-50 border-b border-purple-500/30 shadow-[-4px_0_20px_rgba(149,117,205,0.1)] transition-all duration-300"
+>
   <!-- Blurred background that shows on scroll -->
   <div
     class="absolute inset-0 border-b border-white/10 bg-black/50 backdrop-blur-lg transition-opacity duration-300"
@@ -97,7 +99,7 @@
 </div>
 
 <!-- Alert Banner -->
-<div class="fixed top-16 left-0 right-0 z-40 bg-purple-900/60 backdrop-blur-sm border-b border-purple-500/30">
+<!-- <div class="fixed top-16 left-0 right-0 z-40 bg-purple-900/60 backdrop-blur-sm border-b border-purple-500/30">
   <div class="mx-auto max-w-7xl px-6 py-2">
     <div class="flex items-center justify-center gap-2 text-sm text-purple-200">
       <AlertCircle class="h-4 w-4" />
@@ -111,7 +113,7 @@
       </a>
     </div>
   </div>
-</div>
+</div> -->
 
 <!-- Spacer to prevent content from going under fixed navbar + banner -->
 <div class="h-24"></div>

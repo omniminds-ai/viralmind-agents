@@ -150,7 +150,7 @@
         <!-- Featured Wildcard Section -->
         <FeaturedRace race={wildcardRace} icon={Brain} />
       </div>
-      
+
       <!-- Categories -->
       {#each categories as category}
         <CategorySection {category} {iconMap} />
@@ -158,10 +158,10 @@
 
       <!-- Notification Sign Up -->
       <SubmitRace />
-</div>
+    </div>
 
-<!-- Single modal instance for the entire page -->
-<RaceWarningModal />
+    <!-- Single modal instance for the entire page -->
+    <RaceWarningModal />
   </div>
 
   <!-- Background effects -->

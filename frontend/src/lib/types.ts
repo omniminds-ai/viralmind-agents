@@ -1,3 +1,5 @@
+import type { Book } from 'lucide-svelte';
+
 export interface TournamentMessage {
   _id: string;
   challenge?: string;
@@ -24,7 +26,6 @@ export interface RaceSession {
   created_at: string;
   updated_at: string;
 }
-
 
 interface WhitelistEntry {
   username: string;
@@ -178,41 +179,40 @@ export interface SettingsRes {
   treasury: number;
 }
 
-
 export const colorSchemes = {
   pink: {
     icon: 'text-pink-400',
-    bg: 'bg-gradient-to-br from-pink-900/30 via-purple-800/20 to-purple-900/30',
+    bg: 'bg-gradient-to-br from-pink-900/40 via-purple-800/30 to-purple-900/40',
     hover: 'hover:from-pink-900/40 hover:via-purple-800/30 hover:to-purple-900/40',
     iconBg: 'rgb(var(--pink-400))'
   },
   blue: {
     icon: 'text-blue-400',
-    bg: 'bg-gradient-to-br from-blue-900/30 via-indigo-800/20 to-purple-900/30',
+    bg: 'bg-gradient-to-br from-blue-900/40 via-indigo-800/30 to-purple-900/40',
     hover: 'hover:from-blue-900/40 hover:via-indigo-800/30 hover:to-purple-900/40',
     iconBg: 'rgb(var(--blue-400))'
   },
   purple: {
     icon: 'text-purple-400',
-    bg: 'bg-gradient-to-br from-purple-900/30 via-indigo-800/20 to-stone-900/30',
+    bg: 'bg-gradient-to-br from-purple-900/40 via-indigo-800/30 to-stone-900/40',
     hover: 'hover:from-purple-900/40 hover:via-indigo-800/30 hover:to-stone-900/40',
     iconBg: 'rgb(var(--purple-400))'
   },
   orange: {
     icon: 'text-orange-400',
-    bg: 'bg-gradient-to-br from-orange-900/30 via-red-800/20 to-purple-900/30',
+    bg: 'bg-gradient-to-br from-orange-900/40 via-red-800/30 to-purple-900/40',
     hover: 'hover:from-orange-900/40 hover:via-red-800/30 hover:to-purple-900/40',
     iconBg: 'rgb(var(--orange-400))'
   },
   indigo: {
     icon: 'text-indigo-400',
-    bg: 'bg-gradient-to-br from-indigo-900/30 via-blue-800/20 to-purple-900/30',
+    bg: 'bg-gradient-to-br from-indigo-900/40 via-blue-800/30 to-purple-900/40',
     hover: 'hover:from-indigo-900/40 hover:via-blue-800/30 hover:to-purple-900/40',
     iconBg: 'rgb(var(--indigo-400))'
   },
   emerald: {
     icon: 'text-emerald-400',
-    bg: 'bg-gradient-to-br from-emerald-900/30 via-green-800/20 to-purple-900/30',
+    bg: 'bg-gradient-to-br from-emerald-900/40 via-green-800/30 to-purple-900/40',
     hover: 'hover:from-emerald-900/40 hover:via-green-800/30 hover:to-purple-900/40',
     iconBg: 'rgb(var(--emerald-400))'
   }
@@ -239,4 +239,17 @@ export interface Category {
   title: string;
   icon: any;
   races: Race[];
+}
+
+export interface CarouselSlides {
+  id: string;
+  title: string;
+  description: string;
+  icon: typeof Book;
+  iconColor: string;
+  iconBgColor: string;
+  bgGradient: string;
+  hoverGradient: string;
+  buttonText: string;
+  href: string;
 }
