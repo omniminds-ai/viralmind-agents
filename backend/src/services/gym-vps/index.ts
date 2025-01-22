@@ -1,6 +1,6 @@
-import { NodeSSH } from "node-ssh";
-import { generate } from "random-words";
-import DatabaseService from "../db/index.ts";
+import { NodeSSH } from 'node-ssh';
+import { generate } from 'random-words';
+import DatabaseService from '../db/index.ts';
 
 export class GymVPSService {
   private ip: string;
@@ -12,37 +12,35 @@ export class GymVPSService {
     this.ip = options.ip;
     this.login = {
       privateKey: options.privateKey,
-      username: options.username || "ubuntu", // default sudo user
+      username: options.username || 'ubuntu' // default sudo user
     };
   }
 
   public async initNewTrainer(
     address: string
-  ): Promise<{ username: string; password: string }> {
+  ): Promise<{ username: string; password: string; ip: string }> {
     // ssh in and add the new user
     const ssh = new NodeSSH();
     try {
       await ssh.connect({
         host: this.ip,
         username: this.login.username,
-        privateKey: this.login.privateKey,
+        privateKey: this.login.privateKey
       });
     } catch (e) {
-      console.log("SSH error:", e);
+      console.log('SSH error:', e);
     }
 
-    console.log("Adding new user to VPS for RDP access.");
+    console.log('Adding new user to VPS for RDP access.');
 
     // generate user information from the user's address
-    const username = (generate({ exactly: 2, seed: address }) as string[]).join(
-      "-"
-    );
+    const username = (generate({ exactly: 2, seed: address }) as string[]).join('-');
     const password = (
       generate({
         exactly: 2,
-        seed: address + "password-seed",
+        seed: address + 'password-seed'
       }) as string[]
-    ).join("-");
+    ).join('-');
 
     // create user
     await ssh.execCommand(`sudo useradd em -s /bin/bash "${username}`);
@@ -52,10 +50,8 @@ export class GymVPSService {
     // add to usergroup
     // await ssh.execCommand(`usermod -aG sudo "${username}"`);
     await DatabaseService.addGymVPSUser(this.ip, username, password);
-    console.log(
-      `Added user ${username} with password ${password} to the server.`
-    );
-    return { username, password };
+    console.log(`Added user ${username} with password ${password} to the server.`);
+    return { ip: this.ip, username, password };
   }
 
   public async removeTrainer(username: string) {
@@ -65,13 +61,13 @@ export class GymVPSService {
       await ssh.connect({
         host: this.ip,
         username: this.login.username,
-        privateKey: this.login.privateKey,
+        privateKey: this.login.privateKey
       });
     } catch (e) {
-      console.log("SSH error:", e);
+      console.log('SSH error:', e);
     }
 
-    console.log("Removing user from server.");
+    console.log('Removing user from server.');
     await ssh.execCommand(`sudo userdel -r "${username}"`);
     // todo: create a usergroup that prevents breaking the system but allows installing packages
     // remove from usergroup
