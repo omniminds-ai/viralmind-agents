@@ -7,6 +7,7 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, createTransferInstruction, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { createHash } from "crypto";
@@ -163,8 +164,20 @@ class BlockchainService {
         )
       );
 
+      // Add compute budget instructions for higher priority
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: 300000
+        })
+      );
+      transaction.add(
+        ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: 50000 // Higher priority fee
+        })
+      );
+
       // Get latest blockhash
-      const latestBlockhash = await this.connection.getLatestBlockhash();
+      const latestBlockhash = await this.connection.getLatestBlockhash('finalized');
       transaction.recentBlockhash = latestBlockhash.blockhash;
       transaction.feePayer = fromPublicKey;
 

@@ -18,8 +18,14 @@ import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
 import { VPSRegion } from '../services/gym-vps/types.ts';
 
-async function generateQuest(imageBuffer: Buffer, prompt: string, session: RaceSessionDocument) {
+async function generateQuest(
+  imageUrl: string,
+  prompt: string,
+  session: RaceSessionDocument
+) {
   try {
+    console.log('Requesting quest!!');
+
     // Get treasury balance
     const treasuryBalance = await blockchainService.getTokenBalance(
       viralToken,
@@ -30,6 +36,7 @@ async function generateQuest(imageBuffer: Buffer, prompt: string, session: RaceS
     const rng = Math.random();
     const maxReward = Math.ceil(Math.min(1 / rng, treasuryBalance / 128));
 
+    console.log('Generating new quest for session:', session._id);
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -50,16 +57,17 @@ Return as JSON with these keys:
 - hint: Helpful tip for completing the new task`
             },
             {
-              type: 'image_url',
-              image_url: { url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}` }
-            }
-          ]
-        }
+              type: "image_url",
+              image_url: { url: imageUrl },
+            },
+          ],
+        },
       ],
       max_tokens: 250
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
+    console.log(response.choices[0].message.content);
     if (jsonMatch && jsonMatch[0]) {
       const questData = JSON.parse(jsonMatch[0]);
       return {
@@ -81,8 +89,11 @@ Return as JSON with these keys:
   }
 }
 
+// Track sessions with pending transactions
+const pendingTransactions = new Set<string>();
+
 async function generateHint(
-  imageBuffer: Buffer,
+  imageUrl: string,
   currentQuest: string,
   prompt: string,
   session: RaceSessionDocument,
@@ -90,6 +101,59 @@ async function generateHint(
   hintHistory: string[] = []
 ) {
   try {
+    console.log("Requesting hint!!!");
+    
+    // Check for recent hint (within last 20 seconds)
+    if (!session._id) {
+      throw new Error('Session ID is missing');
+    }
+
+    const recentHint = await TrainingEvent.findOne(
+      { 
+        session: session._id, 
+        type: 'hint',
+        timestamp: { $gt: Date.now() - 20000 }
+      },
+      {},
+      { sort: { timestamp: -1 } }
+    );
+
+    if (recentHint) {
+      console.log('Using cached hint for session:', session._id, 'hint:', recentHint.message);
+      return {
+        hint: recentHint.message,
+        reasoning: "Using cached hint",
+        isCompleted: false,
+        events: []
+      };
+    }
+
+    // Get latest quest event (no time limit)
+    const latestQuestEvent = await TrainingEvent.findOne(
+      { 
+        session: session._id, 
+        type: 'quest'
+      },
+      {},
+      { sort: { timestamp: -1 } }
+    );
+
+    // Must have a quest to generate hints
+    if (!latestQuestEvent) {
+      console.log('No quest found for session:', session._id);
+      return {
+        hint: "Please wait for quest to be generated...",
+        reasoning: "No active quest found",
+        isCompleted: false,
+        events: []
+      };
+    }
+
+    currentQuest = latestQuestEvent.message;
+    maxReward = latestQuestEvent.metadata?.maxReward || 0;
+    console.log('Using existing quest:', currentQuest);
+
+    console.log('Generating new hint for session:', session._id, 'quest:', currentQuest);
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -117,17 +181,18 @@ Output as JSON with three fields:
             {
               type: 'image_url',
               image_url: {
-                url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`
-              }
-            }
-          ]
-        }
+                url: imageUrl
+              },
+            },
+          ],
+        },
       ],
       max_tokens: 250
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
-    let parsedResponse = { hint: '', reasoning: '', isCompleted: false };
+    console.log(response.choices[0].message.content);
+    let parsedResponse = { hint: "", reasoning: "", isCompleted: false };    
     if (jsonMatch) {
       try {
         parsedResponse = JSON.parse(jsonMatch[0]);
@@ -136,60 +201,88 @@ Output as JSON with three fields:
       }
     }
 
-    // If quest is completed, calculate reward and generate new quest
-    if (parsedResponse.isCompleted) {
-      // Calculate actual reward
-      const score = Math.random();
-      const actualReward = Math.ceil(maxReward * score);
-
-      // Transfer reward from treasury
-      const signature = await blockchainService.transferToken(
-        viralToken,
-        actualReward,
-        treasuryKeypair,
-        session.address
-      );
-
-      // Create reward event
-      const rewardEvent = {
-        type: 'reward',
-        message: `The judge rewarded you ${actualReward.toFixed(2)} $VIRAL for this (${(
-          score * 100
-        ).toFixed(0)}% of ${maxReward.toFixed(2)})${
-          signature ? `\nTransaction: ${signature}` : ''
-        }`,
-        session: session._id,
-        frame: 0,
-        timestamp: Date.now(),
-        metadata: {
-          scoreValue: score,
-          rewardValue: actualReward,
-          transaction: signature
+    // If quest is completed and no pending transaction, process reward
+    if (parsedResponse.isCompleted && !pendingTransactions.has(session._id.toString())) {
+      try {
+        // Mark this session as having a pending transaction
+        if (!session._id) {
+          throw new Error('Session ID is missing');
         }
-      };
-      await DatabaseService.createTrainingEvent(rewardEvent);
+        pendingTransactions.add(session._id.toString());
 
-      // Generate new quest
-      const questData = await generateQuest(imageBuffer, prompt, session);
-      const questEvent = {
-        type: 'quest',
-        message: questData.quest,
-        session: session._id,
-        frame: 0,
-        timestamp: Date.now(),
-        metadata: {
-          maxReward: questData.maxReward
+        // Calculate actual reward
+        const score = Math.random();
+        const actualReward = Math.ceil(maxReward * score);
+
+        // Transfer reward from treasury
+        const signature = await blockchainService.transferToken(
+          viralToken,
+          actualReward,
+          treasuryKeypair,
+          session.address
+        );
+
+        // Create reward event
+        const rewardEvent = {
+          type: "reward",
+          message: `The judge rewarded you ${actualReward.toFixed(
+            2
+          )} $VIRAL for this (${(score * 100).toFixed(0)}% of ${maxReward.toFixed(
+            2
+          )})${signature ? `\nTransaction: ${signature}` : ""}`,
+          session: session._id!,
+          frame: 0,
+          timestamp: Date.now(),
+          metadata: {
+            scoreValue: score,
+            rewardValue: actualReward,
+            transaction: signature,
+          },
+        };
+        await DatabaseService.createTrainingEvent(rewardEvent);
+
+        // Generate new quest
+        console.log('Quest completed! Generating new quest...');
+        const questData = await generateQuest(imageUrl, prompt, session);
+        const questEvent = {
+          type: "quest",
+          message: questData.quest,
+          session: session._id!,
+          frame: 0,
+          timestamp: Date.now(),
+          metadata: {
+            maxReward: questData.maxReward,
+          },
+        };
+        await DatabaseService.createTrainingEvent(questEvent);
+
+        // Clear pending transaction flag
+        if (session._id) {
+          pendingTransactions.delete(session._id.toString());
         }
-      };
-      await DatabaseService.createTrainingEvent(questEvent);
 
+        return {
+          hint: parsedResponse.hint,
+          reasoning: parsedResponse.reasoning,
+          isCompleted: true,
+          newQuest: questData.quest,
+          maxReward: questData.maxReward,
+          events: [rewardEvent, questEvent]
+        };
+      } catch (error) {
+        // Clear pending transaction flag on error
+        if (session._id) {
+          pendingTransactions.delete(session._id.toString());
+        }
+        throw error;
+      }
+    } else if (parsedResponse.isCompleted) {
+      // If quest is completed but transaction is pending, return special message
       return {
-        hint: parsedResponse.hint,
-        reasoning: parsedResponse.reasoning,
-        isCompleted: true,
-        newQuest: questData.quest,
-        maxReward: questData.maxReward,
-        events: [rewardEvent, questEvent]
+        hint: "Processing reward... please wait",
+        reasoning: "Transaction in progress",
+        isCompleted: false,
+        events: []
       };
     }
 
@@ -219,9 +312,13 @@ Output as JSON with three fields:
       events: [hintEvent, reasoningEvent]
     };
   } catch (error) {
-    console.error('Error generating hint:', error);
-    const fallbackHint = 'Scroll in the environments list to explore available tasks';
-
+    console.error("Error generating hint:", error);
+    const fallbackHint = "Scroll in the environments list to explore available tasks";
+    
+    if (!session._id) {
+      throw new Error('Session ID is missing');
+    }
+    
     const errorEvent = {
       type: 'hint',
       message: fallbackHint,
@@ -565,22 +662,15 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       return;
     }
 
-    // Get current screenshot
-    let screenshot;
-    try {
-      screenshot = await guacService.getScreenshot(
-        session.vm_credentials.guacToken,
-        session.vm_credentials.guacClientId,
-        session.address
-      );
-    } catch (error) {
-      console.log('Screenshot not available, instance may not be ready:', error);
-      res.status(202).json({
-        message: 'Instance not ready yet. Please wait a moment and try again.',
-        retryAfter: 5
-      });
+    // Get screenshot from request body
+    const { screenshot } = req.body;
+    if (!screenshot) {
+      res.status(400).json({ error: 'Screenshot data is required' });
       return;
     }
+
+    // Create a proper image URL for OpenAI
+    const imageUrl = screenshot;
 
     // Get current quest from latest quest event
     const latestQuestEvent = await TrainingEvent.findOne(
@@ -600,9 +690,47 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
     // Get current max reward from latest quest event
     const maxReward = latestQuestEvent?.metadata?.maxReward || 0;
 
+    // If no quest exists at all, generate initial quest
+    if (!latestQuestEvent) {
+      console.log('No quest found for session:', id, 'generating initial quest...');
+      const questData = await generateQuest(imageUrl, session.prompt, session);
+      const questEvent = {
+        type: "quest",
+        message: questData.quest,
+        session: id,
+        frame: 0,
+        timestamp: Date.now(),
+        metadata: {
+          maxReward: questData.maxReward,
+        },
+      };
+      await DatabaseService.createTrainingEvent(questEvent);
+      console.log('Generated initial quest:', questData.quest);
+
+      // Create initial hint event
+      const hintEvent = {
+        type: "hint",
+        message: questData.hint,
+        session: id,
+        frame: 0,
+        timestamp: Date.now(),
+      };
+      await DatabaseService.createTrainingEvent(hintEvent);
+
+      res.json({
+        quest: questData.quest,
+        hint: questData.hint,
+        maxReward: questData.maxReward,
+        events: [questEvent, hintEvent]
+      });
+    }
+
+    console.log('Current quest:', latestQuestEvent!.message);
+    console.log('Previous hints:', hintHistory);
+
     const result = await generateHint(
-      screenshot,
-      latestQuestEvent?.message || '',
+      imageUrl,
+      latestQuestEvent!.message,
       session.prompt,
       session,
       maxReward,
@@ -633,25 +761,18 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
       return;
     }
 
-    // Get current screenshot
-    let screenshot;
-    try {
-      screenshot = await guacService.getScreenshot(
-        session.vm_credentials.guacToken,
-        session.vm_credentials.guacClientId,
-        session.address
-      );
-    } catch (error) {
-      console.log('Screenshot not available, instance may not be ready:', error);
-      res.status(202).json({
-        message: 'Instance not ready yet. Please wait a moment and try again.',
-        retryAfter: 5
-      });
+    // Get screenshot from request body
+    const { screenshot } = req.body;
+    if (!screenshot) {
+      res.status(400).json({ error: 'Screenshot data is required' });
       return;
     }
 
-    const questData = await generateQuest(screenshot, session.prompt, session);
+    // Create a proper image URL for OpenAI
+    const imageUrl = screenshot;
 
+    const questData = await generateQuest(imageUrl, session.prompt, session);
+    
     // Create quest event
     const questEvent = {
       type: 'quest',

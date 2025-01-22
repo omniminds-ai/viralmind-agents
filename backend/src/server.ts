@@ -28,9 +28,9 @@ const io = initializeSocketIO(httpServer);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '5mb'}));
 
-app.use(express.json());
+app.use(express.json({limit: '5mb'}));
 // Add headers
 app.use(function (req, res, next) {
   // Origin to allow
