@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Sparkles } from 'lucide-svelte';
   import TextArea from '../TextArea.svelte';
+  import Button from '../Button.svelte';
   let raceIdea = '';
   let isSubmitting = false;
   let submitStatus: 'idle' | 'success' | 'error' = 'idle';
@@ -59,7 +60,7 @@
       <p class="text-center text-sm text-red-400">Something went wrong. Please try again.</p>
     {/if}
 
-    <button
+    <Button
       type="submit"
       disabled={isSubmitting || !raceIdea.trim()}
       class="group inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-medium text-white transition-all hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
@@ -70,6 +71,6 @@
         Submit Race Idea
         <ArrowRight class="h-5 w-5 transition-transform group-hover:translate-x-1" />
       {/if}
-    </button>
+    </Button>
   </form>
 </div>

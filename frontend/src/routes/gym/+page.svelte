@@ -39,6 +39,7 @@
   import RaceWarningModal from '$lib/components/gym/RaceWarningModal.svelte';
 
   import type { Race, ColorScheme, CarouselSlides } from '$lib/types';
+  import Button from '$lib/components/Button.svelte';
 
   // Icon mapping for each race ID
   const iconMap: Record<string, any> = {
@@ -234,13 +235,10 @@
                 </p>
               </div>
             </div>
-            <button
-              class="mt-4 inline-flex cursor-not-allowed items-center gap-2 self-start rounded-lg bg-purple-600/50 px-6 py-3 font-semibold text-white md:mt-0 md:self-auto"
-              disabled
-            >
+            <Button disabled>
               Coming Soon
               <Download class="h-5 w-5" />
-            </button>
+            </Button>
           </div>
 
           <!-- Feature Cards -->

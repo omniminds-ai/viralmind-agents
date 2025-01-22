@@ -37,7 +37,7 @@
         }
       });
       const data = await response.json();
-      
+
       // Transform API data to match the Race interface
       races = data.map((session: any, index: number) => ({
         id: session._id,
@@ -54,12 +54,14 @@
   }
 
   $: {
-    selectedCount = races.filter(r => r.selected).length;
+    selectedCount = races.filter((r) => r.selected).length;
     selectedSkills = new Set();
-    races.filter(r => r.selected).forEach(race => {
-      race.skills.forEach(skill => selectedSkills.add(skill));
-    });
-    allSelected = races.length > 0 && races.every(r => r.selected);
+    races
+      .filter((r) => r.selected)
+      .forEach((race) => {
+        race.skills.forEach((skill) => selectedSkills.add(skill));
+      });
+    allSelected = races.length > 0 && races.every((r) => r.selected);
   }
 
   function handleMouseMove(event: MouseEvent) {
@@ -68,20 +70,20 @@
   }
 
   function handleSelectionChanged(selectedRows: any[]) {
-    races = races.map(race => ({
+    races = races.map((race) => ({
       ...race,
-      selected: selectedRows.some(row => row.id === race.id)
+      selected: selectedRows.some((row) => row.id === race.id)
     }));
   }
 
   async function handleExport(type: 'raw' | 'full') {
     if (type === 'raw') {
       try {
-        const selectedIds = races.filter(r => r.selected).map(r => r.id);
+        const selectedIds = races.filter((r) => r.selected).map((r) => r.id);
         const response = await fetch('/api/races/export', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ sessionIds: selectedIds })
         });
@@ -89,7 +91,7 @@
         if (!response.ok) throw new Error('Export failed');
 
         const data = await response.json();
-        
+
         // Create and download the JSON file
         const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const jsonUrl = window.URL.createObjectURL(jsonBlob);
@@ -115,11 +117,12 @@
               const videoUrl = window.URL.createObjectURL(videoBlob);
               const videoLink = document.createElement('a');
               videoLink.href = videoUrl;
-              
+
               // Extract filename from path or use session ID
-              const filename = session.video_path.split('/').pop() || `session-${session.session_id}.mp4`;
+              const filename =
+                session.video_path.split('/').pop() || `session-${session.session_id}.mp4`;
               videoLink.download = filename;
-              
+
               document.body.appendChild(videoLink);
               videoLink.click();
               window.URL.revokeObjectURL(videoUrl);
@@ -162,7 +165,8 @@
 
       <!-- Subtitle -->
       <p class="mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
-        Your recorded computer-use demonstrations for training AI agents, ready to be used as behavioral datasets.
+        Your recorded computer-use demonstrations for training AI agents, ready to be used as
+        behavioral datasets.
       </p>
 
       <!-- Info Section -->
@@ -173,7 +177,8 @@
             <span class="font-semibold">Neural Upload</span>
           </div>
           <p class="mt-2">
-            Upload human behaviors into agents directly through powerful neural fine-tuning or flexible skill databases. Instant datasets for LoRA, RAG, etc
+            Upload human behaviors into agents directly through powerful neural fine-tuning or
+            flexible skill databases. Instant datasets for LoRA, RAG, etc
           </p>
         </div>
         <div class="rounded-xl bg-stone-900/25 p-4 backdrop-blur-sm">
@@ -182,15 +187,18 @@
             <span class="font-semibold">Data Marketplace</span>
           </div>
           <p class="mt-2">
-            Trade valuable training data in the decentralized marketplace. Share agentic knowledge and earn rewards from the AI training community.
+            Trade valuable training data in the decentralized marketplace. Share agentic knowledge
+            and earn rewards from the AI training community.
           </p>
         </div>
       </div>
 
       <!-- Action Menu Bar -->
-      <div class="mb-8 flex items-center justify-between rounded-xl bg-stone-900/25 px-4 py-3 backdrop-blur-sm">
-        <button 
-          on:click={() => showExportDialog = true}
+      <div
+        class="mb-8 flex items-center justify-between rounded-xl bg-stone-900/25 px-4 py-3 backdrop-blur-sm"
+      >
+        <button
+          on:click={() => (showExportDialog = true)}
           class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50 disabled:opacity-50"
           disabled={selectedCount === 0}
         >
@@ -199,8 +207,8 @@
         </button>
 
         <div class="flex items-center gap-2">
-          <button 
-            on:click={() => showTrainDialog = true}
+          <button
+            on:click={() => (showTrainDialog = true)}
             class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50"
           >
             <BrainCircuit class="h-4 w-4" />
@@ -208,7 +216,7 @@
             <span class="rounded bg-yellow-500 px-1.5 py-0.5 text-xs text-black">Soon</span>
           </button>
 
-          <button 
+          <button
             on:click={handleTrade}
             class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50"
           >
@@ -219,18 +227,15 @@
         </div>
       </div>
 
-      <RaceHistoryGrid 
-        {races}
-        onSelectionChanged={handleSelectionChanged}
-      />
+      <RaceHistoryGrid {races} onSelectionChanged={handleSelectionChanged} />
 
       <!-- Neural Network Visualization -->
       <div class="mt-12">
-        <div class="flex items-center gap-2 mb-4">
+        <div class="mb-4 flex items-center gap-2">
           <BrainCircuit class="h-5 w-5 text-purple-400" />
           <span class="text-lg font-semibold">Neural Skill Network</span>
           <span class="ml-2 text-sm text-gray-400">
-            Visualization of known skill signals in the selected data  
+            Visualization of known skill signals in the selected data
           </span>
         </div>
         <SkillNetwork skills={Array.from(selectedSkills)} />
@@ -243,20 +248,21 @@
   <div
     class="absolute inset-0 z-[2] transition-transform duration-1000 ease-out"
     style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.1), transparent 100%); 
-            transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) * -0.05}px)"
+            transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) *
+      -0.05}px)"
   ></div>
   <div class="absolute inset-0 z-[3] bg-gradient-to-b from-black via-transparent to-black"></div>
 </div>
 
-<TrainDialog 
+<TrainDialog
   bind:show={showTrainDialog}
   {selectedCount}
-  onClose={() => showTrainDialog = false}
+  onClose={() => (showTrainDialog = false)}
 />
 
 <ExportDialog
   bind:show={showExportDialog}
   {selectedCount}
-  onClose={() => showExportDialog = false}
+  onClose={() => (showExportDialog = false)}
   onExport={handleExport}
 />
