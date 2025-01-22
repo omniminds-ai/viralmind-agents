@@ -100,7 +100,7 @@
     <button
       id="connected-wallet-btn"
       popovertarget="connected-wallet-menu"
-      class="flex items-center rounded-full border-2 border-transparent bg-black py-1 pl-4 pr-5 text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/50 hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10"
+      class="flex items-center rounded-full border-2 border-transparent bg-black py-1 pr-5 text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/50 hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 md:pl-4"
     >
       <img
         alt="icon of {$walletStore!.adapter!.name}"
@@ -171,7 +171,7 @@
     <button
       id="select-wallet-btn"
       popovertarget="select-wallet-modal"
-      class="rounded-full border-2 border-transparent bg-black py-1 pl-4 pr-5 font-medium tracking-tight text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/50 hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10"
+      class="rounded-full border-2 border-transparent bg-black py-1 pr-5 font-medium tracking-tight text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-blue-500/50 hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 md:pl-4"
     >
       Connect Solana Wallet
     </button>

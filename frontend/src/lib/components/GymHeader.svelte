@@ -1,11 +1,13 @@
 <script lang="ts">
   import logo from '$lib/assets/logoTransparent.png';
-  import { Dumbbell, ChevronLeft, AlertCircle, Trophy, History } from 'lucide-svelte';
+  import { Dumbbell, ChevronLeft, AlertCircle, Trophy, History, X, Menu } from 'lucide-svelte';
   import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
   import { onMount } from 'svelte';
+  import { slide } from 'svelte/transition';
 
   let isScrolled = false;
   let mounted = false;
+  let isMobileMenuOpen = false;
 
   onMount(() => {
     const handleScroll = () => {
@@ -82,19 +84,60 @@
         </a>
       </nav>
 
+      <div class="flex items-center md:hidden">
+        <WalletMultiButton />
+      </div>
+      <!-- Mobile menu button -->
+      <button
+        class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white md:hidden"
+        onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
+      >
+        {#if isMobileMenuOpen}
+          <X class="h-6 w-6" />
+        {:else}
+          <Menu class="h-6 w-6" />
+        {/if}
+      </button>
+
       <!-- Right side notification button -->
-      <div class="flex items-center">
-        <!-- <a
-          class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white"
-          title="Notifications"
-          href="https://t.me/viralmind"
-          target="_blank"
-        >
-          <BellRing class="h-5 w-5" />
-        </a> -->
+      <div class="hidden items-center md:flex">
         <WalletMultiButton />
       </div>
     </div>
+    <!-- Mobile Navigation Menu -->
+    {#if isMobileMenuOpen}
+      <div
+        transition:slide
+        class="absolute left-0 right-0 top-16 border-b border-white/10 bg-black/95 backdrop-blur-lg md:hidden"
+      >
+        <nav class="space-y-4 px-6 py-4">
+          <a
+            href="/gym/free-races"
+            onclick={() => (isMobileMenuOpen = false)}
+            class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
+          >
+            <Trophy class="h-4 w-4" />
+            Free Races
+          </a>
+          <a
+            href="/gym/staked-races"
+            onclick={() => (isMobileMenuOpen = false)}
+            class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
+          >
+            <Dumbbell class="h-4 w-4" />
+            Staked Races
+          </a>
+          <a
+            href="/gym/history"
+            onclick={() => (isMobileMenuOpen = false)}
+            class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
+          >
+            <History class="h-4 w-4" />
+            History
+          </a>
+        </nav>
+      </div>
+    {/if}
   </div>
 </div>
 
