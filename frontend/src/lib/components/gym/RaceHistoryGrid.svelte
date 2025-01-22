@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Shapes, Trophy, CircleDot } from 'lucide-svelte';
+  import { Shapes, Trophy, CircleDot, HandCoins, FileText } from 'lucide-svelte';
   import CustomCheckbox from './CustomCheckbox.svelte';
 
   interface Race {
@@ -10,6 +10,7 @@
     selected: boolean;
     status: string;
     skills: string[];
+    transaction_signature?: string;
   }
 
   export let races: Race[] = [];
@@ -66,6 +67,7 @@
           <th class="p-3 text-left font-medium w-24">Training Tokens</th>
           <th class="p-3 text-left font-medium w-24">Earnings</th>
           <th class="p-3 text-left font-medium w-24">Status</th>
+          <th class="p-3 text-left font-medium w-32">Actions</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-stone-800/50">
@@ -103,6 +105,28 @@
                  race.status === 'processing' ? 'Processing' :
                  'Active'}
               </span>
+            </td>
+            <td class="p-3">
+              <div class="flex items-center gap-2">
+                <button
+                  class="rounded-lg bg-stone-800/50 p-1.5 text-gray-400 hover:bg-stone-700/50 hover:text-white"
+                  title="View Logs"
+                  on:click={() => window.location.href = `/api/races/export?sessionId=${race.id}`}
+                >
+                  <FileText class="h-4 w-4" />
+                </button>
+                {#if race.transaction_signature}
+                  <a
+                    href={`https://solscan.io/tx/${race.transaction_signature}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="rounded-lg bg-stone-800/50 p-1.5 text-gray-400 hover:bg-stone-700/50 hover:text-white"
+                    title="View Transaction"
+                  >
+                    <HandCoins class="h-4 w-4" />
+                  </a>
+                {/if}
+              </div>
             </td>
           </tr>
         {/each}

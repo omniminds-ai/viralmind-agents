@@ -348,7 +348,9 @@ class DataBaseService extends EventEmitter {
         challenge: 1,
         category: 1,
         video_path: 1,
-        created_at: 1
+        created_at: 1,
+        transaction_signature: 1,
+        preview: 1
       }).sort({ created_at: -1 }); // Sort by newest first
     } catch (error) {
       console.error('Database Service Error:', error);
@@ -370,7 +372,9 @@ class DataBaseService extends EventEmitter {
           challenge: 1,
           category: 1,
           video_path: 1,
-          created_at: 1
+          created_at: 1,
+          transaction_signature: 1,
+          preview: 1
         }
       ).sort({ created_at: -1 });
 

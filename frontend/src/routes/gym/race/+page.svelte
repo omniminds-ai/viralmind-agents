@@ -1,13 +1,17 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import TrainingLog from '$lib/components/gym/TrainingLog.svelte';
-  import Timeline from '$lib/components/gym/Timeline.svelte';
-  import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
-  import { walletStore } from '$lib/walletStore';
-  import { trainingEvents } from '$lib/stores/training';
-  import type { RaceSession } from '$lib/types';
-  import { findFastestRegion } from '$lib/utils';
+import { onMount, onDestroy } from 'svelte';
+import TrainingLog from '$lib/components/gym/TrainingLog.svelte';
+import Timeline from '$lib/components/gym/Timeline.svelte';
+import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
+import { walletStore } from '$lib/walletStore';
+import { trainingEvents } from '$lib/stores/training';
+import { activeRace, startPolling, stopPolling } from '$lib/stores/activeRace';
+import type { RaceSession } from '$lib/types';
+import { findFastestRegion } from '$lib/utils';
+import { goto } from '$app/navigation';
 
+  // Initialize with empty URLSearchParams for SSR
+  let urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams('');
   let isLoading = true;
   let hasShownWalletMessage = false;
   let startTime: number;
@@ -28,7 +32,6 @@
   }
 
   async function requestHint() {
-    const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('s');
     if (!sessionId || !raceSession?.vm_credentials) return;
 
@@ -182,13 +185,26 @@
       return;
     }
 
+    // Check if there's already an active race
+    if ($activeRace && $activeRace.sessionId !== urlParams.get('s')) {
+      if (confirm('You have another active race session. Would you like to return to it?')) {
+        goto(`/gym/race?s=${$activeRace.sessionId}`);
+        return;
+      } else {
+        // Stop the other session
+        await fetch(`/api/races/session/${$activeRace.sessionId}/stop`, {
+          method: 'POST'
+        });
+        stopPolling();
+      }
+    }
+
     console.log('using address', publicKey.toBase58());
 
-    const urlParams = new URLSearchParams(window.location.search);
     const raceId = urlParams.get('id');
     const sessionId = urlParams.get('s');
 
-    if (!raceId) {
+    if (!raceId && !sessionId) {
       handleError('No race ID provided');
       return;
     }
@@ -249,7 +265,7 @@
         const data = await res.json();
 
         // Set up Guacamole auth token
-        if (data.vm_credentials?.guacToken) {
+        if (data.vm_credentials?.guacToken && typeof window !== 'undefined') {
           localStorage.setItem(
             'GUAC_AUTH',
             JSON.stringify({
@@ -259,17 +275,20 @@
           );
         }
 
-        // Store session data
-        const sessionData = {
-          status: 'active',
-          vm_credentials: {
-            ...data.vm_credentials
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        raceSession = sessionData;
-        startTime = Date.now();
+    // Store session data
+    const sessionData = {
+      status: 'active',
+      vm_credentials: {
+        ...data.vm_credentials
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    raceSession = sessionData;
+    startTime = Date.now();
+
+    // Start polling for session status
+    startPolling(data.sessionId);
 
         trainingEvents.addEvent({
           type: 'system',
@@ -279,7 +298,9 @@
 
         // Update URL with session ID
         urlParams.set('s', data.sessionId);
-        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+        }
 
         if (sessionData.status !== 'active') {
           handleError('Session is not active');
@@ -301,17 +322,31 @@
 
   let handleBeforeUnload: ((e: BeforeUnloadEvent) => void) | undefined;
 
-  function stopRace() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('s');
-    if (sessionId) {
-      fetch(`/api/races/session/${sessionId}/stop`, {
+async function stopRace() {
+  const sessionId = urlParams.get('s');
+  if (sessionId) {
+    try {
+      const response = await fetch(`/api/races/session/${sessionId}/stop`, {
         method: 'POST'
-      }).catch(console.error);
+      });
+      const data = await response.json();
+      if (data.totalRewards) {
+        trainingEvents.addEvent({
+          type: 'system',
+          message: `Total rewards for this session: ${data.totalRewards} $VIRAL`,
+          timestamp: Date.now()
+        });
+        // Wait a moment for the message to be visible
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    } catch (error) {
+      console.error('Error stopping race:', error);
     }
-    if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
-    window.location.href = '/gym';
+    stopPolling();
   }
+  if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+  goto('/gym');
+}
 
   // Function to refocus Guacamole iframe
   function refocusGuacamole() {
@@ -329,6 +364,9 @@
   }
 
   onMount(() => {
+    // Update URL params with actual window location
+    urlParams = new URLSearchParams(window.location.search);
+
     // Add beforeunload handler
     handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -341,12 +379,18 @@
 
     // Set up interval for hint requests after a delay
     setTimeout(() => {
-      const hintInterval = setInterval(requestHint, 10000); // Increased to 10 seconds
+      const hintInterval = setInterval(requestHint, 5000); // Request hints every 5 seconds
       return () => {
         if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
         clearInterval(hintInterval);
       };
     }, 5000); // Wait 5 seconds before starting hint requests
+
+    // Start polling for session status
+    const sessionId = urlParams.get('s');
+    if (sessionId) {
+      startPolling(sessionId);
+    }
 
     // Add aggressive refocus handlers
     document.addEventListener('click', refocusGuacamole);
@@ -355,10 +399,19 @@
     // Set up interval to constantly try to refocus
     const focusInterval = setInterval(refocusGuacamole, 100);
 
+    // Subscribe to activeRace store to handle expiration
+    const unsubscribe = activeRace.subscribe((race) => {
+      if (!race && sessionId) {
+        // Session expired, redirect to gym
+        goto('/gym');
+      }
+    });
+
     return () => {
       document.removeEventListener('click', refocusGuacamole);
       document.removeEventListener('keydown', refocusGuacamole);
       clearInterval(focusInterval);
+      unsubscribe();
     };
   });
 
@@ -369,6 +422,7 @@
       timestamp: Date.now()
     });
     if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+    stopPolling();
   });
 </script>
 
@@ -389,7 +443,6 @@
                 title="Guacamole Remote Desktop"
                 class="h-full w-full border-0"
                 allow="clipboard-read; clipboard-write"
-                tabindex="0"
               ></iframe>
             </div>
           {/if}

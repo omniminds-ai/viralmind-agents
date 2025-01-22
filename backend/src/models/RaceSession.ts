@@ -29,8 +29,10 @@ export const raceSessionSchema = new mongoose.Schema(
       default: 'active'
     },
     video_path: { type: String },
+    preview: { type: String }, // Base64 encoded screenshot
     created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now }
+    updated_at: { type: Date, default: Date.now },
+    transaction_signature: { type: String, required: false }
   },
   { collection: 'race_sessions' }
 );

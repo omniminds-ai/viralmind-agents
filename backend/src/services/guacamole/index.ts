@@ -456,6 +456,40 @@ export class GuacamoleService {
     }
   }
 
+  public async getActiveSession(address: string): Promise<{token: string, connectionId: string, recordingId: string, clientId: string} | null> {
+    try {
+      // Get user token
+      const token = await this.getUserToken(address);
+
+      // Get connection history
+      const historyResponse = await axios.get(
+        `${this.baseUrl}/api/session/data/${this.dataSource}/history/connections`,
+        {
+          headers: {
+            'Guacamole-Token': token
+          }
+        }
+      );
+
+      // Find active connection
+      const activeConnection = historyResponse.data?.find((entry: any) => entry.endDate === null);
+      console.log(activeConnection);
+      if (!activeConnection?.connectionIdentifier) {
+        return null;
+      }
+
+      return {
+        token,
+        connectionId: activeConnection.connectionIdentifier,
+        recordingId: activeConnection.uuid,
+        clientId: this.encodeClientIdentifier(activeConnection.connectionIdentifier)
+      };
+    } catch (error) {
+      console.error('Error getting active session:', error);
+      return null;
+    }
+  }
+
   public async getScreenshots(token: string, clientId: string, guacUsername: string, numFrames: number = 1, fps: number = 1): Promise<FrameInfo[]> {
     try {
       const historyResponse = await axios.get(
@@ -508,6 +542,44 @@ export class GuacamoleService {
       throw new Error('No frames extracted');
     }
     return frames[0].buffer;
+  }
+
+  public async removeReadPermission(address: string, connectionId: string) {
+    try {
+      // Get admin token to modify permissions
+      const adminToken = await this.getAdminToken();
+
+      // Remove READ permission from the connection
+      await axios.patch(
+        `${this.baseUrl}/api/session/data/${this.dataSource}/users/${address}/permissions`,
+        [
+          {
+            "op": "remove",
+            "path": `/connectionPermissions/${connectionId}`
+          }
+        ],
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Guacamole-Token': adminToken
+          }
+        }
+      );
+
+      console.log(`Removed READ permission for user ${address} on connection ${connectionId}`);
+    } catch (error) {
+      // If it's a 404, the permission is already removed - treat as success
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        console.log(`Permission already removed for user ${address} on connection ${connectionId}`);
+        return;
+      }
+      
+      // For any other error, log but don't throw to prevent breaking the expiry flow
+      console.error('Error removing READ permission:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Response data:', error.response?.data);
+      }
+    }
   }
 
   public async cleanupSession(token: string, connectionId: string) {

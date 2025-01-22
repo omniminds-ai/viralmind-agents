@@ -19,6 +19,7 @@
     selected: boolean;
     status: string;
     skills: string[];
+    transaction_signature?: string;
   }
 
   let races: Race[] = [];
@@ -28,12 +29,17 @@
   let allSelected = false;
 
   async function loadRaceSessions() {
+    if (!$walletStore.connected || !$walletStore.publicKey) {
+      races = [];
+      return;
+    }
+
     try {
       const response = await fetch('/api/races/history', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-Wallet-Address': $walletStore.publicKey?.toString() || ''
+          'X-Wallet-Address': $walletStore.publicKey.toString()
         }
       });
       const data = await response.json();
@@ -46,7 +52,8 @@
         status: session.status || 'active',
         skills: session.category ? [session.category] : [],
         actionTokens: session.actionTokens || 0,
-        earnings: Number((session.earnings || 0).toFixed(2))
+        earnings: Number((session.earnings || 0).toFixed(2)),
+        transaction_signature: session.transaction_signature
       }));
     } catch (error) {
       console.error('Error loading race sessions:', error);
@@ -151,9 +158,13 @@
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
-    loadRaceSessions();
     return () => window.removeEventListener('mousemove', handleMouseMove);
   });
+
+  // Watch wallet store changes
+  $: if ($walletStore) {
+    loadRaceSessions();
+  }
 </script>
 
 <div class="min-h-screen bg-black pb-24 text-white">

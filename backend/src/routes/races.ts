@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import DatabaseService, { RaceSessionDocument } from '../services/db/index.ts';
 import { GymVPSService } from '../services/gym-vps/index.ts';
-import { getEpisode } from './socket.ts';
 import GuacamoleService from '../services/guacamole/index.ts';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
@@ -17,6 +16,7 @@ import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
 import { VPSRegion } from '../services/gym-vps/types.ts';
+import { TreasuryService } from '../services/treasury/index.ts';
 
 async function generateQuest(
   imageUrl: string,
@@ -45,7 +45,7 @@ async function generateQuest(
           content: [
             {
               type: 'text',
-              text: `You are an AI assistant that needs to propose a new Ubuntu desktop quest based on the theme: "${prompt}". 
+              text: `You are an AI assistant that needs to propose a new Ubuntu OS with XFCE4 desktop quest based on the theme: "${prompt}". 
               
 First, analyze the current screen state to understand what task the user has already completed. Then, propose a DIFFERENT task that fits the same theme but isn't repetitive.
 
@@ -82,15 +82,16 @@ Return as JSON with these keys:
 
     return {
       reasoning: 'Failed to analyze screen, providing a generic task within theme',
-      quest: 'Open the Activities overview and launch a relevant application',
-      hint: 'Press the Super (Windows) key or click Activities in the top-left corner',
+      quest: 'Open the XFCE Activities overview and launch a relevant application',
+      hint: 'Click the Applications Menu in the top-left corner of the XFCE panel',
       maxReward: 0
     };
   }
 }
 
-// Track sessions with pending transactions
+// Track sessions with pending transactions and hint generation
 const pendingTransactions = new Set<string>();
+const generatingHints = new Set<string>();
 
 async function generateHint(
   imageUrl: string,
@@ -103,16 +104,29 @@ async function generateHint(
   try {
     console.log("Requesting hint!!!");
     
-    // Check for recent hint (within last 20 seconds)
+    // Check if hint is already being generated for this session
     if (!session._id) {
       throw new Error('Session ID is missing');
     }
+
+    if (generatingHints.has(session._id.toString())) {
+      console.log('Hint generation already in progress for session:', session._id);
+      return {
+        hint: "Please wait, generating hint...",
+        reasoning: "Hint generation in progress",
+        isCompleted: false,
+        events: []
+      };
+    }
+
+    // Mark this session as generating a hint
+    generatingHints.add(session._id.toString());
 
     const recentHint = await TrainingEvent.findOne(
       { 
         session: session._id, 
         type: 'hint',
-        timestamp: { $gt: Date.now() - 20000 }
+        timestamp: { $gt: Date.now() - 10000 }
       },
       {},
       { sort: { timestamp: -1 } }
@@ -169,8 +183,8 @@ First, analyze if the core task has been completed. Focus only on the main objec
 
 Then provide a single actionable hint (if needed) that includes one of these patterns if applicable:
 - Type 'x[TAB]' to autocomplete
-- Scroll in [area] to find [target]
-- Click the [specific element]
+- Navigate the XFCE menu to find [target]
+- Click the [specific XFCE element]
 - Move cursor to [exact location]
 
 Output as JSON with three fields:
@@ -214,29 +228,20 @@ Output as JSON with three fields:
         const score = Math.random();
         const actualReward = Math.ceil(maxReward * score);
 
-        // Transfer reward from treasury
-        const signature = await blockchainService.transferToken(
-          viralToken,
-          actualReward,
-          treasuryKeypair,
-          session.address
-        );
-
-        // Create reward event
+        // Create reward event without transfer
         const rewardEvent = {
           type: "reward",
           message: `The judge rewarded you ${actualReward.toFixed(
             2
           )} $VIRAL for this (${(score * 100).toFixed(0)}% of ${maxReward.toFixed(
             2
-          )})${signature ? `\nTransaction: ${signature}` : ""}`,
+          )})`,
           session: session._id!,
           frame: 0,
           timestamp: Date.now(),
           metadata: {
             scoreValue: score,
-            rewardValue: actualReward,
-            transaction: signature,
+            rewardValue: actualReward
           },
         };
         await DatabaseService.createTrainingEvent(rewardEvent);
@@ -252,6 +257,7 @@ Output as JSON with three fields:
           timestamp: Date.now(),
           metadata: {
             maxReward: questData.maxReward,
+            vm_id: latestQuestEvent.metadata?.vm_id
           },
         };
         await DatabaseService.createTrainingEvent(questEvent);
@@ -313,7 +319,7 @@ Output as JSON with three fields:
     };
   } catch (error) {
     console.error("Error generating hint:", error);
-    const fallbackHint = "Scroll in the environments list to explore available tasks";
+    const fallbackHint = "Navigate the XFCE Applications Menu to explore available tasks";
     
     if (!session._id) {
       throw new Error('Session ID is missing');
@@ -327,6 +333,11 @@ Output as JSON with three fields:
       timestamp: Date.now()
     };
     await DatabaseService.createTrainingEvent(errorEvent);
+
+    // Clear generating hint flag on error
+    if (session._id) {
+      generatingHints.delete(session._id.toString());
+    }
 
     return {
       hint: fallbackHint,
@@ -356,6 +367,41 @@ const guacService = new GuacamoleService();
 const treasuryKeypair = Keypair.fromSecretKey(
   Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
 );
+
+const treasuryService = new TreasuryService(
+  process.env.RPC_URL!,
+  process.env.GYM_TREASURY_WEBHOOK!,
+  process.env.GYM_TREASURY_WALLET!,
+  process.env.VIRAL_TOKEN!
+);
+
+// Test transfer endpoint
+// router.post('/transfer-test', async (req: Request, res: Response) => {
+//   try {
+//     const { amount, recipientAddress } = req.body;
+
+//     if (!amount || !recipientAddress) {
+//       res.status(400).json({ error: 'Amount and recipient address are required' });
+//       return;
+//     }
+
+//     // Transfer tokens from treasury
+//     const signature = await treasuryService.transferFromTreasury(
+//       recipientAddress,
+//       amount
+//     );
+
+//     if (signature) {
+//       res.json({ signature });
+//     } else {
+//       res.status(500).json({ error: 'Transfer failed' });
+//     }
+//   } catch (error) {
+//     console.error('Error transferring tokens:', error);
+//     res.status(500).json({ error: 'Failed to transfer tokens' });
+//   }
+// });
+
 
 // Get treasury balance endpoint
 router.get('/treasury-balance', async (req, res) => {
@@ -414,13 +460,23 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     if (region?.includes('us-east')) regionEnum = VPSRegion.us_east;
     if (region?.includes('us-west')) regionEnum = VPSRegion.us_west;
     if (region?.includes('eu-central')) regionEnum = VPSRegion.eu_central;
-    const instance = await DatabaseService.getGymVPS(regionEnum);
-    const vpsService = new GymVPSService({
-      ip: instance.ip,
-      username: instance.username,
-      privateKey: instance.ssh_keypair.private
-    });
-    const vps = await vpsService.initNewTrainer(address);
+    // const instance = await DatabaseService.getGymVPS(regionEnum);
+    // const vpsService = new GymVPSService({
+    //   ip: instance.ip,
+    //   username: instance.username,
+    //   privateKey: instance.ssh_keypair.private
+    // });
+    // const vps = await vpsService.initNewTrainer(address);
+
+    const instance = {
+      ip: 'windows',
+      ssh_keypair: { private: 'admin' }
+    }
+    const vps = {
+      ip: 'windows',
+      username: 'ai',
+      password: 'admin'
+    }
 
     // Create Guacamole session with RDP connection
     const {
@@ -483,10 +539,24 @@ router.post('/:id/start', async (req: Request, res: Response) => {
 router.get('/session/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const session = await DatabaseService.getRaceSession(id);
+    
+    // Check if session is expired first
+    const isExpired = await checkRaceExpiration(id);
+    if (isExpired) {
+      res.status(410).json({ error: 'Session expired' });
+      return;
+    }
 
+    // Get fresh session data after expiry check
+    const session = await DatabaseService.getRaceSession(id);
     if (!session) {
       res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    // If session is not active after expiry check, return 410
+    if (session.status !== 'active') {
+      res.status(410).json({ error: 'Session expired' });
       return;
     }
 
@@ -494,7 +564,8 @@ router.get('/session/:id', async (req: Request, res: Response) => {
       status: session.status,
       vm_credentials: session.vm_credentials,
       created_at: session.created_at,
-      updated_at: session.updated_at
+      updated_at: session.updated_at,
+      preview: session.preview
     });
   } catch (error) {
     console.error('Error fetching session:', error);
@@ -502,29 +573,113 @@ router.get('/session/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Helper function to stop a race session
+async function stopRaceSession(id: string): Promise<{ success: boolean; totalRewards?: number }> {
+  // Get the session first to check status
+  const session = await DatabaseService.getRaceSession(id);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  // Initialize total rewards
+  let totalRewards = 0;
+
+  // Only process rewards if session is active
+  if (session.status === 'active') {
+    // Get all reward events for this session
+    const rewardEvents = await TrainingEvent.find({
+      session: id,
+      type: 'reward',
+      'metadata.rewardValue': { $exists: true }
+    });
+
+    // Calculate total rewards
+    totalRewards = rewardEvents.reduce((sum, event) => {
+      return sum + (event.metadata?.rewardValue || 0);
+    }, 0);
+
+    // If there are rewards, transfer the total amount
+    if (totalRewards > 0) {
+      // Transfer total rewards from treasury
+      const signature = await treasuryService.transferFromTreasury(
+        session.address,
+        totalRewards
+      );
+
+      // Update session with transaction signature
+      if (signature) {
+        await DatabaseService.updateRaceSession(id, {
+          transaction_signature: signature
+        });
+      }
+    }
+
+    // Remove Guacamole READ permission if session has credentials
+    if (session.vm_credentials?.guacToken && session.vm_credentials?.guacConnectionId) {
+      try {
+        await guacService.removeReadPermission(
+          session.address,
+          session.vm_credentials.guacConnectionId
+        );
+      } catch (error) {
+        console.error('Error removing Guacamole READ permission:', error);
+      }
+    }
+  }
+
+  // Update session status
+  const updatedSession = await DatabaseService.updateRaceSession(id, {
+    status: 'expired',
+    updated_at: new Date()
+  });
+
+  if (!updatedSession) {
+    throw new Error('Failed to update session status');
+  }
+
+  // Return total rewards if session was active
+  return {
+    success: true,
+    ...(session.status === 'active' ? { totalRewards } : {})
+  };
+}
+
+// Helper function to check if a race session is expired
+async function checkRaceExpiration(id: string): Promise<boolean> {
+  const session = await DatabaseService.getRaceSession(id);
+  if (!session) return true;
+
+  // Check if session is already expired
+  if (session.status !== 'active') return true;
+
+  const now = Date.now();
+  const sessionAge = now - session.created_at.getTime();
+  const lastUpdateAge = now - session.updated_at.getTime();
+
+  // Expire if:
+  // 1. Session is older than 15 minutes OR
+  // 2. No updates in the last minute
+  if (sessionAge > 15 * 60 * 1000 || lastUpdateAge > 60 * 1000) {
+    // Check if there's an active guacamole session
+    const guacSession = await guacService.getActiveSession(session.address);
+    if (guacSession) {
+      // Remove READ permission before stopping
+      await guacService.removeReadPermission(session.address, guacSession.connectionId);
+    }
+    // Stop the session
+    await stopRaceSession(id);
+    return true;
+  }
+
+  return false;
+}
+
 // Stop a race session
 router.post('/session/:id/stop', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    // End the episode if it exists
-    const episode = getEpisode(id);
-    if (episode) {
-      await episode.close();
-      console.log(`Episode for session ${id} closed`);
-    }
-
-    const session = await DatabaseService.updateRaceSession(id, {
-      status: 'expired',
-      updated_at: new Date()
-    });
-
-    if (!session) {
-      res.status(404).json({ error: 'Session not found' });
-      return;
-    }
-
-    res.json({ success: true });
+    const result = await stopRaceSession(id);
+    res.json(result);
   } catch (error) {
     console.error('Error stopping session:', error);
     res.status(500).json({ error: 'Failed to stop session' });
@@ -601,7 +756,23 @@ router.get('/history', async (req: Request, res: Response) => {
       return;
     }
 
-    const races = await DatabaseService.getRaceSessions({ address: walletAddress });
+    let races = await DatabaseService.getRaceSessions({ address: walletAddress });
+    if (!races) {
+      res.status(404).json({ error: 'No races found' });
+      return;
+    }
+
+    // Check for and update any expired sessions
+    await Promise.all(
+      races.map(async (race) => {
+        if (race.status === 'active' && race._id) {
+          await checkRaceExpiration(race._id.toString());
+        }
+      })
+    );
+
+    // Refresh the race list after expiry checks
+    races = await DatabaseService.getRaceSessions({ address: walletAddress });
     if (!races) {
       res.status(404).json({ error: 'No races found' });
       return;
@@ -634,7 +805,8 @@ router.get('/history', async (req: Request, res: Response) => {
           ...(race as any).toObject(),
           actionTokens,
           earnings,
-          title
+          title,
+          transaction_signature: race.transaction_signature
         };
       })
     );
@@ -657,8 +829,16 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       return;
     }
 
-    if (!session.vm_credentials?.guacToken || !session.vm_credentials?.guacClientId) {
-      res.status(400).json({ error: 'Session missing Guacamole credentials' });
+    // Check if session is expired
+    if (await checkRaceExpiration(id)) {
+      res.status(400).json({ error: 'Race session has expired' });
+      return;
+    }
+
+    // Check for active guacamole session
+    const guacSession = await guacService.getActiveSession(session.address);
+    if (!guacSession) {
+      res.status(400).json({ error: 'No active guacamole session' });
       return;
     }
 
@@ -668,6 +848,12 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Screenshot data is required' });
       return;
     }
+
+    // Store latest screenshot in session metadata
+    await DatabaseService.updateRaceSession(id, {
+      preview: screenshot,
+      updated_at: new Date()
+    });
 
     // Create a proper image URL for OpenAI
     const imageUrl = screenshot;
@@ -702,6 +888,8 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
         timestamp: Date.now(),
         metadata: {
           maxReward: questData.maxReward,
+          vm_id: guacSession.connectionId,
+          recording_id: guacSession.recordingId
         },
       };
       await DatabaseService.createTrainingEvent(questEvent);
@@ -737,6 +925,11 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       hintHistory
     );
 
+    // Clear generating hint flag before returning
+    if (session._id) {
+      generatingHints.delete(session._id.toString());
+    }
+
     // Return events for frontend to process
     res.json(result);
   } catch (error) {
@@ -756,8 +949,16 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
       return;
     }
 
-    if (!session.vm_credentials?.guacToken || !session.vm_credentials?.guacClientId) {
-      res.status(400).json({ error: 'Session missing Guacamole credentials' });
+    // Check if session is expired
+    if (await checkRaceExpiration(id)) {
+      res.status(400).json({ error: 'Race session has expired' });
+      return;
+    }
+
+    // Check for active guacamole session
+    const guacSession = await guacService.getActiveSession(session.address);
+    if (!guacSession) {
+      res.status(400).json({ error: 'No active guacamole session' });
       return;
     }
 
@@ -767,6 +968,12 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Screenshot data is required' });
       return;
     }
+
+    // Store latest screenshot in session metadata
+    await DatabaseService.updateRaceSession(id, {
+      preview: screenshot,
+      updated_at: new Date()
+    });
 
     // Create a proper image URL for OpenAI
     const imageUrl = screenshot;
@@ -781,7 +988,9 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
       frame: 0,
       timestamp: Date.now(),
       metadata: {
-        maxReward: questData.maxReward
+        maxReward: questData.maxReward,
+        vm_id: guacSession.connectionId,
+        recording_id: guacSession.recordingId
       }
     };
     await DatabaseService.createTrainingEvent(questEvent);
@@ -809,6 +1018,57 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
 });
 
 // Export training events for selected race sessions
+router.get('/export', async (req: Request, res: Response) => {
+  try {
+    const { sessionId } = req.query;
+    if (!sessionId) {
+      res.status(400).json({ error: 'Session ID is required' });
+      return;
+    }
+
+    // Get the session
+    const session = await DatabaseService.getRaceSession(sessionId as string);
+    if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    // Get all events for this session
+    const sessionEvents = await TrainingEvent.find({
+      session: session._id
+    }).sort({ timestamp: 1 }); // Sort by timestamp ascending
+
+    // Transform events into a more readable format
+    const events = sessionEvents.map((event) => ({
+      session_id: session._id,
+      challenge: session.challenge,
+      category: session.category,
+      type: event.type,
+      message: event.message,
+      timestamp: event.timestamp,
+      frame: event.frame,
+      coordinates: event.coordinates,
+      trajectory: event.trajectory,
+      metadata: event.metadata
+    }));
+
+    // Add session metadata
+    const result = {
+      session_id: session._id,
+      challenge: session.challenge,
+      category: session.category,
+      transaction_signature: session.transaction_signature,
+      events
+    };
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error exporting events:', error);
+    res.status(500).json({ error: 'Failed to export events' });
+  }
+});
+
+// Export training events for multiple race sessions
 router.post('/export', async (req: Request, res: Response) => {
   try {
     const { sessionIds } = req.body;

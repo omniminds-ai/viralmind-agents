@@ -10,6 +10,17 @@
   export let race: RaceSession | null;
 
   let logContainer: HTMLDivElement;
+  let accumulatedRewards = 0;
+
+  // Calculate accumulated rewards from events
+  $: {
+    accumulatedRewards = $trainingEvents.reduce((sum, event) => {
+      if (event.type === 'reward' && event.metadata?.rewardValue) {
+        return sum + event.metadata.rewardValue;
+      }
+      return sum;
+    }, 0);
+  }
   let highlightedEventId: string | null = null;
   let highlightTimeout: ReturnType<typeof setTimeout>;
 
@@ -218,6 +229,12 @@
       Neural Link
     </div>
     <div class="ml-7 mt-0.5 text-xs text-white/60">Live Training Session</div>
+    {#if accumulatedRewards > 0}
+      <div class="ml-7 mt-2 text-sm">
+        <span class="text-purple-400">{accumulatedRewards.toFixed(2)} $VIRAL</span>
+        <div class="text-xs text-white/60">Will be released at the end of the race</div>
+      </div>
+    {/if}
   </div>
 
   <div
