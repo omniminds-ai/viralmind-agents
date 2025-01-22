@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount, onDestroy } from 'svelte';
 import TrainingLog from '$lib/components/gym/TrainingLog.svelte';
+import { playTrainingSound } from '$lib/utils/audio';
 import Timeline from '$lib/components/gym/Timeline.svelte';
 import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
 import { walletStore } from '$lib/walletStore';
@@ -363,9 +364,20 @@ async function stopRace() {
     }
   }
 
+  // Subscribe to training events to play sounds
+  let unsubscribeTraining: () => void;
+
   onMount(() => {
     // Update URL params with actual window location
     urlParams = new URLSearchParams(window.location.search);
+
+    // Subscribe to training events
+    unsubscribeTraining = trainingEvents.subscribe(events => {
+      const latestEvent = events[events.length - 1];
+      if (latestEvent) {
+        playTrainingSound(latestEvent.type === 'reward' ? 'reward' : 'other');
+      }
+    });
 
     // Add beforeunload handler
     handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -422,6 +434,7 @@ async function stopRace() {
       timestamp: Date.now()
     });
     if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+    if (unsubscribeTraining) unsubscribeTraining();
     stopPolling();
   });
 </script>
