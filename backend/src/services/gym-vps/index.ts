@@ -43,9 +43,9 @@ export class GymVPSService {
     ).join('-');
 
     // create user
-    await ssh.execCommand(`sudo useradd em -s /bin/bash "${username}`);
+    await ssh.execCommand(`sudo su root -c "useradd -m -s /bin/bash \'${username}'"`);
     // set password
-    await ssh.execCommand(`sudo echo "${username}:${password}" | chpasswd`);
+    await ssh.execCommand(`sudo su root -c "echo '${username}:${password}' | chpasswd"`);
     // todo: create a usergroup that prevents breaking the system but allows installing packages
     // add to usergroup
     // await ssh.execCommand(`usermod -aG sudo "${username}"`);
@@ -68,7 +68,18 @@ export class GymVPSService {
     }
 
     console.log('Removing user from server.');
-    await ssh.execCommand(`sudo userdel -r "${username}"`);
+    while (true) {
+      const res = await ssh.execCommand(`sudo su root -c "userdel -r '${username}'"`);
+      if (res.stderr.includes('is currently used by process')) {
+        const sp = res.stderr.split(' ');
+        const pid = sp[sp.length - 1];
+        console.log(`User in use by process... Attempting to kill ${pid}.`);
+        await ssh.execCommand(`sudo su root -c "kill -9 ${pid}"`);
+      } else {
+        break;
+      }
+    }
+    await ssh.execCommand(`sudo rm -rf -r '/home/${username}'`);
     // todo: create a usergroup that prevents breaking the system but allows installing packages
     // remove from usergroup
     //await ssh.execCommand(`gpasswd --delete "${username} group`)
