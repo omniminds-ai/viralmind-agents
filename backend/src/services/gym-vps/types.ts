@@ -1,5 +1,5 @@
 export enum VPSRegion {
-  us_west = 'us-west-1',
-  us_east = 'us-east-2'
-  // todo: expand this
+  us_west = 'us-west-2',
+  us_east = 'us-east-2',
+  eu_central = 'eu-central-1'
 }

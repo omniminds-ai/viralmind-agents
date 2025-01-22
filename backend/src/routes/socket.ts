@@ -642,8 +642,7 @@ class Episode {
       this.client.disconnect();
     }
 
-    // TODO: get vps region programatically
-    const instance = await DatabaseService.getGymVPS(VPSRegion.us_east);
+    const instance = await DatabaseService.getGymVPS(this.session.vm_region);
     const vpsService = new GymVPSService({
       ip: instance.ip,
       username: instance.username,

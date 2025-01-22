@@ -295,7 +295,7 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     console.log('starting a new race!');
 
     const { id } = req.params;
-    const { address } = req.body;
+    const { address, region } = req.body;
 
     if (!address) {
       res.status(400).json({ error: 'Address is required' });
@@ -312,8 +312,12 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     // Get an open vps instance
     console.log('Joining a Race');
 
-    // TODO: get vps region programatically
-    const instance = await DatabaseService.getGymVPS(VPSRegion.us_east);
+    // get vps region programatically
+    let regionEnum: VPSRegion = VPSRegion.us_east;
+    if (region?.includes('us-east')) regionEnum = VPSRegion.us_east;
+    if (region?.includes('us-west')) regionEnum = VPSRegion.us_west;
+    if (region?.includes('eu-central')) regionEnum = VPSRegion.eu_central;
+    const instance = await DatabaseService.getGymVPS(regionEnum);
     const vpsService = new GymVPSService({
       ip: instance.ip,
       username: instance.username,
@@ -338,6 +342,7 @@ router.post('/:id/start', async (req: Request, res: Response) => {
       vm_ip: instance.ip,
       vm_port: 3389,
       vm_password: instance.ssh_keypair.private,
+      vm_region: regionEnum,
       vm_credentials: {
         username: vps.username,
         password: vps.password,

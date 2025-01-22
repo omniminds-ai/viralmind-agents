@@ -5,6 +5,7 @@
   import { walletStore } from '$lib/walletStore';
   import { trainingEvents } from '$lib/stores/training';
   import type { RaceSession } from '$lib/types';
+  import { findFastestRegion } from '$lib/utils';
 
   let isLoading = true;
   let hasShownWalletMessage = false;
@@ -41,7 +42,7 @@
       }
 
       const data = await res.json();
-      
+
       // Update quest if completed
       if (data.isCompleted && data.newQuest) {
         currentQuest = data.newQuest;
@@ -141,6 +142,9 @@
         handleError(err instanceof Error ? err.message : 'Failed to load session');
       }
     } else {
+      // get closest aws region... default to us-east
+      const region = (await findFastestRegion()) || 'us-east-2';
+
       try {
         trainingEvents.addEvent({
           type: 'system',
@@ -154,7 +158,8 @@
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            address: publicKey.toBase58()
+            address: publicKey.toBase58(),
+            region
           })
         });
 
@@ -166,13 +171,16 @@
         }
 
         const data = await res.json();
-        
+
         // Set up Guacamole auth token
         if (data.vm_credentials?.guacToken) {
-          localStorage.setItem('GUAC_AUTH', JSON.stringify({
-            authToken: data.vm_credentials.guacToken,
-            dataSource: 'mysql'
-          }));
+          localStorage.setItem(
+            'GUAC_AUTH',
+            JSON.stringify({
+              authToken: data.vm_credentials.guacToken,
+              dataSource: 'mysql'
+            })
+          );
         }
 
         // Store session data
@@ -196,7 +204,7 @@
         // Update URL with session ID
         urlParams.set('s', data.sessionId);
         window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
-        
+
         if (sessionData.status !== 'active') {
           handleError('Session is not active');
           return;
@@ -261,7 +269,10 @@
   <div class="flex flex-1 flex-col">
     <!-- Guacamole Stream -->
     <div class="flex flex-1 items-center justify-center p-6">
-      <div class="overflow-hidden rounded-sm bg-black/50 shadow-lg" style="width: 1280px; height: 800px;">
+      <div
+        class="overflow-hidden rounded-sm bg-black/50 shadow-lg"
+        style="width: 1280px; height: 800px;"
+      >
         <div class="relative h-full w-full">
           {#if raceSession?.vm_credentials?.guacToken}
             <iframe
@@ -274,7 +285,9 @@
 
           <!-- Quest Overlay -->
           {#if currentQuest}
-            <div class="absolute bottom-4 left-4 right-4 flex flex-col gap-2 rounded-lg bg-black/80 p-4 text-white">
+            <div
+              class="absolute bottom-4 left-4 right-4 flex flex-col gap-2 rounded-lg bg-black/80 p-4 text-white"
+            >
               <div class="flex items-center justify-between">
                 <div class="font-medium">Current Quest:</div>
                 <div class="text-yellow-400">{maxReward} $VIRAL</div>
