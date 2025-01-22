@@ -7,6 +7,12 @@ export interface TrainingEvent {
     timestamp: number; // Unix timestamp in ms
     frame?: number; // VNC frame number
     coordinates?: { x: number; y: number };
+    metadata?: {
+        maxReward?: number;
+        scoreValue?: number;
+        rewardValue?: number;
+        transaction?: string;
+    };
 }
 
 export interface EventColors {

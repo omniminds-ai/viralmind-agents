@@ -3,11 +3,251 @@ import DatabaseService, { RaceSessionDocument } from '../services/db/index.ts';
 import { GymVPSService } from '../services/gym-vps/index.ts';
 import { getEpisode } from './socket.ts';
 import GuacamoleService from '../services/guacamole/index.ts';
+import OpenAI from 'openai';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 import { TrainingEvent } from '../models/TrainingEvent.ts';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
+
+async function generateQuest(
+  imageBuffer: Buffer,
+  prompt: string,
+  session: RaceSessionDocument
+) {
+  try {
+    // Get treasury balance
+    const treasuryBalance = await blockchainService.getTokenBalance(
+      viralToken,
+      treasuryKeypair.publicKey.toString()
+    );
+
+    // Calculate max reward
+    const rng = Math.random();
+    const maxReward = Math.ceil(
+      Math.min(
+        1 / rng,
+        treasuryBalance / 128
+      )
+    );
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `You are an AI assistant that needs to propose a new Ubuntu desktop quest based on the theme: "${prompt}". 
+              
+First, analyze the current screen state to understand what task the user has already completed. Then, propose a DIFFERENT task that fits the same theme but isn't repetitive.
+
+For example, if the theme is "Draw cartoon characters in jspaint" and they drew a jellyfish, propose drawing a completely different character - not another jellyfish or a variation of it.
+
+Return as JSON with these keys:
+- reasoning: Analyze what's on screen and explain why you're choosing a different task within the same theme
+- quest: The new specific task to complete (should match the theme but be distinct from what's visible)
+- hint: Helpful tip for completing the new task`,
+            },
+            {
+              type: "image_url",
+              image_url: { url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}` },
+            },
+          ],
+        },
+      ],
+      max_tokens: 250,
+    });
+
+    const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
+    if (jsonMatch && jsonMatch[0]) {
+      const questData = JSON.parse(jsonMatch[0]);
+      return {
+        ...questData,
+        maxReward,
+      };
+    }
+
+    throw new Error("No valid JSON found in response");
+  } catch (error) {
+    console.error("Error generating quest:", error);
+
+    return {
+      reasoning:
+        "Failed to analyze screen, providing a generic task within theme",
+      quest: "Open the Activities overview and launch a relevant application",
+      hint: "Press the Super (Windows) key or click Activities in the top-left corner",
+      maxReward: 0,
+    };
+  }
+}
+
+async function generateHint(
+  imageBuffer: Buffer,
+  currentQuest: string,
+  prompt: string,
+  session: RaceSessionDocument,
+  maxReward: number,
+  hintHistory: string[] = []
+) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Current quest: ${currentQuest}
+Previous hints: ${hintHistory.slice(-3).join(", ")}
+
+First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
+
+Then provide a single actionable hint (if needed) that includes one of these patterns if applicable:
+- Type 'x[TAB]' to autocomplete
+- Scroll in [area] to find [target]
+- Click the [specific element]
+- Move cursor to [exact location]
+
+Output as JSON with three fields:
+1. "reasoning": Your analysis of what's been accomplished vs core requirements (ignore artistic details)
+2. "isCompleted": Boolean based on basic task completion
+3. "hint": A single sentence hint if not completed`,
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 250,
+    });
+
+    const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
+    let parsedResponse = { hint: "", reasoning: "", isCompleted: false };
+    if (jsonMatch) {
+      try {
+        parsedResponse = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error("Error parsing JSON from response:", e);
+      }
+    }
+
+    // If quest is completed, calculate reward and generate new quest
+    if (parsedResponse.isCompleted) {
+      // Calculate actual reward
+      const score = Math.random();
+      const actualReward = Math.ceil(maxReward * score);
+
+      // Transfer reward from treasury
+      const signature = await blockchainService.transferToken(
+        viralToken,
+        actualReward,
+        treasuryKeypair,
+        session.address
+      );
+
+      // Create reward event
+      const rewardEvent = {
+        type: "reward",
+        message: `The judge rewarded you ${actualReward.toFixed(
+          2
+        )} $VIRAL for this (${(score * 100).toFixed(0)}% of ${maxReward.toFixed(
+          2
+        )})${signature ? `\nTransaction: ${signature}` : ""}`,
+        session: session._id,
+        frame: 0,
+        timestamp: Date.now(),
+        metadata: {
+          scoreValue: score,
+          rewardValue: actualReward,
+          transaction: signature,
+        },
+      };
+      await DatabaseService.createTrainingEvent(rewardEvent);
+
+      // Generate new quest
+      const questData = await generateQuest(imageBuffer, prompt, session);
+      const questEvent = {
+        type: "quest",
+        message: questData.quest,
+        session: session._id,
+        frame: 0,
+        timestamp: Date.now(),
+        metadata: {
+          maxReward: questData.maxReward,
+        },
+      };
+      await DatabaseService.createTrainingEvent(questEvent);
+
+      return {
+        hint: parsedResponse.hint,
+        reasoning: parsedResponse.reasoning,
+        isCompleted: true,
+        newQuest: questData.quest,
+        maxReward: questData.maxReward,
+        events: [rewardEvent, questEvent]
+      };
+    }
+
+    // Create hint and reasoning events
+    const hintEvent = {
+      type: "hint",
+      message: parsedResponse.hint || "(empty)",
+      session: session._id,
+      frame: 0,
+      timestamp: Date.now(),
+    };
+    await DatabaseService.createTrainingEvent(hintEvent);
+
+    const reasoningEvent = {
+      type: "reasoning",
+      message: parsedResponse.reasoning || "(empty)",
+      session: session._id,
+      frame: 0,
+      timestamp: Date.now(),
+    };
+    await DatabaseService.createTrainingEvent(reasoningEvent);
+
+    return {
+      hint: parsedResponse.hint,
+      reasoning: parsedResponse.reasoning,
+      isCompleted: false,
+      events: [hintEvent, reasoningEvent]
+    };
+  } catch (error) {
+    console.error("Error generating hint:", error);
+    const fallbackHint = "Scroll in the environments list to explore available tasks";
+    
+    const errorEvent = {
+      type: "hint",
+      message: fallbackHint,
+      session: session._id,
+      frame: 0,
+      timestamp: Date.now(),
+    };
+    await DatabaseService.createTrainingEvent(errorEvent);
+    
+    return {
+      hint: fallbackHint,
+      reasoning: "Error occurred during analysis",
+      isCompleted: false,
+      events: [errorEvent]
+    };
+  }
+}
 
 const router = express.Router();
 
@@ -82,19 +322,24 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     console.log('Joining a Race');
 
     // NOTE: in the future, we should be grabbing the ip and private keys from the database based upon the user's region
-    const vpsService = new GymVPSService({
-      ip: process.env.GYM_VPS_IP!,
-      username: 'ubuntu', // default sudo user
-      privateKey: process.env.GYM_VPS_PRIVATE_KEY!
-    });
-    const vps = await vpsService.initNewTrainer(address);
+    // const vpsService = new GymVPSService({
+    //   ip: process.env.GYM_VPS_IP!,
+    //   username: 'ubuntu', // default sudo user
+    //   privateKey: process.env.GYM_VPS_PRIVATE_KEY!
+    // });
+    // const vps = await vpsService.initNewTrainer(address);
+    const vps = {
+      ip: '18.119.106.179',
+      username: 'user',
+      password: 'password'
+    }
 
     // Create Guacamole session with RDP connection
     const {
       token: authToken,
       connectionId,
       clientId
-    } = await guacService.createSession(vps.ip, vps.username, vps.password);
+    } = await guacService.createSession(vps.ip, vps.username, vps.password, address);
 
     // Create race session
     const now = new Date();
@@ -315,6 +560,144 @@ router.get('/history', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching races:', error);
     res.status(500).json({ error: 'Failed to fetch races' });
+  }
+});
+
+// Request a hint for current quest
+router.post('/session/:id/hint', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const session = await DatabaseService.getRaceSession(id);
+    
+    if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    if (!session.vm_credentials?.guacToken || !session.vm_credentials?.guacClientId) {
+      res.status(400).json({ error: 'Session missing Guacamole credentials' });
+      return;
+    }
+
+    // Get current screenshot
+    let screenshot;
+    try {
+      screenshot = await guacService.getScreenshot(
+        session.vm_credentials.guacToken,
+        session.vm_credentials.guacClientId,
+        session.address
+      );
+    } catch (error) {
+      console.log('Screenshot not available, instance may not be ready:', error);
+      res.status(202).json({ 
+        message: 'Instance not ready yet. Please wait a moment and try again.',
+        retryAfter: 5
+      });
+      return;
+    }
+
+    // Get current quest from latest quest event
+    const latestQuestEvent = await TrainingEvent.findOne(
+      { session: id, type: 'quest' },
+      {},
+      { sort: { timestamp: -1 } }
+    );
+
+    // Get hint history
+    const hintEvents = await TrainingEvent.find(
+      { session: id, type: 'hint' },
+      { message: 1 },
+      { sort: { timestamp: -1 }, limit: 3 }
+    );
+    const hintHistory = hintEvents.map(e => e.message);
+
+    // Get current max reward from latest quest event
+    const maxReward = latestQuestEvent?.metadata?.maxReward || 0;
+
+    const result = await generateHint(
+      screenshot,
+      latestQuestEvent?.message || '',
+      session.prompt,
+      session,
+      maxReward,
+      hintHistory
+    );
+
+    // Return events for frontend to process
+    res.json(result);
+  } catch (error) {
+    console.error('Error generating hint:', error);
+    res.status(500).json({ error: 'Failed to generate hint' });
+  }
+});
+
+// Generate initial quest for session
+router.post('/session/:id/quest', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const session = await DatabaseService.getRaceSession(id);
+    
+    if (!session) {
+      res.status(404).json({ error: 'Session not found' });
+      return;
+    }
+
+    if (!session.vm_credentials?.guacToken || !session.vm_credentials?.guacClientId) {
+      res.status(400).json({ error: 'Session missing Guacamole credentials' });
+      return;
+    }
+
+    // Get current screenshot
+    let screenshot;
+    try {
+      screenshot = await guacService.getScreenshot(
+        session.vm_credentials.guacToken,
+        session.vm_credentials.guacClientId,
+        session.address
+      );
+    } catch (error) {
+      console.log('Screenshot not available, instance may not be ready:', error);
+      res.status(202).json({ 
+        message: 'Instance not ready yet. Please wait a moment and try again.',
+        retryAfter: 5
+      });
+      return;
+    }
+
+    const questData = await generateQuest(screenshot, session.prompt, session);
+    
+    // Create quest event
+    const questEvent = {
+      type: "quest",
+      message: questData.quest,
+      session: id,
+      frame: 0,
+      timestamp: Date.now(),
+      metadata: {
+        maxReward: questData.maxReward,
+      },
+    };
+    await DatabaseService.createTrainingEvent(questEvent);
+
+    // Create hint event
+    const hintEvent = {
+      type: "hint",
+      message: questData.hint,
+      session: id,
+      frame: 0,
+      timestamp: Date.now(),
+    };
+    await DatabaseService.createTrainingEvent(hintEvent);
+
+    res.json({
+      quest: questData.quest,
+      hint: questData.hint,
+      maxReward: questData.maxReward,
+      events: [questEvent, hintEvent]
+    });
+  } catch (error) {
+    console.error('Error generating quest:', error);
+    res.status(500).json({ error: 'Failed to generate quest' });
   }
 });
 

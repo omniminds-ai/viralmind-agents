@@ -11,6 +11,9 @@
   let startTime: number;
   let raceSession: RaceSession | null = null;
   let error: string | null = null;
+  let currentQuest = '';
+  let currentHint = '';
+  let maxReward = 0;
 
   function handleError(message: string) {
     error = message;
@@ -20,6 +23,78 @@
       message: `Error: ${message}`,
       timestamp: Date.now()
     });
+  }
+
+  async function requestHint() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('s');
+    if (!sessionId || !raceSession?.vm_credentials) return;
+
+    try {
+      const res = await fetch(`/api/races/session/${sessionId}/hint`, {
+        method: 'POST'
+      });
+
+      if (!res.ok) {
+        console.error('Failed to get hint');
+        return;
+      }
+
+      const data = await res.json();
+      
+      // Update quest if completed
+      if (data.isCompleted && data.newQuest) {
+        currentQuest = data.newQuest;
+        maxReward = data.maxReward;
+      }
+
+      // Update hint
+      currentHint = data.hint;
+
+      // Add events to training log
+      data.events?.forEach((event: any) => {
+        trainingEvents.addEvent({
+          type: event.type,
+          message: event.message,
+          timestamp: event.timestamp,
+          frame: event.frame,
+          metadata: event.metadata
+        });
+      });
+    } catch (err) {
+      console.error('Error requesting hint:', err);
+    }
+  }
+
+  async function generateInitialQuest(sessionId: string) {
+    try {
+      const res = await fetch(`/api/races/session/${sessionId}/quest`, {
+        method: 'POST'
+      });
+
+      if (!res.ok) {
+        console.error('Failed to generate initial quest');
+        return;
+      }
+
+      const data = await res.json();
+      currentQuest = data.quest;
+      currentHint = data.hint;
+      maxReward = data.maxReward;
+
+      // Add events to training log
+      data.events?.forEach((event: any) => {
+        trainingEvents.addEvent({
+          type: event.type,
+          message: event.message,
+          timestamp: event.timestamp,
+          frame: event.frame,
+          metadata: event.metadata
+        });
+      });
+    } catch (err) {
+      console.error('Error generating initial quest:', err);
+    }
   }
 
   async function initializeRace() {
@@ -44,8 +119,28 @@
       return;
     }
 
-    // If no session ID, start a new race session
-    if (!sessionId) {
+    if (sessionId) {
+      try {
+        // Get existing session
+        const res = await fetch(`/api/races/session/${sessionId}`);
+        if (!res.ok) {
+          const data = await res.json();
+          handleError(data.error || 'Failed to load session');
+          return;
+        }
+
+        const data = await res.json();
+        raceSession = data;
+        startTime = new Date(data.created_at).getTime();
+
+        // Generate initial quest
+        await generateInitialQuest(sessionId);
+
+        isLoading = false;
+      } catch (err) {
+        handleError(err instanceof Error ? err.message : 'Failed to load session');
+      }
+    } else {
       try {
         trainingEvents.addEvent({
           type: 'system',
@@ -107,6 +202,9 @@
           return;
         }
 
+        // Generate initial quest
+        await generateInitialQuest(data.sessionId);
+
         isLoading = false;
       } catch (err) {
         handleError(err instanceof Error ? err.message : 'Failed to load session');
@@ -139,8 +237,12 @@
     // Initialize the race
     initializeRace();
 
+    // Set up interval for hint requests
+    const hintInterval = setInterval(requestHint, 5000);
+
     return () => {
       if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+      clearInterval(hintInterval);
     };
   });
 
@@ -159,7 +261,7 @@
   <div class="flex flex-1 flex-col">
     <!-- Guacamole Stream -->
     <div class="flex flex-1 items-center justify-center p-6">
-      <div class="overflow-hidden rounded-xl bg-black/50 shadow-lg" style="width: 1280px; height: 800px;">
+      <div class="overflow-hidden rounded-sm bg-black/50 shadow-lg" style="width: 1280px; height: 800px;">
         <div class="relative h-full w-full">
           {#if raceSession?.vm_credentials?.guacToken}
             <iframe
@@ -168,6 +270,28 @@
               class="absolute inset-0 h-full w-full border-0"
               allow="clipboard-read; clipboard-write"
             ></iframe>
+          {/if}
+
+          <!-- Quest Overlay -->
+          {#if currentQuest}
+            <div class="absolute bottom-4 left-4 right-4 flex flex-col gap-2 rounded-lg bg-black/80 p-4 text-white">
+              <div class="flex items-center justify-between">
+                <div class="font-medium">Current Quest:</div>
+                <div class="text-yellow-400">{maxReward} $VIRAL</div>
+              </div>
+              <div class="text-lg">{currentQuest}</div>
+              <div class="flex items-center justify-between">
+                {#if currentHint}
+                  <div class="text-sm text-blue-400">{currentHint}</div>
+                {/if}
+                <button
+                  class="ml-auto rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+                  on:click={requestHint}
+                >
+                  Request Hint
+                </button>
+              </div>
+            </div>
           {/if}
         </div>
       </div>
