@@ -51,7 +51,7 @@ services:
       MYSQL_PASSWORD: guacamole_user_pw
     volumes:
       - guacamole_db:/var/lib/mysql
-      - ./guacamole/initdb.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./guacamole/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
     networks:
       - node-network 
   guacamole:
