@@ -29,6 +29,7 @@ services:
   # holy guacamole
   guacd:
     image: guacamole/guacd
+    platform: linux/amd64
     container_name: guacd
     restart: always
     volumes:
@@ -40,6 +41,7 @@ services:
       - node-network 
   mysql:
     image: mysql:5.7
+    platform: linux/amd64
     container_name: guac_mysql
     restart: always
     environment:
@@ -49,11 +51,13 @@ services:
       MYSQL_PASSWORD: guacamole_user_pw
     volumes:
       - guacamole_db:/var/lib/mysql
+      - ./guacamole/initdb.sql:/docker-entrypoint-initdb.d/1.sql
     networks:
       - node-network 
   guacamole:
     image: guacamole/guacamole
     container_name: guacamole
+    platform: linux/amd64
     restart: always
     depends_on:
       - guacd
@@ -106,16 +110,9 @@ services:
       - ANCHOR_PROVIDER_URL=${ANCHOR_PROVIDER_URL}
       - IPC_SECRET=${IPC_SECRET}
       - FEEDBACK_WEBHOOK=${FEEDBACK_WEBHOOK}
-      # Hardcoded gym vnc config
-      - VNC_HOST_GYMTEST=${VNC_HOST_GYMTEST}
-      - VNC_PASS_GYMTEST=${VNC_PASS_GYMTEST}
       # Docker Specific Paths
       - ANCHOR_WALLET=/usr/src/app/backend/secrets/solana-keypair.json
       - ANCHOR_WORKSPACE=/usr/src/app/backend/jailbreak-pool
-      # VNC Configuration (replaced RDP config)
-      - VNC_HOST=windows
-      - VNC_PORT=5901
-      - VNC_PASSWORD=admin
       - SERVICE_HOST=windows
       - SERVICE_PORT=6950
       - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
