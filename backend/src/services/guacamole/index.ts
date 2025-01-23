@@ -18,6 +18,15 @@ interface GuacamoleConnection {
   };
 }
 
+interface ActiveConnection {
+  identifier: string;
+  connectionIdentifier: string;
+  startDate: number;
+  remoteHost: string;
+  username: string;
+  connectable: boolean;
+}
+
 interface FrameInfo {
   timestamp: number;
   buffer: Buffer;
@@ -51,6 +60,46 @@ export class GuacamoleService {
     const components = [connectionId, 'c', this.dataSource];
     const str = components.join('\0');
     return Buffer.from(str).toString('base64');
+  }
+
+  public async listActiveConnections(token: string): Promise<Record<string, ActiveConnection>> {
+    try {
+      const response = await axios.get(
+        `${this.baseUrl}/api/session/data/${this.dataSource}/activeConnections`,
+        {
+          headers: {
+            'Guacamole-Token': token
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error listing active connections:', error);
+      throw error;
+    }
+  }
+
+  public async killConnection(token: string, connectionId: string): Promise<void> {
+    try {
+      await axios.patch(
+        `${this.baseUrl}/api/session/data/${this.dataSource}/activeConnections`,
+        [
+          {
+            op: 'remove',
+            path: `/${connectionId}`
+          }
+        ],
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Guacamole-Token': token
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error killing connection:', error);
+      throw error;
+    }
   }
 
   private async getAdminToken(): Promise<string> {
@@ -464,9 +513,7 @@ export class GuacamoleService {
     }
   }
 
-  public async getActiveSession(
-    address: string
-  ): Promise<{
+  public async getActiveSession(address: string): Promise<{
     token: string;
     connectionId: string;
     recordingId: string;
@@ -579,7 +626,8 @@ export class GuacamoleService {
         [
           {
             op: 'remove',
-            path: `/connectionPermissions/${connectionId}`
+            path: `/connectionPermissions/${connectionId}`,
+            value: 'READ'
           }
         ],
         {
