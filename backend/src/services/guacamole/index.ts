@@ -83,8 +83,9 @@ export class GuacamoleService {
     }
   }
 
-  public async killConnection(token: string, connectionId: string): Promise<void> {
+  public async killConnection(connectionId: string): Promise<void> {
     try {
+      const adminToken = await this.getAdminToken();
       await axios.patch(
         `${this.baseUrl}/api/session/data/${this.dataSource}/activeConnections`,
         [
@@ -96,7 +97,7 @@ export class GuacamoleService {
         {
           headers: {
             'Content-Type': 'application/json',
-            'Guacamole-Token': token
+            'Guacamole-Token': adminToken
           }
         }
       );

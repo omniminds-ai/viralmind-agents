@@ -590,7 +590,6 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
         for (const connection of Object.values(activeConnectionsMap)) {
           try {
             await guacService.killConnection(
-              session.vm_credentials.guacToken,
               connection.identifier
             );
           } catch (error) {
