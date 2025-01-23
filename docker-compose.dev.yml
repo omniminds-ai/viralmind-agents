@@ -100,7 +100,7 @@ services:
       - /usr/src/app/backend/node_modules/  # This creates an anonymous volume for node_modules
       # training data output
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
-      - ./guacamole/recordings:/var/lib/guacamole/recordings:ro
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
     environment:
       - DB_URI=${DB_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}

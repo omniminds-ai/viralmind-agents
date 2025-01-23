@@ -610,13 +610,19 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
               process.env.AWS_ACCESS_KEY,
               process.env.AWS_SECRET_KEY
             );
-            await s3Service.saveItem({
-              bucket: 'training-gym',
-              file: `${guacService.recordingsPath}/${recordingId}`,
-              name: `${session.vm_credentials?.username}-${id}-recording`
-            });
-            // delete recording
-            await unlink(`${guacService.recordingsPath}/${recordingId}`);
+            console.log('Uploading recording to s3...');
+            // wrap this function so the user doesn't have to wait for this
+            (async () => {
+              await s3Service.saveItem({
+                bucket: 'training-gym',
+                file: `${guacService.recordingsPath}/${recordingId}`,
+                name: `recording-${id}`
+              });
+              // delete recording
+              await unlink(`${guacService.recordingsPath}/${recordingId}`);
+
+              console.log('done.');
+            })();
           }
         }
         // session cleanup done
