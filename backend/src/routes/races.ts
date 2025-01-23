@@ -257,7 +257,8 @@ Output as JSON with three fields:
           timestamp: Date.now(),
           metadata: {
             maxReward: questData.maxReward,
-            vm_id: latestQuestEvent.metadata?.vm_id
+            vm_id: latestQuestEvent.metadata?.vm_id,
+            recording_id: latestQuestEvent.metadata?.recording_id
           },
         };
         await DatabaseService.createTrainingEvent(questEvent);
