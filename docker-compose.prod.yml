@@ -1,30 +1,89 @@
 # Production
 services:
-  windows:
-    image: dockurr/windows
-    container_name: windows
-    environment:
-      VERSION: "11"
-      USERNAME: "ai"
-      PASSWORD: "admin"
-      VNC_PASSWORD: "admin"
-      WIDTH: 1280
-      HEIGHT: 720
-    devices:
-      - /dev/kvm
-      - /dev/net/tun
+  # windows:
+  #   image: dockurr/windows
+  #   container_name: windows
+  #   environment:
+  #     VERSION: "11"
+  #     USERNAME: "ai"
+  #     PASSWORD: "admin"
+  #     VNC_PASSWORD: "admin"
+  #     WIDTH: 1280
+  #     HEIGHT: 720
+  #   devices:
+  #     - /dev/kvm
+  #     - /dev/net/tun
+  #   volumes:
+  #     - ./vm/storage:/storage
+  #   cap_add:
+  #     - NET_ADMIN
+  #   ports:
+  #     - 8006:8006
+  #     - 5900:5900 # VNC port 
+  #     - 3390:3389 # RDP port
+  #     - 6950:6950 # service server
+  #   stop_grace_period: 2m
+  #   networks:
+  #     - node-network
+
+  
+  # holy guacamole
+  guacd:
+    image: guacamole/guacd
+    platform: linux/amd64
+    container_name: guacd
+    restart: always
     volumes:
-      - ./vm/storage:/storage
-    cap_add:
-      - NET_ADMIN
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
+      - ./guacamole/drive:/drive:rw
     ports:
-      - 8006:8006
-      - 5900:5900 # VNC port 
-      - 3390:3389 # RDP port
-      - 6950:6950 # service server
-    stop_grace_period: 2m
+      - "4822:4822"
     networks:
-      - node-network
+      - node-network 
+  mysql:
+    image: mysql:5.7
+    platform: linux/amd64
+    container_name: guac_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: guacamole_root_pw
+      MYSQL_DATABASE: guacamole_db
+      MYSQL_USER: guacamole_user
+      MYSQL_PASSWORD: guacamole_user_pw
+    volumes:
+      - guacamole_db:/var/lib/mysql
+      - ./guacamole/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+    networks:
+      - node-network 
+  guacamole:
+    image: guacamole/guacamole
+    container_name: guacamole
+    platform: linux/amd64
+    restart: always
+    depends_on:
+      - guacd
+      - mysql
+    environment:
+      GUACAMOLE_HOME: '/opt/guacamole_home'
+      GUACD_HOSTNAME: guacd
+      MYSQL_HOSTNAME: mysql
+      MYSQL_DATABASE: guacamole_db
+      MYSQL_USER: guacamole_user
+      MYSQL_PASSWORD: guacamole_user_pw
+      GUACAMOLE_CORS_ENABLED: 'true'
+      GUACAMOLE_CORS_ALLOWED_ORIGINS: '*'
+      GUACAMOLE_CORS_ALLOWED_METHODS: 'GET, POST, PUT, DELETE, OPTIONS'
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./guacamole/home:/opt/guacamole_home
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
+      - ./guacamole/drive:/drive:rw
+    links:
+      - guacd
+      - mysql
+    networks:
+      - node-network 
 
   back-end:
     build:
@@ -37,6 +96,8 @@ services:
     ports:
       - "8001:8001"
     command: npm start
+    volumes:
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
     environment:
       - DB_URI=${DB_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -54,9 +115,14 @@ services:
       - VNC_PASSWORD=admin
       - SERVICE_HOST=windows
       - SERVICE_PORT=6950
+      - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
+      - GYM_TREASURY_WEBHOOK=${GYM_TREASURY_WEBHOOK}
+      - VIRAL_TOKEN=${VIRAL_TOKEN}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
     depends_on:
       - mongodb
-      - windows
+      # - windows
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -102,3 +168,5 @@ networks:
 
 volumes:
   mongodb_data:
+  guacamole_db:
+
