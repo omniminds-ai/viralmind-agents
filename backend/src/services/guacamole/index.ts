@@ -62,29 +62,23 @@ export class GuacamoleService {
     return Buffer.from(str).toString('base64');
   }
 
-  public async listActiveConnections(token: string): Promise<Record<string, ActiveConnection>> {
+  public async listActiveConnections(username: string): Promise<Record<string, ActiveConnection>> {
     try {
-      const response = await axios.get(
+      const adminToken = await this.getAdminToken();
+      const response = await axios.get<Record<string, ActiveConnection>>(
         `${this.baseUrl}/api/session/data/${this.dataSource}/activeConnections`,
         {
           headers: {
-            'Guacamole-Token': token
+            'Guacamole-Token': adminToken
           }
         }
       );
-      return response.data;
+      
+      return Object.fromEntries(
+        Object.entries(response.data)
+          .filter(([_, connection]) => connection.username === username)
+      );
     } catch (error) {
-      console.log('Error listing active connections.');
-      if ((error as Error).message.includes('AxiosError')) {
-        const err = error as AxiosError;
-        console.log({
-          code: err.code,
-          status: err.response?.status,
-          message: err.response?.statusText,
-          details: err.response?.data
-        });
-      }
-
       throw error;
     }
   }

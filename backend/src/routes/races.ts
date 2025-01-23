@@ -584,9 +584,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
     if (session.vm_credentials?.guacToken && session.vm_credentials?.guacConnectionId) {
       try {
         // Get active connections
-        const activeConnectionsMap = await guacService.listActiveConnections(
-          session.vm_credentials.guacToken
-        );
+        const activeConnectionsMap = await guacService.listActiveConnections(session.address);
 
         // Kill any active connections for this session
         for (const connection of Object.values(activeConnectionsMap)) {
