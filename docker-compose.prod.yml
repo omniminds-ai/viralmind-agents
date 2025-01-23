@@ -1,33 +1,5 @@
 # Production
 services:
-  # windows:
-  #   image: dockurr/windows
-  #   container_name: windows
-  #   environment:
-  #     VERSION: "11"
-  #     USERNAME: "ai"
-  #     PASSWORD: "admin"
-  #     VNC_PASSWORD: "admin"
-  #     WIDTH: 1280
-  #     HEIGHT: 720
-  #   devices:
-  #     - /dev/kvm
-  #     - /dev/net/tun
-  #   volumes:
-  #     - ./vm/storage:/storage
-  #   cap_add:
-  #     - NET_ADMIN
-  #   ports:
-  #     - 8006:8006
-  #     - 5900:5900 # VNC port 
-  #     - 3390:3389 # RDP port
-  #     - 6950:6950 # service server
-  #   stop_grace_period: 2m
-  #   networks:
-  #     - node-network
-
-  
-  # holy guacamole
   guacd:
     image: guacamole/guacd
     platform: linux/amd64
@@ -96,7 +68,7 @@ services:
     ports:
       - "8001:8001"
     # command: npm start
-    command: sh -c "npm run build && ls && echo '====' && ls build && echo '====' && export NODE_OPTIONS=--openssl-legacy-provider && node build/server.js"
+    command: sh -c "npm run build && export NODE_OPTIONS=--openssl-legacy-provider && node build/server.js"
     volumes:
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
       - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
