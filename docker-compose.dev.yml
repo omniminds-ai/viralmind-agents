@@ -118,7 +118,6 @@ services:
       - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
       - GYM_TREASURY_WEBHOOK=${GYM_TREASURY_WEBHOOK}
       - VIRAL_TOKEN=${VIRAL_TOKEN}
-      - DIGITALOCEAN_API_KEY=${DIGITALOCEAN_API_KEY}
     depends_on:
       - mongodb
       - guacd
