@@ -159,4 +159,4 @@
 </div> -->
 
 <!-- Spacer to prevent content from going under fixed navbar + banner -->
-<div class="h-24"></div>
+<div class="h-[65px]"></div>
