@@ -129,7 +129,7 @@
                   class="group rounded-lg bg-stone-800/50 p-1.5 text-gray-400 transition-all duration-100 hover:bg-stone-700/50 hover:text-white"
                   title="Download Recording"
                   target="_blank"
-                  href="https://training-gym.s3.us-east-2.amazonaws.com/{race.id}-recording"
+                  href="https://training-gym.s3.us-east-2.amazonaws.com/recording-{race.id}"
                 >
                   <Video class="h-4 w-4" />
                 </a>

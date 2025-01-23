@@ -847,6 +847,7 @@ router.get('/history', async (req: Request, res: Response) => {
 });
 
 // Request a hint for current quest
+// Also creates the initial quest if there isn't one
 router.post('/session/:id/hint', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -874,6 +875,18 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
     const { screenshot } = req.body;
     if (!screenshot) {
       res.status(400).json({ error: 'Screenshot data is required' });
+      return;
+    }
+
+
+    const now = Date.now();
+    const lastUpdateAge = now - session.updated_at.getTime();
+
+    // if theres a screenshot
+    // and its less than 5 seconds old
+    // then assume this func was just called and abort for now
+    if(session.preview && lastUpdateAge < 5 * 1000) {
+      res.status(400).json({ error: 'Screenshot data was too recently uploaded' });
       return;
     }
 
@@ -962,84 +975,6 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
   }
 });
 
-// Generate initial quest for session
-router.post('/session/:id/quest', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const session = await DatabaseService.getRaceSession(id);
-
-    if (!session) {
-      res.status(404).json({ error: 'Session not found' });
-      return;
-    }
-
-    // Check if session is expired
-    if (await checkRaceExpiration(id)) {
-      res.status(400).json({ error: 'Race session has expired' });
-      return;
-    }
-
-    // Check for active guacamole session
-    const guacSession = await guacService.getActiveSession(session.address);
-    if (!guacSession) {
-      res.status(400).json({ error: 'No active guacamole session' });
-      return;
-    }
-
-    // Get screenshot from request body
-    const { screenshot } = req.body;
-    if (!screenshot) {
-      res.status(400).json({ error: 'Screenshot data is required' });
-      return;
-    }
-
-    // Store latest screenshot in session metadata
-    await DatabaseService.updateRaceSession(id, {
-      preview: screenshot,
-      updated_at: new Date()
-    });
-
-    // Create a proper image URL for OpenAI
-    const imageUrl = screenshot;
-
-    const questData = await generateQuest(imageUrl, session.prompt, session);
-
-    // Create quest event
-    const questEvent = {
-      type: 'quest',
-      message: questData.quest,
-      session: id,
-      frame: 0,
-      timestamp: Date.now(),
-      metadata: {
-        maxReward: questData.maxReward,
-        vm_id: guacSession.connectionId,
-        recording_id: guacSession.recordingId
-      }
-    };
-    await DatabaseService.createTrainingEvent(questEvent);
-
-    // Create hint event
-    const hintEvent = {
-      type: 'hint',
-      message: questData.hint,
-      session: id,
-      frame: 0,
-      timestamp: Date.now()
-    };
-    await DatabaseService.createTrainingEvent(hintEvent);
-
-    res.json({
-      quest: questData.quest,
-      hint: questData.hint,
-      maxReward: questData.maxReward,
-      events: [questEvent, hintEvent]
-    });
-  } catch (error) {
-    console.error('Error generating quest:', error);
-    res.status(500).json({ error: 'Failed to generate quest' });
-  }
-});
 
 // Export training events for selected race sessions
 router.get('/export', async (req: Request, res: Response) => {

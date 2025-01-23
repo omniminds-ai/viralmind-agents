@@ -24,6 +24,8 @@
   let currentQuest = '';
   let currentHint = '';
   let maxReward = 0;
+  let focusInterval: NodeJS.Timeout;
+  let hintInterval: NodeJS.Timeout;
 
   function handleError(message: string) {
     error = message;
@@ -114,76 +116,6 @@
     }
   }
 
-  async function generateInitialQuest(sessionId: string) {
-    try {
-      // Get screenshot from canvas
-      const outerIframe = document.querySelector(
-        'iframe[title="Guacamole Remote Desktop"]'
-      ) as HTMLIFrameElement;
-      if (!outerIframe) {
-        console.error('Outer iframe not found');
-        return;
-      }
-
-      // Access the outer iframe's document
-      const outerIframeDocument =
-        outerIframe.contentDocument || outerIframe.contentWindow?.document;
-      if (!outerIframeDocument) {
-        console.error('Could not access iframe document');
-        return;
-      }
-
-      // Locate the canvas element inside the iframe
-      const canvas = outerIframeDocument.querySelector('canvas') as HTMLCanvasElement;
-      if (!canvas) {
-        console.error('Canvas element not found inside iframe');
-        return;
-      }
-
-      // Get the canvas context and extract as image
-      let imageData;
-      try {
-        imageData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG with 70% quality
-      } catch (err) {
-        console.error('Error capturing canvas content:', err);
-        return;
-      }
-
-      const res = await fetch(`/api/races/session/${sessionId}/quest`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          screenshot: imageData
-        })
-      });
-
-      if (!res.ok) {
-        console.error('Failed to generate initial quest');
-        return;
-      }
-
-      const data = await res.json();
-      currentQuest = data.quest;
-      currentHint = data.hint;
-      maxReward = data.maxReward;
-
-      // Add events to training log
-      data.events?.forEach((event: any) => {
-        trainingEvents.addEvent({
-          type: event.type,
-          message: event.message,
-          timestamp: event.timestamp,
-          frame: event.frame,
-          metadata: event.metadata
-        });
-      });
-    } catch (err) {
-      console.error('Error generating initial quest:', err);
-    }
-  }
-
   async function initializeRace() {
     // Wait a bit for wallet to initialize
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -237,7 +169,7 @@
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Generate initial quest
-        await generateInitialQuest(sessionId);
+        await requestHint();
 
         isLoading = false;
       } catch (err) {
@@ -325,7 +257,7 @@
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         // Generate initial quest
-        await generateInitialQuest(data.sessionId);
+        await requestHint();
 
         isLoading = false;
       } catch (err) {
@@ -406,11 +338,7 @@
 
     // Set up interval for hint requests after a delay
     setTimeout(() => {
-      const hintInterval = setInterval(requestHint, 5000); // Request hints every 5 seconds
-      return () => {
-        if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
-        clearInterval(hintInterval);
-      };
+      hintInterval = setInterval(requestHint, 5000); // Request hints every 5 seconds
     }, 5000); // Wait 5 seconds before starting hint requests
 
     // Start polling for session status
@@ -424,7 +352,7 @@
     document.addEventListener('keydown', refocusGuacamole);
 
     // Set up interval to constantly try to refocus
-    const focusInterval = setInterval(refocusGuacamole, 100);
+    focusInterval = setInterval(refocusGuacamole, 100);
 
     // Subscribe to activeRace store to handle expiration
     const unsubscribe = activeRace.subscribe((race) => {
@@ -450,6 +378,8 @@
     });
     if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
     if (unsubscribeTraining) unsubscribeTraining();
+    if (focusInterval) clearInterval(focusInterval);
+    if (hintInterval) clearInterval(hintInterval);
     stopPolling();
   });
 </script>
