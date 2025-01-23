@@ -576,9 +576,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
         // Kill any active connections for this session
         for (const connection of Object.values(activeConnectionsMap)) {
           try {
-            await guacService.killConnection(
-              connection.identifier
-            );
+            await guacService.killConnection(connection.identifier);
           } catch (error) {
             console.error('Error killing connection:', error);
           }
@@ -589,6 +587,39 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
           session.address,
           session.vm_credentials.guacConnectionId
         );
+
+        // remove user access to the VPS
+        const instance = await DatabaseService.getGymVPS(session.vm_region);
+        const vpsService = new GymVPSService({
+          ip: instance.ip,
+          username: instance.username,
+          privateKey: instance.ssh_keypair.private
+        });
+        await vpsService.removeTrainer(session.vm_credentials?.username!);
+
+        // save recording to s3 if we have a video path
+        const sessionEvents = await TrainingEvent.find({
+          session: id
+        }).sort({ timestamp: 1 }); // Sort by timestamp ascending
+
+        if (sessionEvents.length > 0) {
+          const recordingId = sessionEvents[0].metadata?.recording_id;
+
+          if (recordingId) {
+            const s3Service = new AWSS3Service(
+              process.env.AWS_ACCESS_KEY,
+              process.env.AWS_SECRET_KEY
+            );
+            await s3Service.saveItem({
+              bucket: 'training-gym',
+              file: `${guacService.recordingsPath}/${recordingId}`,
+              name: `${session.vm_credentials?.username}-${id}-recording`
+            });
+            // delete recording
+            await unlink(`${guacService.recordingsPath}/${recordingId}`);
+          }
+        }
+        // session cleanup done
       } catch (error) {
         console.log('Error cleaning up Guacamole session.');
         // parse axios errors because they're wildly long
@@ -600,36 +631,9 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
             message: err.response?.statusText,
             details: err.response?.data
           });
+        } else {
+          console.log(error);
         }
-      }
-    }
-
-    // remove user access to the VPS
-    const instance = await DatabaseService.getGymVPS(session.vm_region);
-    const vpsService = new GymVPSService({
-      ip: instance.ip,
-      username: instance.username,
-      privateKey: instance.ssh_keypair.private
-    });
-    await vpsService.removeTrainer(session.vm_credentials?.username!);
-
-    // save recording to s3 if we have a video path
-    const sessionEvents = await TrainingEvent.find({
-      session: id
-    }).sort({ timestamp: 1 }); // Sort by timestamp ascending
-
-    if (sessionEvents.length > 0) {
-      const recordingId = sessionEvents[0].metadata?.recording_id;
-
-      if (recordingId) {
-        const s3Service = new AWSS3Service('', '');
-        await s3Service.saveItem({
-          bucket: 'training-gym',
-          file: `${guacService.recordingsPath}/${recordingId}`,
-          name: `${session.vm_credentials?.username}-${id}-recording`
-        });
-        // delete recording
-        await unlink(`${guacService.recordingsPath}/${recordingId}`);
       }
     }
 
@@ -685,13 +689,6 @@ async function checkRaceExpiration(id: string): Promise<boolean> {
   // 1. Session is older than 15 minutes OR
   // 2. No updates in the last minute
   if (sessionAge > 15 * 60 * 1000 || lastUpdateAge > 60 * 1000) {
-    // Check if there's an active guacamole session
-    const guacSession = await guacService.getActiveSession(session.address);
-    if (guacSession) {
-      // Remove READ permission before stopping
-      await guacService.removeReadPermission(session.address, guacSession.connectionId);
-    }
-    // Stop the session
     await stopRaceSession(id);
     return true;
   }
@@ -935,24 +932,24 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
         maxReward: questData.maxReward,
         events: [questEvent, hintEvent]
       });
+    } else {
+      const result = await generateHint(
+        imageUrl,
+        latestQuestEvent.message,
+        session.prompt,
+        session,
+        maxReward,
+        hintHistory
+      );
+
+      // Clear generating hint flag before returning
+      if (session._id) {
+        generatingHints.delete(session._id.toString());
+      }
+
+      // Return events for frontend to process
+      res.json(result);
     }
-
-    const result = await generateHint(
-      imageUrl,
-      latestQuestEvent!.message,
-      session.prompt,
-      session,
-      maxReward,
-      hintHistory
-    );
-
-    // Clear generating hint flag before returning
-    if (session._id) {
-      generatingHints.delete(session._id.toString());
-    }
-
-    // Return events for frontend to process
-    res.json(result);
   } catch (error) {
     console.error('Error generating hint:', error);
     res.status(500).json({ error: 'Failed to generate hint' });
