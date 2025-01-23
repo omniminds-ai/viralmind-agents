@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
@@ -74,7 +74,17 @@ export class GuacamoleService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error listing active connections:', error);
+      console.log('Error listing active connections.');
+      if ((error as Error).message.includes('AxiosError')) {
+        const err = error as AxiosError;
+        console.log({
+          code: err.code,
+          status: err.response?.status,
+          message: err.response?.statusText,
+          details: err.response?.data
+        });
+      }
+
       throw error;
     }
   }
@@ -212,8 +222,16 @@ export class GuacamoleService {
 
       console.log(`Granted permissions to user ${username}`);
     } catch (error) {
-      console.error('Error in createUser:', error);
-      throw error;
+      console.log('Error in Guac createUser.');
+      if ((error as Error).message.includes('AxiosError')) {
+        const err = error as AxiosError;
+        console.log({
+          code: err.code,
+          status: err.response?.status,
+          message: err.response?.statusText,
+          details: err.response?.data
+        });
+      }
     }
   }
 
@@ -240,7 +258,16 @@ export class GuacamoleService {
 
       return response.data.authToken;
     } catch (error) {
-      console.error('Error getting user token:', error);
+      console.log('Error getting guac user token');
+      if ((error as Error).message.includes('AxiosError')) {
+        const err = error as AxiosError;
+        console.log({
+          code: err.code,
+          status: err.response?.status,
+          message: err.response?.statusText,
+          details: err.response?.data
+        });
+      }
       throw error;
     }
   }
@@ -547,7 +574,17 @@ export class GuacamoleService {
         clientId: this.encodeClientIdentifier(activeConnection.connectionIdentifier)
       };
     } catch (error) {
-      console.error('Error getting active session:', error);
+      console.error('Error getting active session.');
+      if ((error as Error).message.includes('AxiosError')) {
+        const err = error as AxiosError;
+        console.log({
+          code: err.code,
+          status: err.response?.status,
+          message: err.response?.statusText,
+          details: err.response?.data
+        });
+      }
+
       return null;
     }
   }
@@ -655,27 +692,22 @@ export class GuacamoleService {
   }
 
   public async cleanupSession(token: string, connectionId: string) {
-    try {
-      // Delete the connection
-      await axios.delete(
-        `${this.baseUrl}/api/session/data/${this.dataSource}/connections/${connectionId}`,
-        {
-          headers: {
-            'Guacamole-Token': token
-          }
-        }
-      );
-
-      // Delete the token
-      await axios.delete(`${this.baseUrl}/api/tokens/${token}`, {
+    // Delete the connection
+    await axios.delete(
+      `${this.baseUrl}/api/session/data/${this.dataSource}/connections/${connectionId}`,
+      {
         headers: {
           'Guacamole-Token': token
         }
-      });
-    } catch (error) {
-      console.error('Error cleaning up Guacamole session:', error);
-      throw error;
-    }
+      }
+    );
+
+    // Delete the token
+    await axios.delete(`${this.baseUrl}/api/tokens/${token}`, {
+      headers: {
+        'Guacamole-Token': token
+      }
+    });
   }
 }
 

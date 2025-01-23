@@ -1,30 +1,30 @@
 # Development
 services:
-  windows:
-    image: dockurr/windows
-    container_name: windows
-    environment:
-      VERSION: "11"
-      USERNAME: "ai"
-      PASSWORD: "admin"
-      VNC_PASSWORD: "admin"
-      WIDTH: 1280
-      HEIGHT: 720
-    devices:
-      - /dev/kvm
-      - /dev/net/tun
-    volumes:
-      - ./vm/storage:/storage
-    cap_add:
-      - NET_ADMIN
-    ports:
-      - 8006:8006
-      - 5901:5901 # VNC port 
-      - 3390:3389 # RDP port
-      - 6950:6950 # service server
-    stop_grace_period: 2m
-    networks:
-      - node-network
+  # windows:
+  #   image: dockurr/windows
+  #   container_name: windows
+  #   environment:
+  #     VERSION: "11"
+  #     USERNAME: "ai"
+  #     PASSWORD: "admin"
+  #     VNC_PASSWORD: "admin"
+  #     WIDTH: 1280
+  #     HEIGHT: 720
+  #   devices:
+  #     - /dev/kvm
+  #     - /dev/net/tun
+  #   volumes:
+  #     - ./vm/storage:/storage
+  #   cap_add:
+  #     - NET_ADMIN
+  #   ports:
+  #     - 8006:8006
+  #     - 5901:5901 # VNC port 
+  #     - 3390:3389 # RDP port
+  #     - 6950:6950 # service server
+  #   stop_grace_period: 2m
+  #   networks:
+  #     - node-network
 
   # holy guacamole
   guacd:

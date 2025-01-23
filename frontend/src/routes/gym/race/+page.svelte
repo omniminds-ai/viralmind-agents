@@ -1,18 +1,21 @@
 <script lang="ts">
-import { onMount, onDestroy } from 'svelte';
-import TrainingLog from '$lib/components/gym/TrainingLog.svelte';
-import { playTrainingSound } from '$lib/utils/audio';
-import Timeline from '$lib/components/gym/Timeline.svelte';
-import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
-import { walletStore } from '$lib/walletStore';
-import { trainingEvents } from '$lib/stores/training';
-import { activeRace, startPolling, stopPolling } from '$lib/stores/activeRace';
-import type { RaceSession } from '$lib/types';
-import { findFastestRegion } from '$lib/utils';
-import { goto } from '$app/navigation';
+  import { onMount, onDestroy } from 'svelte';
+  import TrainingLog from '$lib/components/gym/TrainingLog.svelte';
+  import { playTrainingSound } from '$lib/utils/audio';
+  import Timeline from '$lib/components/gym/Timeline.svelte';
+  import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
+  import { walletStore } from '$lib/walletStore';
+  import { trainingEvents } from '$lib/stores/training';
+  import { activeRace, startPolling, stopPolling } from '$lib/stores/activeRace';
+  import type { RaceSession } from '$lib/types';
+  import { findFastestRegion } from '$lib/utils';
+  import { goto } from '$app/navigation';
 
   // Initialize with empty URLSearchParams for SSR
-  let urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams('');
+  let urlParams =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams('');
   let isLoading = true;
   let hasShownWalletMessage = false;
   let startTime: number;
@@ -38,14 +41,17 @@ import { goto } from '$app/navigation';
 
     try {
       // Get screenshot from canvas
-      const outerIframe = document.querySelector('iframe[title="Guacamole Remote Desktop"]') as HTMLIFrameElement;
+      const outerIframe = document.querySelector(
+        'iframe[title="Guacamole Remote Desktop"]'
+      ) as HTMLIFrameElement;
       if (!outerIframe) {
         console.error('Outer iframe not found');
         return;
       }
 
       // Access the outer iframe's document
-      const outerIframeDocument = outerIframe.contentDocument || outerIframe.contentWindow?.document;
+      const outerIframeDocument =
+        outerIframe.contentDocument || outerIframe.contentWindow?.document;
       if (!outerIframeDocument) {
         console.error('Could not access iframe document');
         return;
@@ -111,14 +117,17 @@ import { goto } from '$app/navigation';
   async function generateInitialQuest(sessionId: string) {
     try {
       // Get screenshot from canvas
-      const outerIframe = document.querySelector('iframe[title="Guacamole Remote Desktop"]') as HTMLIFrameElement;
+      const outerIframe = document.querySelector(
+        'iframe[title="Guacamole Remote Desktop"]'
+      ) as HTMLIFrameElement;
       if (!outerIframe) {
         console.error('Outer iframe not found');
         return;
       }
 
       // Access the outer iframe's document
-      const outerIframeDocument = outerIframe.contentDocument || outerIframe.contentWindow?.document;
+      const outerIframeDocument =
+        outerIframe.contentDocument || outerIframe.contentWindow?.document;
       if (!outerIframeDocument) {
         console.error('Could not access iframe document');
         return;
@@ -276,20 +285,20 @@ import { goto } from '$app/navigation';
           );
         }
 
-    // Store session data
-    const sessionData = {
-      status: 'active',
-      vm_credentials: {
-        ...data.vm_credentials
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    raceSession = sessionData;
-    startTime = Date.now();
+        // Store session data
+        const sessionData = {
+          status: 'active',
+          vm_credentials: {
+            ...data.vm_credentials
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        raceSession = sessionData;
+        startTime = Date.now();
 
-    // Start polling for session status
-    startPolling(data.sessionId);
+        // Start polling for session status
+        startPolling(data.sessionId);
 
         trainingEvents.addEvent({
           type: 'system',
@@ -300,7 +309,11 @@ import { goto } from '$app/navigation';
         // Update URL with session ID
         urlParams.set('s', data.sessionId);
         if (typeof window !== 'undefined') {
-          window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+          window.history.replaceState(
+            {},
+            '',
+            `${window.location.pathname}?${urlParams.toString()}`
+          );
         }
 
         if (sessionData.status !== 'active') {
@@ -323,31 +336,31 @@ import { goto } from '$app/navigation';
 
   let handleBeforeUnload: ((e: BeforeUnloadEvent) => void) | undefined;
 
-async function stopRace() {
-  const sessionId = urlParams.get('s');
-  if (sessionId) {
-    try {
-      const response = await fetch(`/api/races/session/${sessionId}/stop`, {
-        method: 'POST'
-      });
-      const data = await response.json();
-      if (data.totalRewards) {
-        trainingEvents.addEvent({
-          type: 'system',
-          message: `Total rewards for this session: ${data.totalRewards} $VIRAL`,
-          timestamp: Date.now()
+  async function stopRace() {
+    const sessionId = urlParams.get('s');
+    if (sessionId) {
+      try {
+        const response = await fetch(`/api/races/session/${sessionId}/stop`, {
+          method: 'POST'
         });
-        // Wait a moment for the message to be visible
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const data = await response.json();
+        if (data.totalRewards) {
+          trainingEvents.addEvent({
+            type: 'system',
+            message: `Total rewards for this session: ${data.totalRewards} $VIRAL`,
+            timestamp: Date.now()
+          });
+          // Wait a moment for the message to be visible
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error('Error stopping race:', error);
       }
-    } catch (error) {
-      console.error('Error stopping race:', error);
+      stopPolling();
     }
-    stopPolling();
+    if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+    goto('/gym');
   }
-  if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
-  goto('/gym');
-}
 
   // Function to refocus Guacamole iframe
   function refocusGuacamole() {
@@ -358,7 +371,9 @@ async function stopRace() {
     }
 
     // Get iframe and focus it
-    const iframe = document.querySelector('iframe[title="Guacamole Remote Desktop"]') as HTMLIFrameElement;
+    const iframe = document.querySelector(
+      'iframe[title="Guacamole Remote Desktop"]'
+    ) as HTMLIFrameElement;
     if (iframe) {
       iframe.focus();
     }
@@ -372,7 +387,7 @@ async function stopRace() {
     urlParams = new URLSearchParams(window.location.search);
 
     // Subscribe to training events
-    unsubscribeTraining = trainingEvents.subscribe(events => {
+    unsubscribeTraining = trainingEvents.subscribe((events) => {
       const latestEvent = events[events.length - 1];
       if (latestEvent) {
         playTrainingSound(latestEvent.type === 'reward' ? 'reward' : 'other');
@@ -407,7 +422,7 @@ async function stopRace() {
     // Add aggressive refocus handlers
     document.addEventListener('click', refocusGuacamole);
     document.addEventListener('keydown', refocusGuacamole);
-    
+
     // Set up interval to constantly try to refocus
     const focusInterval = setInterval(refocusGuacamole, 100);
 
@@ -444,13 +459,10 @@ async function stopRace() {
   <div class="flex flex-1 flex-col">
     <!-- Guacamole Stream -->
     <div class="flex flex-1 items-center justify-center p-6">
-      <div
-        class="overflow-hidden rounded-sm bg-black/50 shadow-lg"
-        style="width: 1280px; height: 800px;"
-      >
+      <div class="overflow-hidden rounded-sm bg-black/50 shadow-lg">
         <div class="relative h-full w-full">
           {#if raceSession?.vm_credentials?.guacToken}
-            <div class="absolute inset-0 focus-within:ring-2 focus-within:ring-blue-500 rounded-sm">
+            <div class="absolute inset-0 rounded-sm focus-within:ring-2 focus-within:ring-blue-500">
               <iframe
                 src={`/guacamole/#/client/${raceSession.vm_credentials.guacClientId}?token=${raceSession.vm_credentials.guacToken}`}
                 title="Guacamole Remote Desktop"
@@ -462,12 +474,7 @@ async function stopRace() {
 
           <!-- Quest Overlay -->
           {#if currentQuest}
-            <QuestOverlay
-              quest={currentQuest}
-              hint={currentHint}
-              {maxReward}
-              isHintActive={true}
-            />
+            <QuestOverlay quest={currentQuest} hint={currentHint} {maxReward} isHintActive={true} />
           {/if}
         </div>
       </div>

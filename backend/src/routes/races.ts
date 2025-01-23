@@ -19,6 +19,7 @@ import { VPSRegion } from '../services/gym-vps/types.ts';
 import { TreasuryService } from '../services/treasury/index.ts';
 import { AWSS3Service } from '../services/aws/index.ts';
 import { unlink } from 'fs/promises';
+import { AxiosError } from 'axios';
 
 async function generateQuest(imageUrl: string, prompt: string, session: RaceSessionDocument) {
   try {
@@ -623,7 +624,17 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
           session.vm_credentials.guacConnectionId
         );
       } catch (error) {
-        console.error('Error cleaning up Guacamole session:', error);
+        console.log('Error cleaning up Guacamole session.');
+        // parse axios errors because they're wildly long
+        if ((error as Error).name.includes('AxiosError')) {
+          const err = error as AxiosError;
+          console.log({
+            code: err.code,
+            status: err.response?.status,
+            message: err.response?.statusText,
+            details: err.response?.data
+          });
+        }
       }
     }
 
