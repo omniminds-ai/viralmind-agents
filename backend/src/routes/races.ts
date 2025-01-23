@@ -878,16 +878,22 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       return;
     }
 
-
-    const now = Date.now();
-    const lastUpdateAge = now - session.updated_at.getTime();
-
-    // if theres a screenshot
-    // and its less than 5 seconds old
-    // then assume this func was just called and abort for now
-    if(session.preview && lastUpdateAge < 5 * 1000) {
-      res.status(400).json({ error: 'Screenshot data was too recently uploaded' });
-      return;
+    // if theres a screenshot but no initial quest
+    // then assume the initial quest is still generating & abort
+    if(session.preview) {
+      const latestQuestEvent = await TrainingEvent.findOne(
+        { session: id, type: 'quest' },
+        {},
+        { sort: { timestamp: -1 } }
+      );
+      
+      if (!latestQuestEvent) {
+        res.status(202).json({ 
+          message: 'Initial quest is still generating',
+          isGenerating: true 
+        });
+        return;
+      }
     }
 
     // Store latest screenshot in session metadata

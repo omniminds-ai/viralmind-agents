@@ -24,7 +24,7 @@
 </script>
 
 <div
-  class="fixed left-0 right-0 top-0 z-50 border-b border-purple-500/30 shadow-[-4px_0_20px_rgba(149,117,205,0.1)] transition-all duration-300"
+  class="fixed left-0 right-0 top-0 z-50 border-b border-purple-500/30 shadow-[-4px_0_20px_rgba(149,117,205,0.1)] transition-all duration-300 pointer-events-none"
 >
   <!-- Blurred background that shows on scroll -->
   <div
@@ -33,7 +33,7 @@
     class:opacity-100={isScrolled}
   ></div>
 
-  <div class="relative z-10 mx-auto max-w-7xl px-6">
+  <div class="relative z-10 mx-auto max-w-7xl px-6 pointer-events-auto">
     <div class="flex h-16 items-center justify-between">
       <!-- Left side with back button and title -->
       <div class="flex items-center space-x-6">

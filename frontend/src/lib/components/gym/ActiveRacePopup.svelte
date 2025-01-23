@@ -47,7 +47,7 @@
 {#if $activeRace && !isRacePage}
   <a 
     href="/gym/race?s={$activeRace.sessionId}"
-    class="fixed bottom-6 right-6 bg-zinc-900/95 rounded-xl shadow-2xl overflow-hidden cursor-pointer hover:scale-[1.02] hover:shadow-blue-500/20 transition-all duration-200 z-50 block no-underline border border-zinc-800/50 backdrop-blur-sm"
+    class="fixed bottom-6 right-6 bg-zinc-900/95 rounded-xl shadow-2xl overflow-hidden cursor-pointer hover:scale-[1.02] hover:shadow-blue-500/20 transition-all duration-200 z-40 block no-underline border border-zinc-800/50 backdrop-blur-sm"
   >
     {#if $activeRace.preview}
       <div class="relative w-64 h-40">

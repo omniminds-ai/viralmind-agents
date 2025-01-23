@@ -91,11 +91,12 @@
       }
 
       const data = await res.json();
+      console.log(data);
 
-      // Update quest if completed
-      if (data.isCompleted && data.newQuest) {
-        currentQuest = data.newQuest;
-        maxReward = data.maxReward;
+      // Update quest if one exists
+      if (data.quest) {
+        currentQuest = data.quest;
+        maxReward = data.maxReward || 0;
       }
 
       // Update hint

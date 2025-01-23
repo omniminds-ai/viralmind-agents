@@ -31,5 +31,7 @@
   }
 </script>
 
-<slot />
-<ActiveRacePopup />
+<!-- <div class="relative"> -->
+  <slot />
+  <ActiveRacePopup />
+<!-- </div> -->
