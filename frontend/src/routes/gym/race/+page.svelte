@@ -1,414 +1,120 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { io, Socket } from 'socket.io-client';
   import TrainingLog from '$lib/components/gym/TrainingLog.svelte';
+  import { playTrainingSound } from '$lib/utils/audio';
   import Timeline from '$lib/components/gym/Timeline.svelte';
-  import { walletStore } from '$lib/walletStore';
   import QuestOverlay from '$lib/components/gym/QuestOverlay.svelte';
-  import { Trophy, Users, Clock } from 'lucide-svelte';
+  import { walletStore } from '$lib/walletStore';
   import { trainingEvents } from '$lib/stores/training';
-  import loadingLoop from '$lib/assets/loading_loop.mp4';
-  import loadingDone from '$lib/assets/loading_done.mp4';
-  import loadingFail from '$lib/assets/loading_fail.mp4';
+  import { activeRace, startPolling, stopPolling } from '$lib/stores/activeRace';
   import type { RaceSession } from '$lib/types';
+  import { findFastestRegion } from '$lib/utils';
+  import { goto } from '$app/navigation';
 
-  let currentImage: string | null = null;
+  // Initialize with empty URLSearchParams for SSR
+  let urlParams =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search)
+      : new URLSearchParams('');
   let isLoading = true;
-  let isConnected = false;
-  let showLoadingDone = false;
-  let showLoadingFail = false;
   let hasShownWalletMessage = false;
-  let socket: Socket;
-  let width = 1280;
-  let height = 800;
   let startTime: number;
-  let currentFrame = 0;
   let raceSession: RaceSession | null = null;
   let error: string | null = null;
-  let timeRemaining = '-:--';
-  let participants = '--';
-  let rewardPool = '-- --';
+  let currentQuest = '';
+  let currentHint = '';
+  let maxReward = 0;
+  let focusInterval: NodeJS.Timeout;
+  let hintInterval: NodeJS.Timeout;
 
   function handleError(message: string) {
     error = message;
     isLoading = false;
-    showLoadingFail = true;
     trainingEvents.addEvent({
       type: 'system',
       message: `Error: ${message}`,
-      timestamp: Date.now(),
-      frame: 0
+      timestamp: Date.now()
     });
   }
 
-  async function loadSession(sessionId: string): Promise<RaceSession> {
+  async function requestHint() {
+    const sessionId = urlParams.get('s');
+    if (!sessionId || !raceSession?.vm_credentials) return;
+
     try {
-      trainingEvents.addEvent({
-        type: 'system',
-        message: `Loading session ${sessionId}...`,
-        timestamp: Date.now(),
-        frame: 0
-      });
-
-      const res = await fetch(`/api/races/session/${sessionId}`);
-      if (!res.ok) {
-        const data = await res.json();
-        const errorMsg = data.error || 'Failed to load session';
-        handleError(errorMsg);
-        throw new Error(errorMsg);
-      }
-      const session = await res.json();
-      raceSession = session;
-
-      trainingEvents.addEvent({
-        type: 'system',
-        message: `Session loaded successfully`,
-        timestamp: Date.now(),
-        frame: 0
-      });
-
-      return session;
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to load session';
-      handleError(errorMsg);
-      throw err;
-    }
-  }
-
-  function setupSocket(sessionData: RaceSession, sessionId: string) {
-    socket = io({
-      path: '/socket.io',
-      query: {
-        sessionId
-      }
-    });
-
-    socket.on('connect_error', (err) => {
-      handleError(`Failed to connect to VNC: ${err.message}`);
-      console.error('Socket connection error:', err);
-    });
-
-    socket.on('error', (err) => {
-      handleError(`Socket error: ${err.message}`);
-      console.error('Socket error:', err);
-    });
-
-    socket.on('connect', () => {
-      isConnected = true;
-      isLoading = false;
-      showLoadingDone = true;
-      startTime = Date.now();
-      trainingEvents.addEvent({
-        type: 'system',
-        message: 'Connected to VNC server',
-        timestamp: Date.now(),
-        frame: 0
-      });
-    });
-
-    socket.on('frame', (data) => {
-      currentImage = `data:image/jpeg;base64,${data.buffer}`;
-      width = data.width;
-      height = data.height;
-      currentFrame = data.frame;
-
-      if (canvas) {
-        canvas.width = width;
-        canvas.height = height;
-        ctx = canvas.getContext('2d');
-      }
-
-      // Reset showLoadingDone after first frame is recv
-      setTimeout(() => {
-        showLoadingDone = false;
-      }, 100);
-    });
-
-    socket.on('training_event', (data) => {
-      trainingEvents.addEvent({
-        ...data,
-        timestamp: Date.now() - startTime,
-        frame: currentFrame
-      });
-    });
-
-    socket.on('quest_update', (data) => {
-      currentQuest = data.quest;
-      currentHint = data.hint;
-      currentReward = data.maxReward;
-      isHintActive = true;
-    });
-
-    socket.on('hint_update', (data) => {
-      currentHint = data.hint;
-      isHintActive = true;
-    });
-  }
-
-  // Quest state
-  let currentQuest = '';
-  let currentHint = '';
-  let currentReward = 0;
-  let isHintActive = true;
-
-  function refreshHint() {
-    isHintActive = false;
-    setTimeout(() => socket?.emit('request_hint'), 1000);
-  }
-
-  interface DragPoint {
-    x: number;
-    y: number;
-    timestamp: number;
-    velocity?: {
-      x: number;
-      y: number;
-      magnitude: number;
-    };
-    acceleration?: {
-      x: number;
-      y: number;
-      magnitude: number;
-    };
-  }
-
-  // Track drag state
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let dragStartClientX = 0;
-  let dragStartClientY = 0;
-  let dragThreshold = 10;
-  let dragPoints: DragPoint[] = [];
-  let dragButton = 0; // 0 = left, 1 = right, 2 = middle
-  let canvas: HTMLCanvasElement;
-  let ctx: CanvasRenderingContext2D | null = null;
-  let fadeTimeout: NodeJS.Timeout;
-
-  // Convert client coordinates to VNC coordinates
-  function getVNCCoordinates(e: MouseEvent & { currentTarget: HTMLImageElement }) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) * (width / rect.width));
-    const y = Math.floor((e.clientY - rect.top) * (height / rect.height));
-    return { x, y };
-  }
-
-  function clearCanvas() {
-    if (ctx) {
-      ctx.clearRect(0, 0, width, height);
-    }
-  }
-
-  function drawDragLine() {
-    if (!ctx || dragPoints.length < 2) return;
-
-    ctx.clearRect(0, 0, width, height);
-    ctx.beginPath();
-    ctx.moveTo(dragPoints[0].x, dragPoints[0].y);
-
-    for (let i = 1; i < dragPoints.length; i++) {
-      ctx.lineTo(dragPoints[i].x, dragPoints[i].y);
-    }
-
-    ctx.strokeStyle = 'rgba(147, 51, 234, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  function startFadeOut() {
-    if (!ctx) return;
-
-    let opacity = 0.5;
-    const fade = () => {
-      if (!ctx || opacity <= 0) {
-        clearCanvas();
+      // Get screenshot from canvas
+      const outerIframe = document.querySelector(
+        'iframe[title="Guacamole Remote Desktop"]'
+      ) as HTMLIFrameElement;
+      if (!outerIframe) {
+        console.error('Outer iframe not found');
         return;
       }
 
-      ctx.clearRect(0, 0, width, height);
-      ctx.beginPath();
-      ctx.moveTo(dragPoints[0].x, dragPoints[0].y);
-
-      for (let i = 1; i < dragPoints.length; i++) {
-        ctx.lineTo(dragPoints[i].x, dragPoints[i].y);
+      // Access the outer iframe's document
+      const outerIframeDocument =
+        outerIframe.contentDocument || outerIframe.contentWindow?.document;
+      if (!outerIframeDocument) {
+        console.error('Could not access iframe document');
+        return;
       }
 
-      ctx.strokeStyle = `rgba(147, 51, 234, ${opacity})`;
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      // Locate the canvas element inside the iframe
+      const canvas = outerIframeDocument.querySelector('canvas') as HTMLCanvasElement;
+      if (!canvas) {
+        console.error('Canvas element not found inside iframe');
+        return;
+      }
 
-      opacity -= 0.05;
-      fadeTimeout = setTimeout(fade, 20);
-    };
+      // Get the canvas context and extract as image
+      let imageData;
+      try {
+        imageData = canvas.toDataURL('image/jpeg', 0.7); // Use JPEG with 70% quality
+      } catch (err) {
+        console.error('Error capturing canvas content:', err);
+        return;
+      }
 
-    fade();
-  }
+      const res = await fetch(`/api/races/session/${sessionId}/hint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          screenshot: imageData
+        })
+      });
 
-  function calculateMotion(points: DragPoint[]): DragPoint[] {
-    if (points.length < 2) return points;
+      if (!res.ok) {
+        console.error('Failed to get hint');
+        return;
+      }
 
-    const result: DragPoint[] = [];
+      const data = await res.json();
+      console.log(data);
 
-    // First point has no velocity or acceleration
-    result.push({
-      ...points[0],
-      velocity: undefined,
-      acceleration: undefined
-    });
+      // Update quest if one exists
+      if (data.quest || data.newQuest) {
+        currentQuest = data.newQuest || data.quest;
+        maxReward = data.maxReward || 0;
+      }
 
-    // Calculate velocities first
-    for (let i = 1; i < points.length; i++) {
-      const point = points[i];
-      const prev = points[i - 1];
-      const dt = (point.timestamp - prev.timestamp) / 1000; // Convert to seconds
+      // Update hint
+      currentHint = data.hint;
 
-      if (dt === 0) {
-        result.push({
-          ...point,
-          velocity: undefined,
-          acceleration: undefined
+      // Add events to training log
+      data.events?.forEach((event: any) => {
+        trainingEvents.addEvent({
+          type: event.type,
+          message: event.message,
+          timestamp: event.timestamp,
+          frame: event.frame,
+          metadata: event.metadata
         });
-        continue;
-      }
-
-      // Calculate velocity
-      const dx = point.x - prev.x;
-      const dy = point.y - prev.y;
-      const velocity = {
-        x: dx / dt,
-        y: dy / dt,
-        magnitude: Math.sqrt((dx / dt) ** 2 + (dy / dt) ** 2)
-      };
-
-      // Calculate acceleration if we have enough points and previous velocity exists
-      let acceleration = undefined;
-      const prevPoint = result[i - 1];
-      if (
-        i > 1 &&
-        prevPoint.velocity &&
-        prevPoint.velocity.x !== undefined &&
-        prevPoint.velocity.y !== undefined
-      ) {
-        const dvx = velocity.x - prevPoint.velocity.x;
-        const dvy = velocity.y - prevPoint.velocity.y;
-        acceleration = {
-          x: dvx / dt,
-          y: dvy / dt,
-          magnitude: Math.sqrt((dvx / dt) ** 2 + (dvy / dt) ** 2)
-        };
-      }
-
-      result.push({
-        ...point,
-        velocity,
-        acceleration
       });
+    } catch (err) {
+      console.error('Error requesting hint:', err);
     }
-
-    return result;
-  }
-
-  // Handle mouse events
-  function handleMouseMove(e: MouseEvent & { currentTarget: HTMLImageElement }) {
-    e.preventDefault();
-
-    const coords = getVNCCoordinates(e);
-    const now = Date.now();
-
-    if (dragStartClientX && dragStartClientY) {
-      const dx = e.clientX - dragStartClientX;
-      const dy = e.clientY - dragStartClientY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance >= dragThreshold) {
-        if (!isDragging) {
-          isDragging = true;
-          dragPoints = [
-            {
-              ...{ x: dragStartX, y: dragStartY },
-              timestamp: now - startTime
-            }
-          ];
-        }
-      }
-    }
-
-    if (isDragging) {
-      dragPoints.push({
-        ...coords,
-        timestamp: now - startTime
-      });
-      drawDragLine();
-    } else {
-      socket?.emit('vnc_mouse', { ...coords, button: 0, frame: currentFrame });
-    }
-  }
-
-  function handleMouseDown(e: MouseEvent & { currentTarget: HTMLImageElement }) {
-    e.preventDefault();
-
-    const coords = getVNCCoordinates(e);
-    const now = Date.now();
-
-    dragStartX = coords.x;
-    dragStartY = coords.y;
-    dragStartClientX = e.clientX;
-    dragStartClientY = e.clientY;
-    dragButton = e.button;
-    dragPoints = [
-      {
-        ...coords,
-        timestamp: now - startTime
-      }
-    ];
-  }
-
-  function handleMouseUp(e: MouseEvent & { currentTarget: HTMLImageElement }) {
-    e.preventDefault();
-
-    const coords = getVNCCoordinates(e);
-    const now = Date.now();
-
-    dragPoints.push({
-      ...coords,
-      timestamp: now - startTime
-    });
-
-    if (isDragging) {
-      const trajectoryWithMotion = calculateMotion(dragPoints);
-      const dragAction =
-        dragButton === 0
-          ? 'left_click_drag'
-          : dragButton === 2
-            ? 'right_click_drag'
-            : 'middle_click_drag';
-      socket?.emit('vnc_mouse', {
-        action: dragAction,
-        trajectory: trajectoryWithMotion,
-        frame: currentFrame
-      });
-      startFadeOut();
-      refreshHint(); // only refresh hint on user input
-    } else {
-      // This was a click, not a drag - send both mouse down event
-      socket?.emit('vnc_mouse', { ...coords, button: dragButton + 1, frame: currentFrame });
-      refreshHint(); // only refresh hint on user input
-    }
-
-    isDragging = false;
-    dragStartX = 0;
-    dragStartY = 0;
-    dragStartClientX = 0;
-    dragStartClientY = 0;
-    dragPoints = [];
-  }
-
-  function handleWheel(e: WheelEvent) {
-    e.preventDefault();
-
-    const action = e.deltaY > 0 ? 'scroll_down' : 'scroll_up';
-    socket?.emit('vnc_mouse', { action, frame: currentFrame });
-    refreshHint(); // only refresh hint on user input
   }
 
   async function initializeRace() {
@@ -422,25 +128,63 @@
       return;
     }
 
+    // Check if there's already an active race
+    if ($activeRace && $activeRace.sessionId !== urlParams.get('s')) {
+      if (confirm('You have another active race session. Would you like to return to it?')) {
+        goto(`/gym/race?s=${$activeRace.sessionId}`);
+        return;
+      } else {
+        // Stop the other session
+        await fetch(`/api/races/session/${$activeRace.sessionId}/stop`, {
+          method: 'POST'
+        });
+        stopPolling();
+      }
+    }
+
     console.log('using address', publicKey.toBase58());
 
-    const urlParams = new URLSearchParams(window.location.search);
     const raceId = urlParams.get('id');
     const sessionId = urlParams.get('s');
 
-    if (!raceId) {
+    if (!raceId && !sessionId) {
       handleError('No race ID provided');
       return;
     }
 
-    // If no session ID, start a new race session
-    if (!sessionId) {
+    if (sessionId) {
+      try {
+        // Get existing session
+        const res = await fetch(`/api/races/session/${sessionId}`);
+        if (!res.ok) {
+          const data = await res.json();
+          handleError(data.error || 'Failed to load session');
+          return;
+        }
+
+        const data = await res.json();
+        raceSession = data;
+        startTime = new Date(data.created_at).getTime();
+
+        // Wait for iframe and canvas to load
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // Generate initial quest
+        await requestHint();
+
+        isLoading = false;
+      } catch (err) {
+        handleError(err instanceof Error ? err.message : 'Failed to load session');
+      }
+    } else {
+      // get closest aws region... default to us-east
+      const region = (await findFastestRegion()) || 'us-east-2';
+
       try {
         trainingEvents.addEvent({
           type: 'system',
           message: `Starting race ${raceId}...`,
-          timestamp: Date.now(),
-          frame: 0
+          timestamp: Date.now()
         });
 
         const res = await fetch(`/api/races/${raceId}/start`, {
@@ -449,7 +193,8 @@
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            address: publicKey.toBase58()
+            address: publicKey.toBase58(),
+            region
           })
         });
 
@@ -462,54 +207,126 @@
 
         const data = await res.json();
 
+        // Set up Guacamole auth token
+        if (data.vm_credentials?.guacToken && typeof window !== 'undefined') {
+          localStorage.setItem(
+            'GUAC_AUTH',
+            JSON.stringify({
+              authToken: data.vm_credentials.guacToken,
+              dataSource: 'mysql'
+            })
+          );
+        }
+
+        // Store session data
+        const sessionData = {
+          status: 'active',
+          vm_credentials: {
+            ...data.vm_credentials
+          },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        raceSession = sessionData;
+        startTime = Date.now();
+
+        // Start polling for session status
+        startPolling(data.sessionId);
+
         trainingEvents.addEvent({
           type: 'system',
           message: `Race started successfully`,
-          timestamp: Date.now(),
-          frame: 0
+          timestamp: Date.now()
         });
 
         // Update URL with session ID
         urlParams.set('s', data.sessionId);
-        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(
+            {},
+            '',
+            `${window.location.pathname}?${urlParams.toString()}`
+          );
+        }
 
-        // Load the new session
-        const sessionData = await loadSession(data.sessionId);
         if (sessionData.status !== 'active') {
           handleError('Session is not active');
           return;
         }
-        setupSocket(sessionData, data.sessionId);
+
+        // Wait for iframe and canvas to load
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // Generate initial quest
+        await requestHint();
+
+        isLoading = false;
       } catch (err) {
         handleError(err instanceof Error ? err.message : 'Failed to load session');
       }
     }
   }
 
-  let handleBeforeUnload:
-    | {
-        (e: BeforeUnloadEvent): void;
-        (this: Window, ev: BeforeUnloadEvent): any;
-        (this: Window, ev: BeforeUnloadEvent): any;
-      }
-    | undefined;
+  let handleBeforeUnload: ((e: BeforeUnloadEvent) => void) | undefined;
 
-  function stopRace() {
-    if (socket) {
-      socket.disconnect();
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get('s');
-      if (sessionId) {
-        fetch(`/api/races/session/${sessionId}/stop`, {
+  async function stopRace() {
+    const sessionId = urlParams.get('s');
+    if (sessionId) {
+      try {
+        const response = await fetch(`/api/races/session/${sessionId}/stop`, {
           method: 'POST'
-        }).catch(console.error);
+        });
+        const data = await response.json();
+        if (data.totalRewards) {
+          trainingEvents.addEvent({
+            type: 'system',
+            message: `Total rewards for this session: ${data.totalRewards} $VIRAL`,
+            timestamp: Date.now()
+          });
+          // Wait a moment for the message to be visible
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error('Error stopping race:', error);
       }
-      if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.location.href = '/gym';
+      stopPolling();
+    }
+    if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+    goto('/gym');
+  }
+
+  // Function to refocus Guacamole iframe
+  function refocusGuacamole() {
+    // Do not refocus if focus is on an input field
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.tagName !== 'IFRAME') {
+      return;
+    }
+
+    // Get iframe and focus it
+    const iframe = document.querySelector(
+      'iframe[title="Guacamole Remote Desktop"]'
+    ) as HTMLIFrameElement;
+    if (iframe) {
+      iframe.focus();
     }
   }
 
+  // Subscribe to training events to play sounds
+  let unsubscribeTraining: () => void;
+
   onMount(() => {
+    // Update URL params with actual window location
+    urlParams = new URLSearchParams(window.location.search);
+
+    // Subscribe to training events
+    unsubscribeTraining = trainingEvents.subscribe((events) => {
+      const latestEvent = events[events.length - 1];
+      if (latestEvent) {
+        playTrainingSound(latestEvent.type === 'reward' ? 'reward' : 'other');
+      }
+    });
+
     // Add beforeunload handler
     handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -517,144 +334,87 @@
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.altKey || e.metaKey) {
-        e.preventDefault();
-      }
-
-      let key = '';
-      if (e.key === ' ') key = 'space';
-      else if (e.key === '+') key = 'plus';
-      else if (e.key === 'Enter') key = 'return';
-      else if (e.key === 'Escape') key = 'escape';
-      else if (e.key === 'Backspace') key = 'backspace';
-      else if (e.key === 'Delete') key = 'delete';
-      else if (e.key === 'Tab') key = 'tab';
-      else if (e.key.startsWith('Arrow')) key = e.key.slice(5).toLowerCase();
-      else if (e.key === 'Home') key = 'home';
-      else if (e.key === 'End') key = 'end';
-      else if (e.key === 'PageUp') key = 'pageup';
-      else if (e.key === 'PageDown') key = 'pagedown';
-      else if (e.key.match(/^F\d+$/)) key = e.key.toLowerCase();
-      else key = e.key;
-
-      const parts = [];
-      if (e.ctrlKey) parts.push('ctrl');
-      if (e.altKey) parts.push('alt');
-      if (e.shiftKey && (key.length > 1 || key === 'tab')) {
-        parts.push('shift');
-      }
-
-      if (key.length === 1) {
-        parts.push(e.key);
-      } else {
-        parts.push(key.toLowerCase());
-      }
-
-      const keyCombo = parts.join('+');
-      socket?.emit('vnc_keypress', { key: keyCombo, frame: currentFrame });
-      refreshHint(); // only refresh hint on user input
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    if (canvas) {
-      ctx = canvas.getContext('2d');
-    }
-
     // Initialize the race
     initializeRace();
 
+    // Set up interval for hint requests after a delay
+    setTimeout(() => {
+      hintInterval = setInterval(requestHint, 5000); // Request hints every 5 seconds
+    }, 5000); // Wait 5 seconds before starting hint requests
+
+    // Start polling for session status
+    const sessionId = urlParams.get('s');
+    if (sessionId) {
+      startPolling(sessionId);
+    }
+
+    // Add aggressive refocus handlers
+    document.addEventListener('click', refocusGuacamole);
+    document.addEventListener('keydown', refocusGuacamole);
+
+    // Set up interval to constantly try to refocus
+    focusInterval = setInterval(refocusGuacamole, 100);
+
+    // Subscribe to activeRace store to handle expiration
+    const unsubscribe = activeRace.subscribe((race) => {
+      if (!race && sessionId) {
+        // Session expired, redirect to gym
+        goto('/gym');
+      }
+    });
+
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', refocusGuacamole);
+      document.removeEventListener('keydown', refocusGuacamole);
+      clearInterval(focusInterval);
+      unsubscribe();
     };
   });
 
   onDestroy(() => {
-    if (socket) {
-      socket.disconnect();
-      trainingEvents.addEvent({
-        type: 'system',
-        message: 'Disconnected from VNC server',
-        timestamp: Date.now(),
-        frame: currentFrame
-      });
-    }
-    if (fadeTimeout) {
-      clearTimeout(fadeTimeout);
-    }
+    trainingEvents.addEvent({
+      type: 'system',
+      message: 'Race session ended',
+      timestamp: Date.now()
+    });
+    if (handleBeforeUnload) window.removeEventListener('beforeunload', handleBeforeUnload);
+    if (unsubscribeTraining) unsubscribeTraining();
+    if (focusInterval) clearInterval(focusInterval);
+    if (hintInterval) clearInterval(hintInterval);
+    stopPolling();
   });
 </script>
 
 <div class="flex h-[calc(100vh-theme(spacing.16)-theme(spacing.20))] bg-black">
   <!-- Main Content -->
   <div class="flex flex-1 flex-col">
-    <!-- VNC Stream -->
+    <!-- Guacamole Stream -->
     <div class="flex flex-1 items-center justify-center p-6">
       <div
-        class="overflow-hidden rounded-xl bg-black/50 shadow-lg"
-        style="width: {width}px; height: {height}px;"
+        style="width: calc(100vw - 319px); height: calc(100vh - 300px);"
+        class="aspect-video w-full overflow-hidden rounded-sm bg-black/50 shadow-lg"
       >
-        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div class="relative h-full w-full">
-          {#if isLoading}
-            <video
-              src={loadingLoop}
-              autoplay
-              loop
-              muted
-              class="absolute inset-0 h-full w-full object-cover"
-            ></video>
+          {#if raceSession?.vm_credentials?.guacToken}
+            <div class="absolute inset-0 rounded-sm focus-within:ring-2 focus-within:ring-blue-500">
+              <iframe
+                src={`/guacamole/#/client/${raceSession.vm_credentials.guacClientId}?token=${raceSession.vm_credentials.guacToken}`}
+                title="Guacamole Remote Desktop"
+                class="h-full w-full border-0"
+                allow="clipboard-read; clipboard-write"
+              ></iframe>
+            </div>
           {/if}
-          {#if showLoadingDone}
-            <video
-              src={loadingDone}
-              autoplay
-              muted
-              class="absolute inset-0 h-full w-full object-cover"
-            ></video>
-          {/if}
-          {#if showLoadingFail}
-            <video
-              src={loadingFail}
-              autoplay
-              muted
-              class="absolute inset-0 h-full w-full object-cover"
-            ></video>
-          {/if}
-          {#if currentImage}
-            <img
-              src={currentImage}
-              alt="VNC stream"
-              class="absolute inset-0 h-full w-full cursor-crosshair select-none object-cover"
-              on:mousemove={handleMouseMove}
-              on:mousedown={handleMouseDown}
-              on:mouseup={handleMouseUp}
-              on:wheel={handleWheel}
-              on:contextmenu|preventDefault
-              draggable="false"
-            />
-          {/if}
-          <canvas
-            bind:this={canvas}
-            {width}
-            {height}
-            class="pointer-events-none absolute inset-0 h-full w-full"
-          ></canvas>
+
+          <!-- Quest Overlay -->
           {#if currentQuest}
-            <QuestOverlay
-              quest={currentQuest}
-              hint={currentHint}
-              maxReward={currentReward}
-              {isHintActive}
-            />
+            <QuestOverlay quest={currentQuest} hint={currentHint} {maxReward} isHintActive={true} />
           {/if}
         </div>
       </div>
     </div>
 
-    {#if isConnected}
+    {#if !isLoading}
       <Timeline {startTime} />
     {/if}
 
@@ -665,31 +425,6 @@
       >
         Stop Race
       </button>
-      <!-- <div class="grid grid-cols-3 gap-4">
-                <div class="bg-purple-950/30 rounded-xl p-4 border border-purple-500/20">
-                    <div class="flex items-center gap-2 text-purple-400 mb-2">
-                        <Clock size={20} />
-                        <span>Time Remaining</span>
-                    </div>
-                    <span class="text-2xl text-white font-medium">{timeRemaining}</span>
-                </div>
-                
-                <div class="bg-purple-950/30 rounded-xl p-4 border border-purple-500/20">
-                    <div class="flex items-center gap-2 text-purple-400 mb-2">
-                        <Users size={20} />
-                        <span>Participants</span>
-                    </div>
-                    <span class="text-2xl text-white font-medium">{participants}</span>
-                </div>
-                
-                <div class="bg-purple-950/30 rounded-xl p-4 border border-purple-500/20">
-                    <div class="flex items-center gap-2 text-purple-400 mb-2">
-                        <Trophy size={20} />
-                        <span>Reward Pool</span>
-                    </div>
-                    <span class="text-2xl text-white font-medium">{rewardPool}</span>
-                </div>
-            </div> -->
     </div>
   </div>
 

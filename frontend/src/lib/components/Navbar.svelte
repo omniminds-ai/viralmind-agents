@@ -4,6 +4,7 @@
   import { Dumbbell, Trophy, HelpCircle, Book, Coins, Menu, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
+  import { slide } from 'svelte/transition';
 
   let isScrolled = false;
   let isMobileMenuOpen = false;
@@ -112,6 +113,7 @@
     <!-- Mobile Navigation Menu -->
     {#if isMobileMenuOpen}
       <div
+        transition:slide
         class="absolute left-0 right-0 top-16 border-b border-white/10 bg-black/95 backdrop-blur-lg md:hidden"
       >
         <nav class="space-y-4 px-6 py-4">
@@ -149,7 +151,7 @@
           </a>
           <a
             href="/gym"
-            class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
+            class="flex items-center gap-3 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 px-2 py-2 text-black transition-colors"
           >
             <Dumbbell class="h-5 w-5" />
             Training Gym

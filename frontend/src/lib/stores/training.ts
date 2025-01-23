@@ -5,8 +5,14 @@ export interface TrainingEvent {
     type: 'task' | 'mouse' | 'keyboard' | 'scroll' | 'system' | 'hint' | 'quest' | 'reasoning' | 'reward';
     message: string;
     timestamp: number; // Unix timestamp in ms
-    frame: number; // VNC frame number
+    frame?: number; // VNC frame number
     coordinates?: { x: number; y: number };
+    metadata?: {
+        maxReward?: number;
+        scoreValue?: number;
+        rewardValue?: number;
+        transaction?: string;
+    };
 }
 
 export interface EventColors {

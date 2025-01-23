@@ -4,15 +4,8 @@ export const gymVPSSchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true },
     ip: { type: String, required: true },
-    droplet_id: { type: Number, required: true },
-    name: { type: String, required: true },
-    login: {
-      type: {
-        username: { type: String, required: true },
-        password: { type: String, required: true },
-      },
-      required: true,
-    },
+    region: { type: String, required: true },
+    username: { type: String, required: true },
     ssh_keypair: {
       type: {
         public: { type: String, required: true },
@@ -20,14 +13,15 @@ export const gymVPSSchema = new mongoose.Schema(
       },
       required: true,
     },
-    vnc: {
-      type: {
-        password: { type: String, required: true },
-      },
+    users: {
+      type: [
+        {
+          username: { type: String, required: true },
+          password: { type: String, required: true },
+        },
+      ],
       required: true,
     },
-    status: { type: String, enum: ["assigned", "open"], required: true },
-    address: { type: String, required: false },
   },
   { collection: "gym-servers" }
 );

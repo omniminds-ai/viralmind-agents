@@ -1,10 +1,7 @@
-import { EventEmitter } from "events";
-import { Buffer } from "buffer";
-
 declare namespace Express {
   export interface Request {
     user?: {
-      date_created: NativeDate;
+      date_created: Date;
       address?: string | null | undefined;
       api_key?: string | null | undefined;
     };
@@ -12,6 +9,8 @@ declare namespace Express {
 }
 
 declare module "vnc-rfb-client" {
+  import { EventEmitter } from "events";
+  import { Buffer } from "buffer";
   /** VNC client configuration options */
   export interface VncClientOptions {
     /** Enable debug logging */
@@ -86,7 +85,7 @@ declare module "vnc-rfb-client" {
    * Handles buffered socket data reading with various data type parsing capabilities.
    * Used internally by the VNC client to manage the RFB protocol data stream.
    */
-  declare class SocketBuffer {
+  export class SocketBuffer {
     buffer: Buffer;
     offset: number;
 
@@ -188,7 +187,7 @@ declare module "vnc-rfb-client" {
    * Supports multiple encodings, authentication methods, and provides
    * both synchronous and event-based interfaces for VNC operations.
    */
-  declare class VncClient extends EventEmitter {
+  export class VncClient extends EventEmitter {
     static readonly consts: {
       encodings: typeof encodings;
     };

@@ -1,12 +1,36 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { 
-    Trophy, Timer, MessagesSquare, ArrowRight, BellRing, 
-    Palette, Video, Layout, FileSpreadsheet, Globe2, 
-    MousePointer, Sparkles, Brain, DollarSign,
-    Coffee, Gamepad, Dice5, Monitor, Gamepad2,
-    Crosshair, Zap, Move, TrendingUp, LineChart,
-    Download, Upload, Cpu, Shield
+  import {
+    Trophy,
+    Timer,
+    MessagesSquare,
+    ArrowRight,
+    BellRing,
+    Palette,
+    Video,
+    Layout,
+    FileSpreadsheet,
+    Globe2,
+    MousePointer,
+    Sparkles,
+    Brain,
+    DollarSign,
+    Coffee,
+    Gamepad,
+    Dice5,
+    Monitor,
+    Gamepad2,
+    Crosshair,
+    Zap,
+    Move,
+    TrendingUp,
+    LineChart,
+    Download,
+    Upload,
+    Cpu,
+    Shield,
+    Book,
+    LucideComponent
   } from 'lucide-svelte';
   import FeaturedRace from '$lib/components/gym/FeaturedRace.svelte';
   import CategorySection from '$lib/components/gym/CategorySection.svelte';
@@ -14,24 +38,25 @@
   import FeaturedCarousel from '$lib/components/gym/FeaturedCarousel.svelte';
   import RaceWarningModal from '$lib/components/gym/RaceWarningModal.svelte';
 
-  import type { Race, ColorScheme } from '$lib/types';
+  import type { Race, ColorScheme, CarouselSlides } from '$lib/types';
+  import Button from '$lib/components/Button.svelte';
 
   // Icon mapping for each race ID
   const iconMap: Record<string, any> = {
-    'paint': Palette,
-    'office': FileSpreadsheet,
-    'video': Video,
-    'web': Globe2,
-    'miniwob': MousePointer,
-    'precision': Crosshair,
-    'speed': Zap,
-    'drag': Move,
-    'webgames': Gamepad,
-    'gambler': Dice5,
-    'trader': TrendingUp,
-    'hedgefund': LineChart,
-    'desktop': Monitor,
-    'wildcard': Brain,
+    paint: Palette,
+    office: FileSpreadsheet,
+    video: Video,
+    web: Globe2,
+    miniwob: MousePointer,
+    precision: Crosshair,
+    speed: Zap,
+    drag: Move,
+    webgames: Gamepad,
+    gambler: Dice5,
+    trader: TrendingUp,
+    hedgefund: LineChart,
+    desktop: Monitor,
+    wildcard: Brain,
     'paint-pro': Palette,
     'office-pro': FileSpreadsheet,
     'video-pro': Video,
@@ -49,26 +74,30 @@
   };
 
   let featuredRaces: Race[] = [];
-  
+
   async function fetchRaces() {
     try {
       const response = await fetch('/api/races');
       const races: Race[] = await response.json();
-      
+
       // Get a mix of free and staked races for featuring
       // Get wildcard race first
-      const wildcardRace = races.find(race => race.id === 'wildcard');
+      const wildcardRace = races.find((race) => race.id === 'wildcard');
       const highRewardRaces = races
-        .filter(race => race.id !== 'wildcard' && !race.stakeRequired)
+        .filter((race) => race.id !== 'wildcard' && !race.stakeRequired)
         .slice(0, 2); // Get top 2 high reward races
 
       featuredRaces = [
-        ...(wildcardRace ? [{
-          ...wildcardRace,
-          icon: iconMap[wildcardRace.icon || 'Brain'] || Brain,
-          colorScheme: 'purple' as ColorScheme
-        }] : []),
-        ...highRewardRaces.map(race => ({
+        ...(wildcardRace
+          ? [
+              {
+                ...wildcardRace,
+                icon: iconMap[wildcardRace.icon || 'Brain'] || Brain,
+                colorScheme: 'purple' as ColorScheme
+              }
+            ]
+          : []),
+        ...highRewardRaces.map((race) => ({
           ...race,
           icon: iconMap[race.icon || 'Brain'] || Brain,
           colorScheme: 'purple' as ColorScheme
@@ -85,6 +114,35 @@
     mousePosition.x = (event.clientX / window.innerWidth) * 100;
     mousePosition.y = (event.clientY / window.innerHeight) * 100;
   }
+
+  const featuredSlides: CarouselSlides[] = [
+    {
+      id: 'train-agent',
+      title: 'Train Your Own Agent',
+      description:
+        'Convert your gameplay into state-of-the-art LAMs: 4-step guide to building better agents',
+      icon: Book,
+      iconColor: 'text-emerald-400',
+      iconBgColor: 'bg-emerald-600/30',
+      bgGradient: 'from-emerald-900/50 via-emerald-800/40 to-stone-900/50',
+      hoverGradient: '',
+      buttonText: 'Read Guide',
+      href: 'https://viralmind.gitbook.io/viralmind.ai/train-your-own-agentic-lams'
+    },
+    {
+      id: 'vm1',
+      title: 'Introducing VM-1',
+      description:
+        'Your demonstrations are training the ChatGPT of gaming and work automation. Ask it to do your homework, play games with you, or assist with Blender - VM-1 will be your ultimate desktop companion.',
+      icon: Brain,
+      iconColor: 'text-purple-400',
+      iconBgColor: 'bg-purple-600/30',
+      bgGradient: 'from-purple-900/50 via-purple-800/40 to-stone-900/50',
+      hoverGradient: '',
+      buttonText: 'Learn More',
+      href: 'https://viralmind.gitbook.io/viralmind.ai/vm-1-the-future-of-large-action-models'
+    }
+  ];
 
   onMount(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -105,16 +163,16 @@
 
       <!-- Subtitle -->
       <p class="mb-12 max-w-2xl text-xl text-gray-400 md:text-2xl">
-        Train with AI assistants and earn rewards
+        Train with AI assistants and earn rewards.
       </p>
 
       <!-- Featured Carousel -->
-      <FeaturedCarousel />
-      
-      <!-- Featured Races -->
+      <FeaturedCarousel slides={featuredSlides} />
+
+      <!-- Featured Races  -->
       <div class="mb-16">
         <h2 class="mb-8 text-3xl font-bold text-purple-400">Featured Races</h2>
-        <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
           {#each featuredRaces as race}
             <FeaturedRace {race} />
           {/each}
@@ -125,7 +183,10 @@
       <div class="mb-16">
         <h2 class="mb-8 text-3xl font-bold text-purple-400">Race Categories</h2>
         <div class="grid gap-6 md:grid-cols-2">
-          <a href="/gym/free-races" class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8 hover:from-purple-900/40 hover:to-stone-900/40">
+          <a
+            href="/gym/free-races"
+            class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8 hover:from-purple-900/40 hover:to-stone-900/40"
+          >
             <div class="flex items-center gap-4">
               <div class="rounded-xl bg-purple-400/20 p-4">
                 <Trophy class="h-8 w-8 text-purple-400" />
@@ -136,7 +197,10 @@
               </div>
             </div>
           </a>
-          <a href="/gym/staked-races" class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8 hover:from-purple-900/40 hover:to-stone-900/40">
+          <a
+            href="/gym/staked-races"
+            class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8 hover:from-purple-900/40 hover:to-stone-900/40"
+          >
             <div class="flex items-center gap-4">
               <div class="rounded-xl bg-purple-400/20 p-4">
                 <DollarSign class="h-8 w-8 text-purple-400" />
@@ -152,33 +216,36 @@
 
       <!-- Desktop App Section -->
       <div class="my-16">
-        <h2 class="mb-8 text-3xl font-bold text-purple-400">Get the Training Gym on Your Desktop</h2>
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8">
+        <h2 class="mb-8 text-3xl font-bold text-purple-400">
+          Get the Training Gym on Your Desktop
+        </h2>
+        <div
+          class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8"
+        >
           <!-- Header -->
-          <div class="flex items-center justify-between mb-8">
+          <div class="mb-8 flex flex-col items-center justify-between md:flex-row">
             <div class="flex items-center gap-4">
               <div class="rounded-xl bg-purple-400/20 p-4">
                 <Gamepad2 class="h-8 w-8 text-purple-400" />
               </div>
               <div>
                 <h3 class="text-2xl font-bold">Train AI on Your Games</h3>
-                <p class="text-gray-300">Desktop app for recording gameplay - beyond just desktop apps</p>
+                <p class="text-gray-300">
+                  Desktop app for recording gameplay - beyond just desktop apps
+                </p>
               </div>
             </div>
-            <button 
-              class="inline-flex items-center gap-2 rounded-lg bg-purple-600/50 px-6 py-3 font-semibold text-white cursor-not-allowed"
-              disabled
-            >
+            <Button disabled>
               Coming Soon
               <Download class="h-5 w-5" />
-            </button>
+            </Button>
           </div>
 
           <!-- Feature Cards -->
           <div class="grid gap-6 md:grid-cols-2">
             <!-- Game Recording Features -->
             <div class="rounded-2xl bg-black/20 p-6">
-              <div class="flex items-center gap-3 mb-4">
+              <div class="mb-4 flex items-center gap-3">
                 <Gamepad2 class="h-6 w-6 text-purple-400" />
                 <h4 class="text-xl font-semibold">Game Recording</h4>
               </div>
@@ -200,7 +267,7 @@
 
             <!-- Advanced AI Training -->
             <div class="rounded-2xl bg-black/20 p-6">
-              <div class="flex items-center gap-3 mb-4">
+              <div class="mb-4 flex items-center gap-3">
                 <Brain class="h-6 w-6 text-purple-400" />
                 <h4 class="text-xl font-semibold">Advanced AI Training</h4>
               </div>
@@ -225,9 +292,8 @@
 
       <!-- Notification Sign Up -->
       <SubmitRace />
-
     </div>
-    
+
     <!-- Single modal instance for the entire page -->
     <RaceWarningModal />
   </div>

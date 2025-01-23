@@ -26,6 +26,64 @@ services:
   #   networks:
   #     - node-network
 
+  # holy guacamole
+  guacd:
+    image: guacamole/guacd
+    platform: linux/amd64
+    container_name: guacd
+    restart: always
+    volumes:
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
+      - ./guacamole/drive:/drive:rw
+    ports:
+      - "4822:4822"
+    networks:
+      - node-network 
+  mysql:
+    image: mysql:5.7
+    platform: linux/amd64
+    container_name: guac_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: guacamole_root_pw
+      MYSQL_DATABASE: guacamole_db
+      MYSQL_USER: guacamole_user
+      MYSQL_PASSWORD: guacamole_user_pw
+    volumes:
+      - guacamole_db:/var/lib/mysql
+      - ./guacamole/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+    networks:
+      - node-network 
+  guacamole:
+    image: guacamole/guacamole
+    container_name: guacamole
+    platform: linux/amd64
+    restart: always
+    depends_on:
+      - guacd
+      - mysql
+    environment:
+      GUACAMOLE_HOME: '/opt/guacamole_home'
+      GUACD_HOSTNAME: guacd
+      MYSQL_HOSTNAME: mysql
+      MYSQL_DATABASE: guacamole_db
+      MYSQL_USER: guacamole_user
+      MYSQL_PASSWORD: guacamole_user_pw
+      GUACAMOLE_CORS_ENABLED: 'true'
+      GUACAMOLE_CORS_ALLOWED_ORIGINS: '*'
+      GUACAMOLE_CORS_ALLOWED_METHODS: 'GET, POST, PUT, DELETE, OPTIONS'
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./guacamole/home:/opt/guacamole_home
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
+      - ./guacamole/drive:/drive:rw
+    links:
+      - guacd
+      - mysql
+    networks:
+      - node-network 
+
   back-end:
     build:
       context: backend
@@ -42,7 +100,7 @@ services:
       - /usr/src/app/backend/node_modules/  # This creates an anonymous volume for node_modules
       # training data output
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
-      - ./backend/public/recordings:/usr/src/app/backend/public/recordings
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
     environment:
       - DB_URI=${DB_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -52,23 +110,20 @@ services:
       - ANCHOR_PROVIDER_URL=${ANCHOR_PROVIDER_URL}
       - IPC_SECRET=${IPC_SECRET}
       - FEEDBACK_WEBHOOK=${FEEDBACK_WEBHOOK}
-      # Hardcoded gym vnc config
-      - VNC_HOST_GYMTEST=${VNC_HOST_GYMTEST}
-      - VNC_PASS_GYMTEST=${VNC_PASS_GYMTEST}
       # Docker Specific Paths
       - ANCHOR_WALLET=/usr/src/app/backend/secrets/solana-keypair.json
       - ANCHOR_WORKSPACE=/usr/src/app/backend/jailbreak-pool
-      # VNC Configuration (replaced RDP config)
-      - VNC_HOST=windows
-      - VNC_PORT=5901
-      - VNC_PASSWORD=admin
       - SERVICE_HOST=windows
       - SERVICE_PORT=6950
       - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
+      - GYM_TREASURY_WEBHOOK=${GYM_TREASURY_WEBHOOK}
       - VIRAL_TOKEN=${VIRAL_TOKEN}
-      - DIGITALOCEAN_API_KEY=${DIGITALOCEAN_API_KEY}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - GUACAMOLE_PASSWORD=${GUACAMOLE_PASSWORD}
     depends_on:
       - mongodb
+      - guacd
       # - windows
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -122,3 +177,4 @@ networks:
 
 volumes:
   mongodb_data:
+  guacamole_db:
