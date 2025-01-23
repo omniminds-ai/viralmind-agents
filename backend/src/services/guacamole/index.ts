@@ -145,26 +145,24 @@ export class GuacamoleService {
             'Guacamole-Token': adminToken
           }
         });
-        console.log(`User ${username} already exists`);
-
         // Even if user exists, ensure they have the correct permissions
-        await axios.patch(
-          `${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}/permissions`,
-          [
-            {
-              op: 'add',
-              path: '/connectionGroupPermissions/ROOT',
-              value: 'READ'
-            }
-          ],
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Guacamole-Token': adminToken
-            }
-          }
-        );
-        console.log(`Updated permissions for existing user ${username}`);
+        // await axios.patch(
+        //   `${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}/permissions`,
+        //   [
+        //     {
+        //       op: 'add',
+        //       path: '/connectionGroupPermissions/ROOT',
+        //       value: 'READ'
+        //     }
+        //   ],
+        //   {
+        //     headers: {
+        //       'Content-Type': 'application/json',
+        //       'Guacamole-Token': adminToken
+        //     }
+        //   }
+        // );
+        // console.log(`Updated permissions for existing user ${username}`);
         return;
       } catch (error: any) {
         // If 404, user doesn't exist, continue with creation
@@ -203,24 +201,23 @@ export class GuacamoleService {
       console.log(`Created user ${username}`);
 
       // Grant the user basic permissions to read the ROOT connection group
-      await axios.patch(
-        `${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}/permissions`,
-        [
-          {
-            op: 'add',
-            path: '/connectionGroupPermissions/ROOT',
-            value: 'READ'
-          }
-        ],
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Guacamole-Token': adminToken
-          }
-        }
-      );
-
-      console.log(`Granted permissions to user ${username}`);
+      // await axios.patch(
+      //   `${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}/permissions`,
+      //   [
+      //     {
+      //       op: 'add',
+      //       path: '/connectionGroupPermissions/ROOT',
+      //       value: 'READ'
+      //     }
+      //   ],
+      //   {
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //       'Guacamole-Token': adminToken
+      //     }
+      //   }
+      // );
+      // console.log(`Granted permissions to user ${username}`);
     } catch (error) {
       console.log('Error in Guac createUser.');
       if ((error as Error).message.includes('AxiosError')) {
