@@ -459,7 +459,10 @@
   <div class="flex flex-1 flex-col">
     <!-- Guacamole Stream -->
     <div class="flex flex-1 items-center justify-center p-6">
-      <div class="overflow-hidden rounded-sm bg-black/50 shadow-lg w-full max-w-[90vw] aspect-video">
+      <div
+        style="width: calc(100vw - 319px); height: calc(100vh - 300px);"
+        class="aspect-video w-full overflow-hidden rounded-sm bg-black/50 shadow-lg"
+      >
         <div class="relative h-full w-full">
           {#if raceSession?.vm_credentials?.guacToken}
             <div class="absolute inset-0 rounded-sm focus-within:ring-2 focus-within:ring-blue-500">
