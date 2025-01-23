@@ -17,12 +17,10 @@ import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
 import { VPSRegion } from '../services/gym-vps/types.ts';
 import { TreasuryService } from '../services/treasury/index.ts';
+import { AWSS3Service } from '../services/aws/index.ts';
+import { unlink } from 'fs/promises';
 
-async function generateQuest(
-  imageUrl: string,
-  prompt: string,
-  session: RaceSessionDocument
-) {
+async function generateQuest(imageUrl: string, prompt: string, session: RaceSessionDocument) {
   try {
     console.log('Requesting quest!!');
 
@@ -57,11 +55,11 @@ Return as JSON with these keys:
 - hint: Helpful tip for completing the new task`
             },
             {
-              type: "image_url",
-              image_url: { url: imageUrl },
-            },
-          ],
-        },
+              type: 'image_url',
+              image_url: { url: imageUrl }
+            }
+          ]
+        }
       ],
       max_tokens: 250
     });
@@ -102,8 +100,8 @@ async function generateHint(
   hintHistory: string[] = []
 ) {
   try {
-    console.log("Requesting hint!!!");
-    
+    console.log('Requesting hint!!!');
+
     // Check if hint is already being generated for this session
     if (!session._id) {
       throw new Error('Session ID is missing');
@@ -112,8 +110,8 @@ async function generateHint(
     if (generatingHints.has(session._id.toString())) {
       console.log('Hint generation already in progress for session:', session._id);
       return {
-        hint: "Please wait, generating hint...",
-        reasoning: "Hint generation in progress",
+        hint: 'Please wait, generating hint...',
+        reasoning: 'Hint generation in progress',
         isCompleted: false,
         events: []
       };
@@ -123,8 +121,8 @@ async function generateHint(
     generatingHints.add(session._id.toString());
 
     const recentHint = await TrainingEvent.findOne(
-      { 
-        session: session._id, 
+      {
+        session: session._id,
         type: 'hint',
         timestamp: { $gt: Date.now() - 10000 }
       },
@@ -136,7 +134,7 @@ async function generateHint(
       console.log('Using cached hint for session:', session._id, 'hint:', recentHint.message);
       return {
         hint: recentHint.message,
-        reasoning: "Using cached hint",
+        reasoning: 'Using cached hint',
         isCompleted: false,
         events: []
       };
@@ -144,8 +142,8 @@ async function generateHint(
 
     // Get latest quest event (no time limit)
     const latestQuestEvent = await TrainingEvent.findOne(
-      { 
-        session: session._id, 
+      {
+        session: session._id,
         type: 'quest'
       },
       {},
@@ -156,8 +154,8 @@ async function generateHint(
     if (!latestQuestEvent) {
       console.log('No quest found for session:', session._id);
       return {
-        hint: "Please wait for quest to be generated...",
-        reasoning: "No active quest found",
+        hint: 'Please wait for quest to be generated...',
+        reasoning: 'No active quest found',
         isCompleted: false,
         events: []
       };
@@ -196,17 +194,17 @@ Output as JSON with three fields:
               type: 'image_url',
               image_url: {
                 url: imageUrl
-              },
-            },
-          ],
-        },
+              }
+            }
+          ]
+        }
       ],
       max_tokens: 250
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
     console.log(response.choices[0].message.content);
-    let parsedResponse = { hint: "", reasoning: "", isCompleted: false };    
+    let parsedResponse = { hint: '', reasoning: '', isCompleted: false };
     if (jsonMatch) {
       try {
         parsedResponse = JSON.parse(jsonMatch[0]);
@@ -230,19 +228,17 @@ Output as JSON with three fields:
 
         // Create reward event without transfer
         const rewardEvent = {
-          type: "reward",
-          message: `The judge rewarded you ${actualReward.toFixed(
-            2
-          )} $VIRAL for this (${(score * 100).toFixed(0)}% of ${maxReward.toFixed(
-            2
-          )})`,
+          type: 'reward',
+          message: `The judge rewarded you ${actualReward.toFixed(2)} $VIRAL for this (${(
+            score * 100
+          ).toFixed(0)}% of ${maxReward.toFixed(2)})`,
           session: session._id!,
           frame: 0,
           timestamp: Date.now(),
           metadata: {
             scoreValue: score,
             rewardValue: actualReward
-          },
+          }
         };
         await DatabaseService.createTrainingEvent(rewardEvent);
 
@@ -250,7 +246,7 @@ Output as JSON with three fields:
         console.log('Quest completed! Generating new quest...');
         const questData = await generateQuest(imageUrl, prompt, session);
         const questEvent = {
-          type: "quest",
+          type: 'quest',
           message: questData.quest,
           session: session._id!,
           frame: 0,
@@ -258,7 +254,7 @@ Output as JSON with three fields:
           metadata: {
             maxReward: questData.maxReward,
             vm_id: latestQuestEvent.metadata?.vm_id
-          },
+          }
         };
         await DatabaseService.createTrainingEvent(questEvent);
 
@@ -285,8 +281,8 @@ Output as JSON with three fields:
     } else if (parsedResponse.isCompleted) {
       // If quest is completed but transaction is pending, return special message
       return {
-        hint: "Processing reward... please wait",
-        reasoning: "Transaction in progress",
+        hint: 'Processing reward... please wait',
+        reasoning: 'Transaction in progress',
         isCompleted: false,
         events: []
       };
@@ -318,13 +314,13 @@ Output as JSON with three fields:
       events: [hintEvent, reasoningEvent]
     };
   } catch (error) {
-    console.error("Error generating hint:", error);
-    const fallbackHint = "Navigate the XFCE Applications Menu to explore available tasks";
-    
+    console.error('Error generating hint:', error);
+    const fallbackHint = 'Navigate the XFCE Applications Menu to explore available tasks';
+
     if (!session._id) {
       throw new Error('Session ID is missing');
     }
-    
+
     const errorEvent = {
       type: 'hint',
       message: fallbackHint,
@@ -402,7 +398,6 @@ const treasuryService = new TreasuryService(
 //   }
 // });
 
-
 // Get treasury balance endpoint
 router.get('/treasury-balance', async (req, res) => {
   try {
@@ -460,23 +455,13 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     if (region?.includes('us-east')) regionEnum = VPSRegion.us_east;
     if (region?.includes('us-west')) regionEnum = VPSRegion.us_west;
     if (region?.includes('eu-central')) regionEnum = VPSRegion.eu_central;
-    // const instance = await DatabaseService.getGymVPS(regionEnum);
-    // const vpsService = new GymVPSService({
-    //   ip: instance.ip,
-    //   username: instance.username,
-    //   privateKey: instance.ssh_keypair.private
-    // });
-    // const vps = await vpsService.initNewTrainer(address);
-
-    const instance = {
-      ip: 'windows',
-      ssh_keypair: { private: 'admin' }
-    }
-    const vps = {
-      ip: 'windows',
-      username: 'ai',
-      password: 'admin'
-    }
+    const instance = await DatabaseService.getGymVPS(regionEnum);
+    const vpsService = new GymVPSService({
+      ip: instance.ip,
+      username: instance.username,
+      privateKey: instance.ssh_keypair.private
+    });
+    const vps = await vpsService.initNewTrainer(address);
 
     // Create Guacamole session with RDP connection
     const {
@@ -539,7 +524,7 @@ router.post('/:id/start', async (req: Request, res: Response) => {
 router.get('/session/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     // Check if session is expired first
     const isExpired = await checkRaceExpiration(id);
     if (isExpired) {
@@ -601,10 +586,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
     // If there are rewards, transfer the total amount
     if (totalRewards > 0) {
       // Transfer total rewards from treasury
-      const signature = await treasuryService.transferFromTreasury(
-        session.address,
-        totalRewards
-      );
+      const signature = await treasuryService.transferFromTreasury(session.address, totalRewards);
 
       // Update session with transaction signature
       if (signature) {
@@ -624,6 +606,34 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
       } catch (error) {
         console.error('Error removing Guacamole READ permission:', error);
       }
+    }
+
+    // remove user access to the VPS
+    const instance = await DatabaseService.getGymVPS(session.vm_region);
+    const vpsService = new GymVPSService({
+      ip: instance.ip,
+      username: instance.username,
+      privateKey: instance.ssh_keypair.private
+    });
+    await vpsService.removeTrainer(session.vm_credentials?.username!);
+
+    // save recording to s3 if we have a video path
+
+    const sessionEvents = await TrainingEvent.find({
+      session: session._id
+    }).sort({ timestamp: 1 }); // Sort by timestamp ascending
+
+    const recordingId = sessionEvents[0].metadata.recording_id;
+
+    if (recordingId) {
+      const s3Service = new AWSS3Service('', '');
+      await s3Service.saveItem({
+        bucket: 'training-gym',
+        file: `${guacService.recordingsPath}/${recordingId}`,
+        name: `${session.vm_credentials?.username}-${id}-recording`
+      });
+      // delete recording
+      await unlink(`${guacService.recordingsPath}/${recordingId}`);
     }
   }
 
@@ -881,7 +891,7 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       console.log('No quest found for session:', id, 'generating initial quest...');
       const questData = await generateQuest(imageUrl, session.prompt, session);
       const questEvent = {
-        type: "quest",
+        type: 'quest',
         message: questData.quest,
         session: id,
         frame: 0,
@@ -890,18 +900,18 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
           maxReward: questData.maxReward,
           vm_id: guacSession.connectionId,
           recording_id: guacSession.recordingId
-        },
+        }
       };
       await DatabaseService.createTrainingEvent(questEvent);
       console.log('Generated initial quest:', questData.quest);
 
       // Create initial hint event
       const hintEvent = {
-        type: "hint",
+        type: 'hint',
         message: questData.hint,
         session: id,
         frame: 0,
-        timestamp: Date.now(),
+        timestamp: Date.now()
       };
       await DatabaseService.createTrainingEvent(hintEvent);
 
@@ -979,7 +989,7 @@ router.post('/session/:id/quest', async (req: Request, res: Response) => {
     const imageUrl = screenshot;
 
     const questData = await generateQuest(imageUrl, session.prompt, session);
-    
+
     // Create quest event
     const questEvent = {
       type: 'quest',

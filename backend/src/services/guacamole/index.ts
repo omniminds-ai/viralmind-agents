@@ -28,7 +28,7 @@ export class GuacamoleService {
   private adminUsername: string;
   private adminPassword: string;
   private dataSource: string;
-  private recordingsPath: string;
+  public recordingsPath: string;
   private gymSecret: string;
   private tempDir: string;
 
@@ -40,7 +40,7 @@ export class GuacamoleService {
     this.recordingsPath = '/var/lib/guacamole/recordings';
     this.gymSecret = process.env.GYM_SECRET || 'guacadmin';
     this.tempDir = '/tmp/guac-frames';
-    
+
     // Ensure temp directory exists
     if (!fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
@@ -81,14 +81,11 @@ export class GuacamoleService {
     try {
       try {
         // Check if user exists first
-        await axios.get(
-          `${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}`,
-          {
-            headers: {
-              'Guacamole-Token': adminToken
-            }
+        await axios.get(`${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}`, {
+          headers: {
+            'Guacamole-Token': adminToken
           }
-        );
+        });
         console.log(`User ${username} already exists`);
 
         // Even if user exists, ensure they have the correct permissions
@@ -96,9 +93,9 @@ export class GuacamoleService {
           `${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}/permissions`,
           [
             {
-              "op": "add",
-              "path": "/connectionGroupPermissions/ROOT",
-              "value": "READ"
+              op: 'add',
+              path: '/connectionGroupPermissions/ROOT',
+              value: 'READ'
             }
           ],
           {
@@ -130,7 +127,7 @@ export class GuacamoleService {
             'access-window-end': '',
             'valid-from': '',
             'valid-until': '',
-            'timezone': null,
+            timezone: null,
             'guac-full-name': '',
             'guac-organization': '',
             'guac-organizational-role': ''
@@ -151,9 +148,9 @@ export class GuacamoleService {
         `${this.baseUrl}/api/session/data/${this.dataSource}/users/${username}/permissions`,
         [
           {
-            "op": "add",
-            "path": "/connectionGroupPermissions/ROOT",
-            "value": "READ"
+            op: 'add',
+            path: '/connectionGroupPermissions/ROOT',
+            value: 'READ'
           }
         ],
         {
@@ -199,10 +196,15 @@ export class GuacamoleService {
     }
   }
 
-  private async createOrGetRDPConnection(token: string, ip: string, username: string, password: string): Promise<string> {
+  private async createOrGetRDPConnection(
+    token: string,
+    ip: string,
+    username: string,
+    password: string
+  ): Promise<string> {
     try {
       const connectionName = `RDP-${ip}-${username}`;
-      
+
       // First try to get existing connection
       try {
         const response = await axios.get(
@@ -213,7 +215,7 @@ export class GuacamoleService {
             }
           }
         );
-        
+
         // Look for existing connection with same name
         const connections = response.data;
         for (const [id, connection] of Object.entries(connections)) {
@@ -226,42 +228,42 @@ export class GuacamoleService {
         console.log('Error checking existing connections:', error);
         // Continue to create new connection if we can't check existing ones
       }
-  
+
       // If we get here, create new connection
       console.log(`Creating new connection: ${connectionName}`);
-      
+
       // Define the RDP connection configuration
       const connection: GuacamoleConnection = {
         name: connectionName,
-        parentIdentifier: "ROOT",
-        protocol: "rdp",
+        parentIdentifier: 'ROOT',
+        protocol: 'rdp',
         parameters: {
-          'hostname': ip,
-          'port': '3389',
-          'username': username,
-          'password': password,
-          'security': 'any',          // Enable security/auth
+          hostname: ip,
+          port: '3389',
+          username: username,
+          password: password,
+          security: 'any', // Enable security/auth
           'ignore-cert': 'true',
-          'width': '1280',
-          'height': '800',
-          'dpi': '96',
+          width: '1280',
+          height: '800',
+          dpi: '96',
           'recording-path': '/var/lib/guacamole/recordings',
           'recording-name': '${HISTORY_UUID}',
           'recording-include-keys': 'true',
           'create-recording-path': 'true',
           'enable-recording': 'true',
           'enable-wallpaper': 'true', // Enable wallpaper
-          'disable-auth': 'false'     // Enable authentication
+          'disable-auth': 'false' // Enable authentication
         },
         attributes: {
           'max-connections': '1',
           'max-connections-per-user': '1'
         }
       };
-  
+
       // Create the connection
       const createResponse = await axios.post(
-        `${this.baseUrl}/api/session/data/${this.dataSource}/connections`, 
+        `${this.baseUrl}/api/session/data/${this.dataSource}/connections`,
         connection,
         {
           headers: {
@@ -270,12 +272,12 @@ export class GuacamoleService {
           }
         }
       );
-  
+
       if (!createResponse.data?.identifier) {
         console.error('Connection response:', createResponse.data);
         throw new Error('No connection identifier in response');
       }
-  
+
       return createResponse.data.identifier;
     } catch (error) {
       console.error('Connection creation/retrieval error:', error);
@@ -285,29 +287,34 @@ export class GuacamoleService {
       throw error;
     }
   }
-  
-  public async createSession(ip: string, username: string, password: string, address: string): Promise<{token: string, connectionId: string, clientId: string}> {
+
+  public async createSession(
+    ip: string,
+    username: string,
+    password: string,
+    address: string
+  ): Promise<{ token: string; connectionId: string; clientId: string }> {
     try {
       // Get admin token first
       const adminToken = await this.getAdminToken();
       console.log('Got admin token');
-      
+
       // Create/verify user exists and has permissions
       await this.createUser(adminToken, address);
       console.log('User created/verified');
-      
+
       // Create or get existing RDP connection using admin token
       const connectionId = await this.createOrGetRDPConnection(adminToken, ip, username, password);
       console.log('Connection created/retrieved:', connectionId);
-  
+
       // Grant the user access to the connection
       await axios.patch(
         `${this.baseUrl}/api/session/data/${this.dataSource}/users/${address}/permissions`,
         [
           {
-            "op": "add",
-            "path": `/connectionPermissions/${connectionId}`,
-            "value": "READ"
+            op: 'add',
+            path: `/connectionPermissions/${connectionId}`,
+            value: 'READ'
           }
         ],
         {
@@ -318,15 +325,15 @@ export class GuacamoleService {
         }
       );
       console.log('Granted connection permissions to user');
-  
+
       // Now get user token for the session
       const userToken = await this.getUserToken(address);
       console.log('Got user token');
-  
+
       // Generate the client identifier
       const clientId = this.encodeClientIdentifier(connectionId);
       console.log('Generated client ID:', clientId);
-  
+
       return {
         token: userToken,
         connectionId,
@@ -337,12 +344,15 @@ export class GuacamoleService {
       throw error;
     }
   }
-  
-  
-  private async extractFramesFromRecording(recordingPath: string, numFrames: number = 1, fps: number = 1): Promise<FrameInfo[]> {
+
+  private async extractFramesFromRecording(
+    recordingPath: string,
+    numFrames: number = 1,
+    fps: number = 1
+  ): Promise<FrameInfo[]> {
     try {
       console.log('Starting frame extraction for recording:', recordingPath);
-      
+
       // Verify recording file exists and is readable
       if (!fs.existsSync(recordingPath)) {
         throw new Error(`Recording file not found at ${recordingPath}`);
@@ -357,7 +367,7 @@ export class GuacamoleService {
       // Create unique temporary directory
       const sessionId = path.basename(recordingPath);
       const tempSessionDir = path.join(this.tempDir, sessionId);
-      
+
       console.log('Creating temp directory:', tempSessionDir);
       if (!fs.existsSync(tempSessionDir)) {
         fs.mkdirSync(tempSessionDir, { recursive: true });
@@ -366,11 +376,9 @@ export class GuacamoleService {
       // Run guacenc with verbose output
       const videoPath = path.join(tempSessionDir, 'recording.m4v');
       console.log('Converting recording to video...');
-      
+
       try {
-        const { stdout, stderr } = await execAsync(
-          `guacenc -f "${recordingPath}" 2>&1`
-        );
+        const { stdout, stderr } = await execAsync(`guacenc -f "${recordingPath}" 2>&1`);
         console.log('guacenc stdout:', stdout);
         console.log('guacenc stderr:', stderr);
       } catch (error: any) {
@@ -379,11 +387,11 @@ export class GuacamoleService {
         console.error('guacenc stderr:', error.stderr);
         throw new Error(`guacenc failed: ${error.message}`);
       }
-      
+
       // The output will be recordingPath + '.m4v'
       const sourceVideoPath = recordingPath + '.m4v';
       console.log('Checking for video at:', sourceVideoPath);
-      
+
       if (!fs.existsSync(sourceVideoPath)) {
         console.error('Video file not found after conversion');
         // List directory contents for debugging
@@ -407,7 +415,7 @@ export class GuacamoleService {
       // Calculate frame positions
       const frames: FrameInfo[] = [];
       const frameInterval = 1 / fps;
-      const startTime = Math.max(0, duration - (numFrames * frameInterval));
+      const startTime = Math.max(0, duration - numFrames * frameInterval);
 
       console.log('Extracting frames:', {
         numFrames,
@@ -416,7 +424,7 @@ export class GuacamoleService {
       });
 
       for (let i = 0; i < numFrames; i++) {
-        const timestamp = startTime + (i * frameInterval);
+        const timestamp = startTime + i * frameInterval;
         const outputPath = path.join(tempSessionDir, `frame-${i}.png`);
 
         console.log(`Extracting frame ${i} at timestamp ${timestamp}`);
@@ -456,7 +464,14 @@ export class GuacamoleService {
     }
   }
 
-  public async getActiveSession(address: string): Promise<{token: string, connectionId: string, recordingId: string, clientId: string} | null> {
+  public async getActiveSession(
+    address: string
+  ): Promise<{
+    token: string;
+    connectionId: string;
+    recordingId: string;
+    clientId: string;
+  } | null> {
     try {
       // Get user token
       const token = await this.getUserToken(address);
@@ -490,7 +505,13 @@ export class GuacamoleService {
     }
   }
 
-  public async getScreenshots(token: string, clientId: string, guacUsername: string, numFrames: number = 1, fps: number = 1): Promise<FrameInfo[]> {
+  public async getScreenshots(
+    token: string,
+    clientId: string,
+    guacUsername: string,
+    numFrames: number = 1,
+    fps: number = 1
+  ): Promise<FrameInfo[]> {
     try {
       const historyResponse = await axios.get(
         `${this.baseUrl}/api/session/data/${this.dataSource}/history/connections`,
@@ -500,13 +521,12 @@ export class GuacamoleService {
           }
         }
       );
-  
+
       const activeConnection = historyResponse.data?.find((entry: any) => entry.endDate === null);
-      if (!activeConnection?.uuid)
-        throw new Error('No active connection found');
-      
+      if (!activeConnection?.uuid) throw new Error('No active connection found');
+
       const recordingPath = path.join(this.recordingsPath, activeConnection.uuid);
-      
+
       if (fs.existsSync(recordingPath)) {
         const stats = fs.statSync(recordingPath);
         console.log('Recording file stats:', {
@@ -514,20 +534,20 @@ export class GuacamoleService {
           mtime: stats.mtime,
           age: Date.now() - stats.mtimeMs
         });
-  
+
         // Wait a short time if the file was just modified
         if (Date.now() - stats.mtimeMs < 1000) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
 
         const frames = await this.extractFramesFromRecording(recordingPath, numFrames, fps);
         if (frames.length > 0) {
           return frames;
         }
-        
+
         throw new Error('No frames extracted from recording file');
       }
-  
+
       throw new Error('Recording file not found');
     } catch (error) {
       console.error('Error getting screenshots:', error);
@@ -536,7 +556,11 @@ export class GuacamoleService {
   }
 
   // For backward compatibility
-  public async getScreenshot(token: string, clientId: string, guacUsername: string): Promise<Buffer> {
+  public async getScreenshot(
+    token: string,
+    clientId: string,
+    guacUsername: string
+  ): Promise<Buffer> {
     const frames = await this.getScreenshots(token, clientId, guacUsername, 1, 1);
     if (frames.length === 0) {
       throw new Error('No frames extracted');
@@ -554,8 +578,8 @@ export class GuacamoleService {
         `${this.baseUrl}/api/session/data/${this.dataSource}/users/${address}/permissions`,
         [
           {
-            "op": "remove",
-            "path": `/connectionPermissions/${connectionId}`
+            op: 'remove',
+            path: `/connectionPermissions/${connectionId}`
           }
         ],
         {
@@ -573,7 +597,7 @@ export class GuacamoleService {
         console.log(`Permission already removed for user ${address} on connection ${connectionId}`);
         return;
       }
-      
+
       // For any other error, log but don't throw to prevent breaking the expiry flow
       console.error('Error removing READ permission:', error);
       if (axios.isAxiosError(error)) {
@@ -595,14 +619,11 @@ export class GuacamoleService {
       );
 
       // Delete the token
-      await axios.delete(
-        `${this.baseUrl}/api/tokens/${token}`,
-        {
-          headers: {
-            'Guacamole-Token': token
-          }
+      await axios.delete(`${this.baseUrl}/api/tokens/${token}`, {
+        headers: {
+          'Guacamole-Token': token
         }
-      );
+      });
     } catch (error) {
       console.error('Error cleaning up Guacamole session:', error);
       throw error;
