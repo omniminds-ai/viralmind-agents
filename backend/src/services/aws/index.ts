@@ -3,10 +3,12 @@ import { promises as fs } from 'fs';
 
 export class AWSS3Service {
   private client: S3Client;
-  constructor(accessKeyId: string, secretAccessKey: string) {
+  constructor(accessKeyId?: string, secretAccessKey?: string) {
+    if (!accessKeyId) throw Error('Cannot initialize S3 client. Access key not provided.');
+    if (!secretAccessKey) throw Error('Cannot initialize S3 client. Secret key not provided.');
     this.client = new S3Client({
       credentials: { accessKeyId, secretAccessKey },
-      region: 'us-west-2'
+      region: 'us-east-2'
     });
   }
 
