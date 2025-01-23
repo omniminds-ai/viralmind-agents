@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "pwd && export NODE_OPTIONS=--openssl-legacy-provider && nodemon",
-    "build": "export NODE_OPTIONS=--openssl-legacy-provider && tsc",
+    "build": "node esbuild.js",
     "start": "export NODE_OPTIONS=--openssl-legacy-provider node build/server.js",
     "tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts",
     "init-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts init",
@@ -30,6 +30,7 @@
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "dots-wrapper": "^3.11.14",
+    "esbuild": "^0.24.2",
     "express": "^4.18.3",
     "fs": "^0.0.1-security",
     "http2-express-bridge": "^1.0.7",
