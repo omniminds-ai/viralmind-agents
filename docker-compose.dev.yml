@@ -120,6 +120,7 @@ services:
       - VIRAL_TOKEN=${VIRAL_TOKEN}
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - GUACAMOLE_PASSWORD=${GUACAMOLE_PASSWORD}
     depends_on:
       - mongodb
       - guacd
