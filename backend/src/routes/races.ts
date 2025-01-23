@@ -23,8 +23,6 @@ import { AxiosError } from 'axios';
 
 async function generateQuest(imageUrl: string, prompt: string, session: RaceSessionDocument) {
   try {
-    console.log('Requesting quest!!');
-
     // Get treasury balance
     const treasuryBalance = await blockchainService.getTokenBalance(
       viralToken,
@@ -35,7 +33,6 @@ async function generateQuest(imageUrl: string, prompt: string, session: RaceSess
     const rng = Math.random();
     const maxReward = Math.ceil(Math.min(1 / rng, treasuryBalance / 128));
 
-    console.log('Generating new quest for session:', session._id);
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -66,7 +63,6 @@ Return as JSON with these keys:
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
-    console.log(response.choices[0].message.content);
     if (jsonMatch && jsonMatch[0]) {
       const questData = JSON.parse(jsonMatch[0]);
       return {
@@ -101,8 +97,6 @@ async function generateHint(
   hintHistory: string[] = []
 ) {
   try {
-    console.log('Requesting hint!!!');
-
     // Check if hint is already being generated for this session
     if (!session._id) {
       throw new Error('Session ID is missing');
@@ -132,7 +126,6 @@ async function generateHint(
     );
 
     if (recentHint) {
-      console.log('Using cached hint for session:', session._id, 'hint:', recentHint.message);
       return {
         hint: recentHint.message,
         reasoning: 'Using cached hint',
@@ -164,9 +157,7 @@ async function generateHint(
 
     currentQuest = latestQuestEvent.message;
     maxReward = latestQuestEvent.metadata?.maxReward || 0;
-    console.log('Using existing quest:', currentQuest);
 
-    console.log('Generating new hint for session:', session._id, 'quest:', currentQuest);
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
@@ -204,7 +195,6 @@ Output as JSON with three fields:
     });
 
     const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
-    console.log(response.choices[0].message.content);
     let parsedResponse = { hint: '', reasoning: '', isCompleted: false };
     if (jsonMatch) {
       try {
@@ -432,8 +422,6 @@ router.get('/', async (_req: Request, res: Response) => {
 // Start a new race session
 router.post('/:id/start', async (req: Request, res: Response) => {
   try {
-    console.log('starting a new race!');
-
     const { id } = req.params;
     const { address, region } = req.body;
 
@@ -450,7 +438,6 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     }
 
     // Get an open vps instance
-    console.log('Joining a Race');
 
     // get vps region programatically
     let regionEnum: VPSRegion = VPSRegion.us_east;
@@ -634,7 +621,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
       session: id
     }).sort({ timestamp: 1 }); // Sort by timestamp ascending
 
-    if(sessionEvents.length > 0) {
+    if (sessionEvents.length > 0) {
       const recordingId = sessionEvents[0].metadata?.recording_id;
 
       if (recordingId) {
@@ -934,7 +921,6 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
         }
       };
       await DatabaseService.createTrainingEvent(questEvent);
-      console.log('Generated initial quest:', questData.quest);
 
       // Create initial hint event
       const hintEvent = {
@@ -953,9 +939,6 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
         events: [questEvent, hintEvent]
       });
     }
-
-    console.log('Current quest:', latestQuestEvent!.message);
-    console.log('Previous hints:', hintHistory);
 
     const result = await generateHint(
       imageUrl,
@@ -1132,13 +1115,9 @@ router.post('/export', async (req: Request, res: Response) => {
     // Get all training events for the selected sessions
     const events = await Promise.all(
       sessions.map(async (session) => {
-        console.log(`Processing session ${session._id}...`);
-
         const sessionEvents = await TrainingEvent.find({
           session: session._id
         }).sort({ timestamp: 1 }); // Sort by timestamp ascending
-
-        console.log(`Found ${sessionEvents.length} events for session ${session._id}`);
 
         // Transform events into a more readable format
         const events = sessionEvents.map((event) => ({
