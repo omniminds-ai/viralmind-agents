@@ -580,24 +580,6 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
       'metadata.rewardValue': { $exists: true }
     });
 
-    // Calculate total rewards
-    totalRewards = rewardEvents.reduce((sum, event) => {
-      return sum + (event.metadata?.rewardValue || 0);
-    }, 0);
-
-    // If there are rewards, transfer the total amount
-    if (totalRewards > 0) {
-      // Transfer total rewards from treasury
-      const signature = await treasuryService.transferFromTreasury(session.address, totalRewards);
-
-      // Update session with transaction signature
-      if (signature) {
-        await DatabaseService.updateRaceSession(id, {
-          transaction_signature: signature
-        });
-      }
-    }
-
     // Kill active connections and remove permissions if session has credentials
     if (session.vm_credentials?.guacToken && session.vm_credentials?.guacConnectionId) {
       try {
@@ -652,18 +634,25 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
       session: id
     }).sort({ timestamp: 1 }); // Sort by timestamp ascending
 
-    const recordingId = sessionEvents[0].metadata.recording_id;
+    if(sessionEvents.length > 0) {
+      const recordingId = sessionEvents[0].metadata?.recording_id;
 
-    if (recordingId) {
-      const s3Service = new AWSS3Service('', '');
-      await s3Service.saveItem({
-        bucket: 'training-gym',
-        file: `${guacService.recordingsPath}/${recordingId}`,
-        name: `${session.vm_credentials?.username}-${id}-recording`
-      });
-      // delete recording
-      await unlink(`${guacService.recordingsPath}/${recordingId}`);
+      if (recordingId) {
+        const s3Service = new AWSS3Service('', '');
+        await s3Service.saveItem({
+          bucket: 'training-gym',
+          file: `${guacService.recordingsPath}/${recordingId}`,
+          name: `${session.vm_credentials?.username}-${id}-recording`
+        });
+        // delete recording
+        await unlink(`${guacService.recordingsPath}/${recordingId}`);
+      }
     }
+
+    // Calculate total rewards
+    totalRewards = rewardEvents.reduce((sum, event) => {
+      return sum + (event.metadata?.rewardValue || 0);
+    }, 0);
   }
 
   // Update session status
@@ -671,6 +660,19 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
     status: 'expired',
     updated_at: new Date()
   });
+
+  // If there are rewards, transfer the total amount
+  if (totalRewards > 0) {
+    // Transfer total rewards from treasury
+    const signature = await treasuryService.transferFromTreasury(session.address, totalRewards);
+
+    // Update session with transaction signature
+    if (signature) {
+      await DatabaseService.updateRaceSession(id, {
+        transaction_signature: signature
+      });
+    }
+  }
 
   if (!updatedSession) {
     throw new Error('Failed to update session status');
