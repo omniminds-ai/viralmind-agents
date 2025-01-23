@@ -73,10 +73,9 @@ export class GuacamoleService {
           }
         }
       );
-      
+
       return Object.fromEntries(
-        Object.entries(response.data)
-          .filter(([_, connection]) => connection.username === username)
+        Object.entries(response.data).filter(([_, connection]) => connection.username === username)
       );
     } catch (error) {
       throw error;
@@ -554,7 +553,6 @@ export class GuacamoleService {
 
       // Find active connection
       const activeConnection = historyResponse.data?.find((entry: any) => entry.endDate === null);
-      console.log(activeConnection);
       if (!activeConnection?.connectionIdentifier) {
         return null;
       }
