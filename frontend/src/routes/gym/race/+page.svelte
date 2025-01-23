@@ -94,8 +94,8 @@
       console.log(data);
 
       // Update quest if one exists
-      if (data.quest) {
-        currentQuest = data.quest;
+      if (data.quest || data.newQuest) {
+        currentQuest = data.newQuest || data.quest;
         maxReward = data.maxReward || 0;
       }
 
