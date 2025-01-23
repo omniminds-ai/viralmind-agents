@@ -95,8 +95,10 @@ services:
     tty: true
     ports:
       - "8001:8001"
-    command: npm start
+    # command: npm start
+    command: sh -c "npm run build && ls && echo '====' && ls build && echo '====' && export NODE_OPTIONS=--openssl-legacy-provider && node build/server.js"
     volumes:
+      - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
       - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
     environment:
       - DB_URI=${DB_URI}
