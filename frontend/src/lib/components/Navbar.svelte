@@ -1,6 +1,6 @@
 <!-- Navbar.svelte -->
 <script lang="ts">
-  import logo from '$lib/assets/logoTransparent.png';
+  import logo from '$lib/assets/logo2.png';
   import { Dumbbell, Trophy, HelpCircle, Book, Coins, Menu, X } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
