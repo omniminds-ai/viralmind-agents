@@ -76,7 +76,7 @@ services:
       - "8080:8080"
     volumes:
       - ./guacamole/home:/opt/guacamole_home
-      - ./guacamole/recordings:/var/lib/guacamole/recordings:ro
+      - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
       - ./guacamole/drive:/drive:rw
     links:
       - guacd
@@ -118,6 +118,8 @@ services:
       - GYM_TREASURY_WALLET=${GYM_TREASURY_WALLET}
       - GYM_TREASURY_WEBHOOK=${GYM_TREASURY_WEBHOOK}
       - VIRAL_TOKEN=${VIRAL_TOKEN}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
     depends_on:
       - mongodb
       - guacd
