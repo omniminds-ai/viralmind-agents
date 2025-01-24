@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pwd && export NODE_OPTIONS=--openssl-legacy-provider && nodemon",
     "build": "node esbuild.js",
-    "start": "export NODE_OPTIONS=--openssl-legacy-provider node build/server.js",
+    "start": "export NODE_OPTIONS=--openssl-legacy-provider && node build/server.js",
     "tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts",
     "init-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts init",
     "start-tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts start",
