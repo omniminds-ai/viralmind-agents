@@ -4,7 +4,7 @@
 # Create salt
 SALT=$(openssl rand -hex 16)
 # Hash the GUACAMOLE_PASSWORD
-PASSWORD_HASH=$(echo -n "$GUACAMOLE_PASSWORD$SALT" | sha256sum | cut -d' ' -f1)
+PASSWORD_HASH=$(echo -n "$GUACAMOLE_PASSWORD" | sha256sum | cut -d' ' -f1)
 
 echo "Initalizing with..."
 echo $GUACAMOLE_USERNAME
@@ -497,11 +497,10 @@ CREATE TABLE guacamole_user_password_history (
 -- Create default user with placeholders
 INSERT INTO guacamole_entity (name, type) VALUES ('${GUACAMOLE_USERNAME}', 'USER');
 
-INSERT INTO guacamole_user (entity_id, password_hash, password_salt, password_date)
+INSERT INTO guacamole_user (entity_id, password_hash, password_date)
 SELECT
     entity_id,
     x'${PASSWORD_HASH}', -- Replace with dynamically generated hash
-    x'${SALT}',
     NOW()
 FROM guacamole_entity WHERE name = '${GUACAMOLE_USERNAME}';
 
