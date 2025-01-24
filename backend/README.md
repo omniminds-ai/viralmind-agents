@@ -7,24 +7,28 @@ This is the backend server for the Jailbreak project. It handles database operat
 The backend provides CLI commands for managing tournaments through Docker:
 
 - Initialize a new tournament:
+
 ```bash
-docker exec back-end npm run init-tournament -- -n "test1" -t "title test" -d "description test" -s "system prompt test" [-m <model>] [-c <character-limit>] [-p <pool>]
+docker exec backend npm run init-tournament -- -n "test1" -t "title test" -d "description test" -s "system prompt test" [-m <model>] [-c <character-limit>] [-p <pool>]
 ```
 
 - Start a tournament:
+
 ```bash
-docker exec back-end npm run tournament -- init-account
-docker exec back-end npm run start-tournament -- -n <name> 
+docker exec backend npm run tournament -- init-account
+docker exec backend npm run start-tournament -- -n <name> 
 ```
 
 - Conclude a tournament:
+
 ```bash
-docker exec back-end npm run conclude-tournament -- -n <name> -w <winner-address>
+docker exec backend npm run conclude-tournament -- -n <name> -w <winner-address>
 ```
 
 ## Database Operations
 
 The backend handles all database operations for tournaments through MongoDB, including:
+
 - Storing tournament information
 - Tracking tournament status
 - Managing tournament participants
@@ -39,10 +43,10 @@ The backend runs in a Docker container. Use docker-compose to manage the service
 docker-compose up -d
 
 # View logs
-docker-compose logs -f back-end
+docker-compose logs -f backend
 
 # Execute commands in container
-docker exec back-end npm run <command>
+docker exec backend npm run <command>
 
 # Stop services
 docker-compose down
