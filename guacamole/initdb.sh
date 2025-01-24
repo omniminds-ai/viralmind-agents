@@ -2,9 +2,9 @@
 
 
 # Create salt
-SALT=$(openssl rand -base64 16)
+SALT=$(openssl rand -hex 16)
 # Hash the GUACAMOLE_PASSWORD
-PASSWORD_HASH=$(echo -n "$GUACAMOLE_PASSWORD$SALT" | sha256sum | awk '{print $1}')
+PASSWORD_HASH=$(echo -n "$GUACAMOLE_PASSWORD$SALT" | sha256sum | cut -d' ' -f1)
 
 echo "Initalizing with..."
 echo $GUACAMOLE_USERNAME
@@ -12,28 +12,6 @@ echo $GUACAMOLE_PASSWORD
 
 mysql -u root -p$MYSQL_ROOT_PASSWORD $MYSQL_DATABASE --execute \
 "
---
--- Licensed to the Apache Software Foundation (ASF) under one
--- or more contributor license agreements.  See the NOTICE file
--- distributed with this work for additional information
--- regarding copyright ownership.  The ASF licenses this file
--- to you under the Apache License, Version 2.0 (the
--- \"License\"); you may not use this file except in compliance
--- with the License.  You may obtain a copy of the License at
---
---   http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing,
--- software distributed under the License is distributed on an
--- \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
--- KIND, either express or implied.  See the License for the
--- specific language governing permissions and limitations
--- under the License.
---
-
---
--- Table of connection groups. Each connection group has a name.
---
 
 CREATE TABLE \`guacamole_connection_group\` (
 
@@ -57,11 +35,6 @@ CREATE TABLE \`guacamole_connection_group\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of connections. Each connection has a name, protocol, and
--- associated set of parameters.
--- A connection may belong to a connection group.
---
 
 CREATE TABLE \`guacamole_connection\` (
 
@@ -92,12 +65,6 @@ CREATE TABLE \`guacamole_connection\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of base entities which may each be either a user or user group. Other
--- tables which represent qualities shared by both users and groups will point
--- to guacamole_entity, while tables which represent qualities specific to
--- users or groups will point to guacamole_user or guacamole_user_group.
---
 
 CREATE TABLE \`guacamole_entity\` (
 
@@ -111,12 +78,6 @@ CREATE TABLE \`guacamole_entity\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of users. Each user has a unique username and a hashed password
--- with corresponding salt. Although the authentication system will always set
--- salted passwords, other systems may set unsalted passwords by simply not
--- providing the salt.
---
 
 CREATE TABLE \`guacamole_user\` (
 
@@ -160,11 +121,6 @@ CREATE TABLE \`guacamole_user\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of user groups. Each user group may have an arbitrary set of member
--- users and member groups, with those members inheriting the permissions
--- granted to that group.
---
 
 CREATE TABLE \`guacamole_user_group\` (
 
@@ -185,9 +141,6 @@ CREATE TABLE \`guacamole_user_group\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of users which are members of given user groups.
---
 
 CREATE TABLE \`guacamole_user_group_member\` (
 
@@ -208,13 +161,6 @@ CREATE TABLE \`guacamole_user_group_member\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of sharing profiles. Each sharing profile has a name, associated set
--- of parameters, and a primary connection. The primary connection is the
--- connection that the sharing profile shares, and the parameters dictate the
--- restrictions/features which apply to the user joining the connection via the
--- sharing profile.
---
 
 CREATE TABLE guacamole_sharing_profile (
 
@@ -232,10 +178,6 @@ CREATE TABLE guacamole_sharing_profile (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of connection parameters. Each parameter is simply a name/value pair
--- associated with a connection.
---
 
 CREATE TABLE \`guacamole_connection_parameter\` (
 
@@ -251,13 +193,6 @@ CREATE TABLE \`guacamole_connection_parameter\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of sharing profile parameters. Each parameter is simply
--- name/value pair associated with a sharing profile. These parameters dictate
--- the restrictions/features which apply to the user joining the associated
--- connection via the sharing profile.
---
-
 CREATE TABLE guacamole_sharing_profile_parameter (
 
   \`sharing_profile_id\` integer       NOT NULL,
@@ -272,12 +207,6 @@ CREATE TABLE guacamole_sharing_profile_parameter (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of arbitrary user attributes. Each attribute is simply a name/value
--- pair associated with a user. Arbitrary attributes are defined by other
--- extensions. Attributes defined by this extension will be mapped to
--- properly-typed columns of a specific table.
---
 
 CREATE TABLE guacamole_user_attribute (
 
@@ -294,12 +223,6 @@ CREATE TABLE guacamole_user_attribute (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of arbitrary user group attributes. Each attribute is simply a
--- name/value pair associated with a user group. Arbitrary attributes are
--- defined by other extensions. Attributes defined by this extension will be
--- mapped to properly-typed columns of a specific table.
---
 
 CREATE TABLE guacamole_user_group_attribute (
 
@@ -316,12 +239,6 @@ CREATE TABLE guacamole_user_group_attribute (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of arbitrary connection attributes. Each attribute is simply a
--- name/value pair associated with a connection. Arbitrary attributes are
--- defined by other extensions. Attributes defined by this extension will be
--- mapped to properly-typed columns of a specific table.
---
 
 CREATE TABLE guacamole_connection_attribute (
 
@@ -338,12 +255,6 @@ CREATE TABLE guacamole_connection_attribute (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of arbitrary connection group attributes. Each attribute is simply a
--- name/value pair associated with a connection group. Arbitrary attributes are
--- defined by other extensions. Attributes defined by this extension will be
--- mapped to properly-typed columns of a specific table.
---
 
 CREATE TABLE guacamole_connection_group_attribute (
 
@@ -360,12 +271,6 @@ CREATE TABLE guacamole_connection_group_attribute (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of arbitrary sharing profile attributes. Each attribute is simply a
--- name/value pair associated with a sharing profile. Arbitrary attributes are
--- defined by other extensions. Attributes defined by this extension will be
--- mapped to properly-typed columns of a specific table.
---
 
 CREATE TABLE guacamole_sharing_profile_attribute (
 
@@ -382,10 +287,6 @@ CREATE TABLE guacamole_sharing_profile_attribute (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of connection permissions. Each connection permission grants a user or
--- user group specific access to a connection.
---
 
 CREATE TABLE \`guacamole_connection_permission\` (
 
@@ -408,10 +309,6 @@ CREATE TABLE \`guacamole_connection_permission\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of connection group permissions. Each group permission grants a user
--- or user group specific access to a connection group.
---
 
 CREATE TABLE \`guacamole_connection_group_permission\` (
 
@@ -434,10 +331,6 @@ CREATE TABLE \`guacamole_connection_group_permission\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of sharing profile permissions. Each sharing profile permission grants
--- a user or user group specific access to a sharing profile.
---
 
 CREATE TABLE guacamole_sharing_profile_permission (
 
@@ -460,10 +353,6 @@ CREATE TABLE guacamole_sharing_profile_permission (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of system permissions. Each system permission grants a user or user
--- group a system-level privilege of some kind.
---
 
 CREATE TABLE \`guacamole_system_permission\` (
 
@@ -483,11 +372,6 @@ CREATE TABLE \`guacamole_system_permission\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of user permissions. Each user permission grants a user or user group
--- access to another user (the \"affected\" user) for a specific type of
--- operation.
---
 
 CREATE TABLE \`guacamole_user_permission\` (
 
@@ -510,11 +394,6 @@ CREATE TABLE \`guacamole_user_permission\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of user group permissions. Each user group permission grants a user
--- or user group access to a another user group (the \"affected\" user group) for
--- a specific type of operation.
---
 
 CREATE TABLE \`guacamole_user_group_permission\` (
 
@@ -537,11 +416,6 @@ CREATE TABLE \`guacamole_user_group_permission\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Table of connection history records. Each record defines a specific user's
--- session, including the connection used, the start time, and the end time
--- (if any).
---
 
 CREATE TABLE \`guacamole_connection_history\` (
 
@@ -578,9 +452,6 @@ CREATE TABLE \`guacamole_connection_history\` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- User login/logout history
---
 
 CREATE TABLE guacamole_user_history (
 
@@ -603,9 +474,6 @@ CREATE TABLE guacamole_user_history (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- User password history
---
 
 CREATE TABLE guacamole_user_password_history (
 
@@ -625,24 +493,6 @@ CREATE TABLE guacamole_user_password_history (
     REFERENCES \`guacamole_user\` (\`user_id\`) ON DELETE CASCADE
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
---
--- Licensed to the Apache Software Foundation (ASF) under one
--- or more contributor license agreements.  See the NOTICE file
--- distributed with this work for additional information
--- regarding copyright ownership.  The ASF licenses this file
--- to you under the Apache License, Version 2.0 (the
--- \"License\"); you may not use this file except in compliance
--- with the License.  You may obtain a copy of the License at
---
---   http://www.apache.org/licenses/LICENSE-2.0
---
--- Unless required by applicable law or agreed to in writing,
--- software distributed under the License is distributed on an
--- \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
--- KIND, either express or implied.  See the License for the
--- specific language governing permissions and limitations
--- under the License.
---
 
 -- Create default user with placeholders
 INSERT INTO guacamole_entity (name, type) VALUES ('${GUACAMOLE_USERNAME}', 'USER');
