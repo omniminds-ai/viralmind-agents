@@ -12,21 +12,26 @@ services:
       - "4822:4822"
     networks:
       - node-network 
+      
   mysql:
-    image: mysql:5.7
     platform: linux/amd64
-    container_name: guac_mysql
+    container_name: mysql
+    image: mysql:5.7
     restart: always
+    ports:
+      - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: guacamole_root_pw
-      MYSQL_DATABASE: guacamole_db
-      MYSQL_USER: guacamole_user
-      MYSQL_PASSWORD: guacamole_user_pw
+      MYSQL_ROOT_PASSWORD: ${GUAC_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${GUAC_MYSQL_DATABASE}
+      MYSQL_USER: ${GUAC_MYSQL_USER}
+      MYSQL_PASSWORD: ${GUAC_MYSQL_USER_PASSWORD}
+      GUACAMOLE_USERNAME: ${GUACAMOLE_USERNAME}
+      GUACAMOLE_PASSWORD: ${GUACAMOLE_PASSWORD}
     volumes:
       - guacamole_db:/var/lib/mysql
-      - ./guacamole/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+      - ./guacamole/initdb.sh:/docker-entrypoint-initdb.d/initdb.sh
     networks:
-      - node-network 
+      - node-network
   guacamole:
     image: guacamole/guacamole
     container_name: guacamole
@@ -39,9 +44,9 @@ services:
       GUACAMOLE_HOME: '/opt/guacamole_home'
       GUACD_HOSTNAME: guacd
       MYSQL_HOSTNAME: mysql
-      MYSQL_DATABASE: guacamole_db
-      MYSQL_USER: guacamole_user
-      MYSQL_PASSWORD: guacamole_user_pw
+      MYSQL_DATABASE: ${GUAC_MYSQL_DATABASE}
+      MYSQL_USER: ${GUAC_MYSQL_USER}
+      MYSQL_PASSWORD: ${GUAC_MYSQL_USER_PASSWORD}
       GUACAMOLE_CORS_ENABLED: 'true'
       GUACAMOLE_CORS_ALLOWED_ORIGINS: '*'
       GUACAMOLE_CORS_ALLOWED_METHODS: 'GET, POST, PUT, DELETE, OPTIONS'
@@ -67,8 +72,7 @@ services:
     tty: true
     ports:
       - "8001:8001"
-    # command: npm start
-    command: sh -c "npm run build && export NODE_OPTIONS=--openssl-legacy-provider && node build/server.js"
+    command:  sh -c "npm run build && npm run start"
     volumes:
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
       - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
@@ -95,6 +99,7 @@ services:
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - GUACAMOLE_PASSWORD=${GUACAMOLE_PASSWORD}
+      - GUACAMOLE_USERNAME=${GUACAMOLE_USERNAME}
     depends_on:
       - mongodb
       # - windows
@@ -122,7 +127,6 @@ services:
     ports:
       - "5173:5173"
     command: sh -c "npm run build && npm run preview -- --host 0.0.0.0 --port 5173"
-
   nginx:
     build:
       context: nginx
@@ -144,4 +148,3 @@ networks:
 volumes:
   mongodb_data:
   guacamole_db:
-
