@@ -504,7 +504,18 @@ router.post('/:id/start', async (req: Request, res: Response) => {
       guacURL
     });
   } catch (error) {
-    console.error('Error starting race:', error);
+    // parse axios errors because they're wildly long
+    if ((error as Error).name.includes('AxiosError')) {
+      const err = error as AxiosError;
+      console.log({
+        code: err.code,
+        status: err.response?.status,
+        message: err.response?.statusText,
+        details: err.response?.data
+      });
+    } else {
+      console.error('Error starting race:', error);
+    }
     res.status(500).json({ error: 'Failed to start race' });
   }
 });
@@ -883,17 +894,17 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
 
     // if theres a screenshot but no initial quest
     // then assume the initial quest is still generating & abort
-    if(session.preview) {
+    if (session.preview) {
       const latestQuestEvent = await TrainingEvent.findOne(
         { session: id, type: 'quest' },
         {},
         { sort: { timestamp: -1 } }
       );
-      
+
       if (!latestQuestEvent) {
-        res.status(202).json({ 
+        res.status(202).json({
           message: 'Initial quest is still generating',
-          isGenerating: true 
+          isGenerating: true
         });
         return;
       }
@@ -983,7 +994,6 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to generate hint' });
   }
 });
-
 
 // Export training events for selected race sessions
 router.get('/export', async (req: Request, res: Response) => {
