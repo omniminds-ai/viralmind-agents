@@ -555,11 +555,20 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
     throw new Error('Session not found');
   }
 
+  const was_active = session.status === 'active';
+
+  // Update session status
+  const updatedSession = await DatabaseService.updateRaceSession(id, {
+    status: 'expired',
+    updated_at: new Date()
+  });
+
+
   // Initialize total rewards
   let totalRewards = 0;
 
   // Only process rewards if session is active
-  if (session.status === 'active') {
+  if (was_active) {
     // Get all reward events for this session
     const rewardEvents = await TrainingEvent.find({
       session: id,
@@ -647,24 +656,18 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
     totalRewards = rewardEvents.reduce((sum, event) => {
       return sum + (event.metadata?.rewardValue || 0);
     }, 0);
-  }
+    
+    // If there are rewards, transfer the total amount
+    if (totalRewards > 0) {
+      // Transfer total rewards from treasury
+      const signature = await treasuryService.transferFromTreasury(session.address, totalRewards);
 
-  // Update session status
-  const updatedSession = await DatabaseService.updateRaceSession(id, {
-    status: 'expired',
-    updated_at: new Date()
-  });
-
-  // If there are rewards, transfer the total amount
-  if (totalRewards > 0) {
-    // Transfer total rewards from treasury
-    const signature = await treasuryService.transferFromTreasury(session.address, totalRewards);
-
-    // Update session with transaction signature
-    if (signature) {
-      await DatabaseService.updateRaceSession(id, {
-        transaction_signature: signature
-      });
+      // Update session with transaction signature
+      if (signature) {
+        await DatabaseService.updateRaceSession(id, {
+          transaction_signature: signature
+        });
+      }
     }
   }
 
@@ -675,7 +678,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
   // Return total rewards if session was active
   return {
     success: true,
-    ...(session.status === 'active' ? { totalRewards } : {})
+    ...(was_active ? { totalRewards } : {})
   };
 }
 
