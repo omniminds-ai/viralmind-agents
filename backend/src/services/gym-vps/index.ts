@@ -46,6 +46,8 @@ export class GymVPSService {
     await ssh.execCommand(`sudo su root -c "useradd -m -s /bin/bash \'${username}'"`);
     // set password
     await ssh.execCommand(`sudo su root -c "echo '${username}:${password}' | chpasswd"`);
+    // close the connection
+    ssh.dispose();
     // todo: create a usergroup that prevents breaking the system but allows installing packages
     // add to usergroup
     // await ssh.execCommand(`usermod -aG sudo "${username}"`);
@@ -80,6 +82,8 @@ export class GymVPSService {
       }
     }
     await ssh.execCommand(`sudo rm -rf -r '/home/${username}'`);
+    // close the connection
+    ssh.dispose();
     // todo: create a usergroup that prevents breaking the system but allows installing packages
     // remove from usergroup
     //await ssh.execCommand(`gpasswd --delete "${username} group`)
