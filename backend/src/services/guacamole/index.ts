@@ -271,8 +271,9 @@ export class GuacamoleService {
   ): Promise<string> {
     try {
       const connectionName = `RDP-${ip}-${username}`;
+      let connectionId: string | null = null;
 
-      // First try to get existing connection
+      // Try to get existing connection
       try {
         const response = await axios.get(
           `${this.baseUrl}/api/session/data/${this.dataSource}/connections`,
@@ -287,17 +288,13 @@ export class GuacamoleService {
         const connections = response.data;
         for (const [id, connection] of Object.entries(connections)) {
           if ((connection as any).name === connectionName) {
-            console.log(`Found existing connection: ${connectionName}`);
-            return id as string;
+            connectionId = id as string;
+            break;
           }
         }
       } catch (error) {
         console.log('Error checking existing connections:', error);
-        // Continue to create new connection if we can't check existing ones
       }
-
-      // If we get here, create new connection
-      console.log(`Creating new connection: ${connectionName}`);
 
       // Define the RDP connection configuration
       const connection: GuacamoleConnection = {
@@ -309,7 +306,7 @@ export class GuacamoleService {
           port: '3389',
           username: username,
           password: password,
-          security: 'any', // Enable security/auth
+          security: 'any',
           'ignore-cert': 'true',
           width: '1280',
           height: '800',
@@ -319,8 +316,8 @@ export class GuacamoleService {
           'recording-include-keys': 'true',
           'create-recording-path': 'true',
           'enable-recording': 'true',
-          'enable-wallpaper': 'true', // Enable wallpaper
-          'disable-auth': 'false' // Enable authentication
+          'enable-wallpaper': 'true',
+          'disable-auth': 'false'
         },
         attributes: {
           'max-connections': '1',
@@ -328,7 +325,24 @@ export class GuacamoleService {
         }
       };
 
-      // Create the connection
+      if (connectionId) {
+        // Update existing connection
+        await axios.put(
+          `${this.baseUrl}/api/session/data/${this.dataSource}/connections/${connectionId}`,
+          connection,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Guacamole-Token': token
+            }
+          }
+        );
+        console.log(`Updated existing connection: ${connectionName}`);
+        return connectionId;
+      }
+
+      // Create new connection if none exists
+      console.log(`Creating new connection: ${connectionName}`);
       const createResponse = await axios.post(
         `${this.baseUrl}/api/session/data/${this.dataSource}/connections`,
         connection,
@@ -341,13 +355,12 @@ export class GuacamoleService {
       );
 
       if (!createResponse.data?.identifier) {
-        console.error('Connection response:', createResponse.data);
         throw new Error('No connection identifier in response');
       }
 
       return createResponse.data.identifier;
     } catch (error) {
-      console.error('Connection creation/retrieval error:', error);
+      console.error('Connection creation/update error:', error);
       if (axios.isAxiosError(error)) {
         console.error('Response data:', error.response?.data);
       }
