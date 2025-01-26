@@ -1,0 +1,22 @@
+{
+  "name": "pipeline",
+  "version": "1.0.0",
+  "main": "process.js",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "start": "tsx main.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cli-table3": "^0.6.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.10",
+    "vitest": "^1.6.0"
+  }
+}
