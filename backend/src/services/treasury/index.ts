@@ -44,31 +44,29 @@ export class TreasuryService {
     amount: number
   ): Promise<string | false> {
     try {
-      // Get initial treasury balance
       const initialBalance = await this.blockchainService.getTokenBalance(
         this.viralToken,
         this.treasuryKeypair.publicKey.toString()
       );
 
-      // Perform transfer
-      const signature = await this.blockchainService.transferToken(
+      const result = await this.blockchainService.transferToken(
         this.viralToken,
         amount,
         this.treasuryKeypair,
         recipientAddress
       );
 
-      if (!signature) {
+      if (!result) {
         throw new Error('Transfer failed');
       }
 
-      // Get final treasury balance
+      const { signature, usedFeePercentage } = result;
+
       const finalBalance = await this.blockchainService.getTokenBalance(
         this.viralToken,
         this.treasuryKeypair.publicKey.toString()
       );
 
-      // Prepare webhook payload
       const webhookPayload: WebhookPayload = {
         embeds: [{
           title: '🎉 Treasury Transfer Complete',
@@ -90,6 +88,11 @@ export class TreasuryService {
               inline: true
             },
             {
+              name: '💨 Priority Fee Used',
+              value: `${usedFeePercentage}% of base fee`,
+              inline: true
+            },
+            {
               name: '🔗 Transaction',
               value: `[View on Solscan](https://solscan.io/tx/${signature})`,
               inline: false
@@ -100,18 +103,16 @@ export class TreasuryService {
               inline: false
             }
           ],
-          color: 5793266 // Green color
+          color: 5793266
         }]
       };
 
-      // Send webhook notification
       await axios.post(this.webhookUrl, webhookPayload);
 
       return signature;
     } catch (error) {
       console.error('Treasury transfer failed:', error);
       
-      // Send error webhook
       const errorPayload: WebhookPayload = {
         embeds: [{
           title: '❌ Treasury Transfer Failed',
@@ -128,7 +129,7 @@ export class TreasuryService {
               inline: true
             }
           ],
-          color: 15158332 // Red color
+          color: 15158332
         }]
       };
 

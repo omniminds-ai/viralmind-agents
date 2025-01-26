@@ -96,52 +96,45 @@ class BlockchainService {
     }
   }
   
+  
   async transferToken(
     tokenMint: string, 
     amount: number,
     fromWallet: Keypair,
-    toAddress: string
-  ): Promise<string | false> {
+    toAddress: string,
+    retryCount: number = 0
+  ): Promise<{ signature: string; usedFeePercentage: number } | false> {
     try {
-      console.log(`Sending ${amount} ${tokenMint} from ${fromWallet.publicKey.toString()} to ${toAddress}`);
+      const feePercentages = [0.01, 0.1, 0.5, 1.0];
+      const currentFeePercentage = feePercentages[retryCount] || 1.0;
       
-      // Step 1: Get source token account
-      console.log(`1 - Getting Source Token Account`);
+      console.log(`Attempt ${retryCount + 1} with ${currentFeePercentage * 100}% of base priority fee`);
+      
       const sourceAccount = await getOrCreateAssociatedTokenAccount(
         this.connection,
         fromWallet,
         new PublicKey(tokenMint),
         fromWallet.publicKey
       );
-      console.log(`    Source Account: ${sourceAccount.address.toString()}`);
-  
-      // Step 2: Get destination token account
-      console.log(`2 - Getting Destination Token Account`);
+
       const destinationAccount = await getOrCreateAssociatedTokenAccount(
         this.connection,
         fromWallet,
         new PublicKey(tokenMint),
         new PublicKey(toAddress)
       );
-      console.log(`    Destination Account: ${destinationAccount.address.toString()}`);
-  
-      // Step 3: Get token decimals
-      console.log(`3 - Fetching Number of Decimals for Mint: ${tokenMint}`);
+
       const tokenInfo = await this.connection.getParsedAccountInfo(new PublicKey(tokenMint));
       const decimals = (tokenInfo.value?.data as any).parsed.info.decimals;
-      console.log(`    Number of Decimals: ${decimals}`);
-  
-      // Step 4: Get QuickNode priority fees
-      console.log(`4 - Fetching QuickNode priority fees`);
-      const priorityFee = await this.getQuickNodePriorityFees();
-      console.log(`    Using priority fee: ${priorityFee} microLamports`);
-  
-      // Step 5: Create and send transaction
-      console.log(`5 - Creating and Sending Transaction`);
+
+      const basePriorityFee = await this.getQuickNodePriorityFees();
+      const adjustedPriorityFee = Math.floor(basePriorityFee * currentFeePercentage);
+      
+      console.log(`Base priority fee: ${basePriorityFee}, Using: ${adjustedPriorityFee}`);
+
       const transaction = new Transaction();
-  
-      // Add transfer instruction
       const transferAmount = amount * Math.pow(10, decimals);
+      
       transaction.add(
         createTransferInstruction(
           sourceAccount.address,
@@ -150,28 +143,18 @@ class BlockchainService {
           transferAmount
         )
       );
-  
-      // Add compute budget instructions with QuickNode fee
+
       transaction.add(
         ComputeBudgetProgram.setComputeUnitLimit({ units: 300000 })
       );
       transaction.add(
-        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFee })
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: adjustedPriorityFee })
       );
-  
-      // Get latest blockhash
+
       const latestBlockHash = await this.connection.getLatestBlockhash('confirmed');
       transaction.recentBlockhash = latestBlockHash.blockhash;
       transaction.feePayer = fromWallet.publicKey;
-  
-      console.log('Transaction details:', {
-        instructions: transaction.instructions.length,
-        priorityFee,
-        recentBlockhash: latestBlockHash.blockhash
-      });
-  
-      // Send and confirm transaction
-      console.log('Sending transaction...');
+
       const signature = await sendAndConfirmTransaction(
         this.connection,
         transaction,
@@ -181,24 +164,34 @@ class BlockchainService {
           maxRetries: 5
         }
       );
-  
+
       console.log(
-        '\x1b[32m', // Green text
-        `   Transaction Success!🎉`,
+        '\x1b[32m',
+        `Transaction Success!🎉 (${currentFeePercentage * 100}% fee)`,
         `\n    https://explorer.solana.com/tx/${signature}?cluster=mainnet`
       );
-  
-      return signature;
-  
+
+      return { 
+        signature, 
+        usedFeePercentage: currentFeePercentage * 100 
+      };
+
     } catch (error: any) {
-      console.error('\x1b[31m', 'Transfer failed:', { // Red text
+      console.error('\x1b[31m', 'Transfer failed:', {
         message: error.message,
         logs: error?.logs
       });
+
+      // Retry with higher fee if possible
+      if (retryCount < 3) {
+        console.log(`Retrying with higher fee percentage...`);
+        return this.transferToken(tokenMint, amount, fromWallet, toAddress, retryCount + 1);
+      }
+
       return false;
     }
   }
-
+  
   // Utility to calculate the discriminator
   calculateDiscriminator(instructionName: string) {
     const hash = createHash("sha256")
