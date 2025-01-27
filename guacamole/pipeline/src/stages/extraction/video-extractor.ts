@@ -41,9 +41,16 @@ export class VideoExtractor implements PipelineStage<string, ProcessedEvent[]> {
             fs.mkdirSync(tempDir, { recursive: true });
         }
         
-        // Extract keyframes every second for demo
-        // In practice, you'd want to be more selective
-        for (let time = 0; time < 3 * 60000; time += 1000) {
+        // Get video duration
+        const durationStr = execSync(
+            `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
+            { encoding: 'utf-8' }
+        );
+        const durationSecs = Math.floor(parseFloat(durationStr));
+        const durationMs = durationSecs * 1000;
+
+        // Extract keyframes every second for the entire duration
+        for (let time = 0; time <= durationMs; time += 1000) {
             const frame = await this.extractFrame(videoPath, time);
             if (frame) {
                 events.push({
