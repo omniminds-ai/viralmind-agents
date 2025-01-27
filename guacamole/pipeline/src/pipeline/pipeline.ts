@@ -10,12 +10,24 @@ export class Pipeline {
     async process(sessionId: string): Promise<ProcessedEvent[]> {
         let allEvents: ProcessedEvent[] = [];
         
-        for (const stage of this.config.stages) {
+        // Run extractors first
+        for (const extractor of this.config.extractors) {
             try {
-                const stageEvents = await stage.process(sessionId);
-                allEvents = [...allEvents, ...stageEvents];
+                const extractedEvents = await extractor.process(sessionId);
+                allEvents = [...allEvents, ...extractedEvents];
             } catch (error) {
-                console.error(`Pipeline stage failed:`, error);
+                console.error(`Extractor stage failed:`, error);
+                throw error;
+            }
+        }
+
+        // Then run augmenters on the combined events
+        for (const augmenter of this.config.augmenters) {
+            try {
+                allEvents = await augmenter.process(allEvents);
+                // allEvents = [...allEvents, ...augmentedEvents];
+            } catch (error) {
+                console.error(`Augmenter stage failed:`, error);
                 throw error;
             }
         }

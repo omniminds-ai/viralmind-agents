@@ -51,7 +51,7 @@ export interface Message {
 }
 
 export interface ProcessedEvent {
-    type: 'keydown' | 'keyup' | 'mousedown' | 'mouseup' | 'mousedrag' | 'frame' | 'quest' | 'hint' | 'mouseclick' | 'type' | 'hotkey';
+    type: 'keydown' | 'keyup' | 'mousedown' | 'mouseup' | 'mousedrag' | 'frame' | 'quest' | 'hint' | 'mouseclick' | 'type' | 'hotkey' | 'dense_caption' | 'state_transition' | 'structured_data';
     timestamp: number;
     data: {
         x?: number;
@@ -59,6 +59,8 @@ export interface ProcessedEvent {
         keyCode?: number;
         text?: string;
         frame?: string;
+        beforeFrame?: string;
+        afterFrame?: string;
         message?: string;
         coordinates?: Array<{
             time: number;  // relative ms from start of drag
@@ -76,5 +78,6 @@ export interface PipelineConfig {
     dataDir: string;
     outputDir: string;
     sessionIds: string[];
-    stages: PipelineStage<any, any>[];
+    extractors: PipelineStage<string, ProcessedEvent[]>[];
+    augmenters: PipelineStage<ProcessedEvent[], ProcessedEvent[]>[];
 }

@@ -165,7 +165,7 @@ export class GuacExtractor implements PipelineStage<string, ProcessedEvent[]> {
         
         const flushText = () => {
             if (currentText.length > 0 && firstTimestamp !== null) {
-                console.log('Flushing text:', currentText, 'with timestamp:', firstTimestamp); // Debug log
+                // console.log('Flushing text:', currentText, 'with timestamp:', firstTimestamp); // Debug log
                 events.push({
                     type: 'type',
                     timestamp: firstTimestamp,
@@ -215,7 +215,7 @@ export class GuacExtractor implements PipelineStage<string, ProcessedEvent[]> {
                         firstTimestamp = event.timestamp;  // Set timestamp only for first character
                     }
                     currentText += event.text;
-                    console.log('Current text:', currentText, 'first timestamp:', firstTimestamp); // Debug log
+                    // console.log('Current text:', currentText, 'first timestamp:', firstTimestamp); // Debug log
                 }
             } else if (event.type === 'keyup' && isModifier) {
                 activeModifiers.delete(modifierName);
