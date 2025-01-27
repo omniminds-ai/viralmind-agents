@@ -43,12 +43,15 @@ export interface GuacInstruction {
 
 export interface Message {
     role: 'user' | 'assistant';
-    content: string;
+    content: string | {
+        type: 'image';
+        data: string;
+    };
     timestamp: number;
 }
 
 export interface ProcessedEvent {
-    type: 'keydown' | 'keyup' | 'mousedown' | 'mouseup' | 'mousedrag' | 'frame' | 'quest' | 'hint';
+    type: 'keydown' | 'keyup' | 'mousedown' | 'mouseup' | 'mousedrag' | 'frame' | 'quest' | 'hint' | 'mouseclick' | 'type' | 'hotkey';
     timestamp: number;
     data: {
         x?: number;

@@ -77,13 +77,19 @@ export function visualizeMessages(messages: Message[]): string {
                 .role.assistant { color: #2c5282; }
                 .timestamp { color: #666; margin-right: 10px; }
                 .content { margin: 0; white-space: pre-wrap; font-family: monospace; }
+                .content img { max-height: 200px; }
             </style>
-            ${messages.map(msg => `
+            ${messages.map(msg => {
+                const content = typeof msg.content === 'object' && msg.content.type === 'image'
+                    ? `<img src="data:image/jpeg;base64,${msg.content.data}" height="200"/>`
+                    : `<pre class="content">${msg.content}</pre>`;
+                
+                return `
                 <div class="message">
                     <span class="timestamp">${formatTimestamp(msg.timestamp)}</span>
                     <span class="role ${msg.role}">${msg.role}</span>
-                    <pre class="content">${msg.content}</pre>
-                </div>
-            `).join('\n')}
+                    ${content}
+                </div>`;
+            }).join('\n')}
         </div>`;
 }

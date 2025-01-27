@@ -86,10 +86,10 @@
               Play. Earn. Train <span class="text-purple-400">Computer-Use Agents.</span>
             </h1>
             <p class="mb-4 text-xl text-gray-300 md:text-2xl">
-              We're leading a computer-use agent revolution.
+              Turn powerful foundation models into capable computer-use agents.
             </p>
             <p class="mb-12 text-lg text-gray-400">
-              Open-source has ZERO desktop computer-use datasets. With AI, data is king, so we built the Training Gym - the ONLY platform that collects high-quality data for training computer-use agents, using diverse AI-generated tasks, and instantly rewards you for participating.
+              Open-source has ZERO desktop computer-use datasets. We're changing that with the Training Gym - the ONLY platform that collects high-quality data for fine-tuning state-of-the-art models like DeepSeek and Qwen VL into powerful computer-use agents. Get instantly rewarded for contributing to the future of AI.
             </p>
             <div class="flex gap-4">
               <ButtonCTA href="/gym">
@@ -213,37 +213,34 @@
           Training powerful agents is now efficient and rewarding, powered by the $VIRAL token
           ecosystem
         </p>
-
         <div class="grid gap-8 md:grid-cols-3">
           <div class="rounded-xl bg-black/30 p-8">
             <div class="mb-4 flex justify-center">
-              <Brain class="h-12 w-12 text-purple-400" />
+              <Gamepad2 class="h-12 w-12 text-purple-400" />
             </div>
-            <h3 class="mb-4 text-2xl font-bold">Train</h3>
+            <h3 class="mb-4 text-2xl font-bold">Play Tasks</h3>
             <p class="text-gray-400">
-              Play games and complete tasks in our Training Gym. Your behavior becomes high-quality
-              training data.
+              Jump into our Training Gym and complete AI-generated computer tasks. From games to apps, every click and action contributes to something bigger.
             </p>
           </div>
-
+        
           <div class="rounded-xl bg-black/30 p-8">
             <div class="mb-4 flex justify-center">
               <Coins class="h-12 w-12 text-purple-400" />
             </div>
-            <h3 class="mb-4 text-2xl font-bold">Earn</h3>
+            <h3 class="mb-4 text-2xl font-bold">Earn Instantly</h3>
             <p class="text-gray-400">
-              Get rewarded in $VIRAL tokens for quality demonstrations. Build valuable datasets
-              others can use.
+              Your gameplay automatically becomes high-quality training data. We augment UI with reasoning, and you get $VIRAL tokens instantly for your contributions.
             </p>
           </div>
-
+        
           <div class="rounded-xl bg-black/30 p-8">
             <div class="mb-4 flex justify-center">
-              <MonitorPlay class="h-12 w-12 text-purple-400" />
+              <Bot class="h-12 w-12 text-purple-400" />
             </div>
-            <h3 class="mb-4 text-2xl font-bold">Deploy</h3>
+            <h3 class="mb-4 text-2xl font-bold">Create Agents</h3>
             <p class="text-gray-400">
-              One-click deploy your trained agents. Earn when others use your agent's capabilities.
+              Turn your data into powerful computer-use agents that understand any UI. One-click trains DeepSeek into your own LAM that can reason, navigate, and execute tasks just like you do.
             </p>
           </div>
         </div>

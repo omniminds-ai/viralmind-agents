@@ -22,7 +22,30 @@ export class Pipeline {
 
         // Sort events by timestamp
         allEvents.sort((a, b) => a.timestamp - b.timestamp);
-        return allEvents;
+
+        // Filter consecutive frame events, keeping only the last one
+        const result: ProcessedEvent[] = [];
+        let consecutiveFrames: ProcessedEvent[] = [];
+
+        for (const event of allEvents) {
+            if (event.type === 'frame') {
+                consecutiveFrames.push(event);
+            } else {
+                if (consecutiveFrames.length > 0) {
+                    // Only keep the last frame from consecutive frames
+                    result.push(consecutiveFrames[consecutiveFrames.length - 1]);
+                    consecutiveFrames = [];
+                }
+                result.push(event);
+            }
+        }
+
+        // Handle any remaining consecutive frames at the end
+        if (consecutiveFrames.length > 0) {
+            result.push(consecutiveFrames[consecutiveFrames.length - 1]);
+        }
+
+        return result;
     }
 
     async run(): Promise<void> {
