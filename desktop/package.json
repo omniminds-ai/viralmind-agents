@@ -1,0 +1,54 @@
+{
+  "name": "desktop",
+  "version": "1.0.0",
+  "main": "dist-electron/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:preload": "tsc -p tsconfig.preload.json",
+    "build": "rimraf dist dist-electron && npm run build:renderer && npm run build:electron && npm run build:preload",
+    "preview": "vite preview",
+    "start": "cross-env NODE_ENV=development npm run build && electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "GUI Agent Chat Application",
+  "dependencies": {
+    "@computer-use/nut-js": "^4.2.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "big.js": "^6.2.2",
+    "concurrently": "^9.1.2",
+    "dotenv": "^16.4.7",
+    "electron": "^34.0.1",
+    "lucide-svelte": "^0.474.0",
+    "openai": "^4.80.1",
+    "screenshot-desktop": "^1.15.1",
+    "sharp": "^0.33.5",
+    "svelte": "^5.19.3"
+  },
+  "build": {
+    "appId": "com.viralmind.gui-agent-chat",
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "directories": {
+      "output": "release"
+    }
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@types/big.js": "^6.2.2",
+    "@types/node": "^22.10.10",
+    "@types/screenshot-desktop": "^1.12.3",
+    "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.5.1",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11"
+  }
+}

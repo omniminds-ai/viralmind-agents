@@ -1,0 +1,5 @@
+dist-electron
+.env
+node_modules
+inference
+tmp
