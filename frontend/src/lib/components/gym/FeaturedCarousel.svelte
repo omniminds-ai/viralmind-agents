@@ -50,7 +50,7 @@
   <div class="relative h-[550px] md:h-[500px] lg:h-[480px]">
     {#each slides as slide, i}
       <div
-        class="absolute h-full w-full rounded-3xl bg-gradient-to-br {slide.bgGradient} p-12 backdrop-blur-sm {slide.hoverGradient} flex items-center overflow-hidden transition-all duration-700 ease-in-out"
+        class="absolute h-full w-full rounded-3xl bg-gradient-to-br {slide.bgGradient} px-16 pt-12 backdrop-blur-sm {slide.hoverGradient} flex items-center overflow-hidden transition-all duration-700 ease-in-out"
         style="opacity: {i === currentSlide ? 1 : 0}; transform: scale({i === currentSlide
           ? 1
           : 0.98}) translateX({(i - currentSlide) * 100}%); pointer-events: {i === currentSlide

@@ -45,9 +45,7 @@
           <img
             src={logo}
             alt="ViralMind"
-            class="h-6 w-6 transition-transform"
-            class:scale-0={mounted}
-            style="position: absolute; left: 24px; opacity: 0;"
+            class="h-6 w-6 transition-transform group-hover:-translate-x-0.5"
           />
         </a>
 
@@ -60,7 +58,7 @@
       </div>
 
       <!-- Center navigation -->
-      <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center space-x-8 md:flex">
+      <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center space-x-8 lg:flex">
         <a
           href="/gym/free-races"
           class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
@@ -84,12 +82,12 @@
         </a>
       </nav>
 
-      <div class="flex items-center md:hidden">
+      <div class="hidden items-center lg:flex">
         <WalletMultiButton />
       </div>
       <!-- Mobile menu button -->
       <button
-        class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white md:hidden"
+        class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white lg:hidden"
         onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
       >
         {#if isMobileMenuOpen}
@@ -100,15 +98,12 @@
       </button>
 
       <!-- Right side notification button -->
-      <div class="hidden items-center md:flex">
-        <WalletMultiButton />
-      </div>
     </div>
     <!-- Mobile Navigation Menu -->
     {#if isMobileMenuOpen}
       <div
         transition:slide
-        class="absolute left-0 right-0 top-16 border-b border-white/10 bg-black/95 backdrop-blur-lg md:hidden"
+        class="absolute left-0 right-0 top-16 border-b border-white/10 bg-black/95 backdrop-blur-lg lg:hidden"
       >
         <nav class="space-y-4 px-6 py-4">
           <a
@@ -135,6 +130,9 @@
             <History class="h-4 w-4" />
             History
           </a>
+          <div class="items-center">
+            <WalletMultiButton />
+          </div>
         </nav>
       </div>
     {/if}

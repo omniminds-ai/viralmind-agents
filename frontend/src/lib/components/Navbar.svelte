@@ -69,7 +69,7 @@
             class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
             <Github class="h-4 w-4 transition-transform group-hover:scale-110" />
-            Github
+            GitHub
           </a>
           <a
             href="https://viralmind.gitbook.io/viralmind.ai"
@@ -153,7 +153,7 @@
             class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
             <Github class="h-5 w-5" />
-            Github
+            GitHub
           </a>
           <a
             href="https://viralmind.gitbook.io/viralmind.ai"

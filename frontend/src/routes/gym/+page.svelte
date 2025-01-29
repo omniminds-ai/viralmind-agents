@@ -2,20 +2,14 @@
   import { onMount } from 'svelte';
   import {
     Trophy,
-    Timer,
-    MessagesSquare,
-    ArrowRight,
-    BellRing,
     Palette,
     Video,
-    Layout,
     FileSpreadsheet,
     Globe2,
     MousePointer,
     Sparkles,
     Brain,
     DollarSign,
-    Coffee,
     Gamepad,
     Dice5,
     Monitor,
@@ -29,11 +23,9 @@
     Upload,
     Cpu,
     Shield,
-    Book,
-    LucideComponent
+    Book
   } from 'lucide-svelte';
   import FeaturedRace from '$lib/components/gym/FeaturedRace.svelte';
-  import CategorySection from '$lib/components/gym/CategorySection.svelte';
   import SubmitRace from '$lib/components/gym/SubmitRace.svelte';
   import FeaturedCarousel from '$lib/components/gym/FeaturedCarousel.svelte';
   import RaceWarningModal from '$lib/components/gym/RaceWarningModal.svelte';
@@ -139,7 +131,7 @@
       iconBgColor: 'bg-purple-600/30',
       bgGradient: 'from-purple-900/50 via-purple-800/40 to-stone-900/50',
       hoverGradient: '',
-      buttonText: 'Learn More',
+      buttonText: 'Read the Docs',
       href: 'https://viralmind.gitbook.io/viralmind.ai/vm-1-the-future-of-large-action-models'
     }
   ];
@@ -154,7 +146,7 @@
   });
 </script>
 
-<div class="min-h-screen bg-black pb-24 text-white">
+<div class="min-h-screen bg-black pb-24 pt-10 text-white">
   <div class="relative flex min-h-screen flex-col items-start justify-center overflow-hidden">
     <!-- Content Container -->
     <div class="relative z-10 mx-auto w-full max-w-[1400px] px-8">
@@ -166,30 +158,17 @@
         Train with AI assistants and earn rewards.
       </p>
 
-      <!-- Featured Carousel -->
-      <FeaturedCarousel slides={featuredSlides} />
-
-      <!-- Featured Races  -->
-      <div class="mb-16">
-        <h2 class="mb-8 text-3xl font-bold text-purple-400">Featured Races</h2>
-        <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-          {#each featuredRaces as race}
-            <FeaturedRace {race} />
-          {/each}
-        </div>
-      </div>
-
       <!-- Race Categories -->
       <div class="mb-16">
-        <h2 class="mb-8 text-3xl font-bold text-purple-400">Race Categories</h2>
+        <h2 class="mb-8 text-3xl font-bold text-purple-400">Start Training</h2>
         <div class="grid gap-6 md:grid-cols-2">
           <a
             href="/gym/free-races"
-            class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900/30 to-stone-900/30 p-8 hover:from-purple-900/40 hover:to-stone-900/40"
+            class="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-900/30 to-stone-900/30 p-8 hover:from-green-900/40 hover:to-stone-900/40"
           >
             <div class="flex items-center gap-4">
-              <div class="rounded-xl bg-purple-400/20 p-4">
-                <Trophy class="h-8 w-8 text-purple-400" />
+              <div class="rounded-xl bg-green-400/20 p-4">
+                <Trophy class="h-8 w-8 text-green-400" />
               </div>
               <div>
                 <h3 class="text-2xl font-bold">Free Races</h3>
@@ -212,6 +191,22 @@
             </div>
           </a>
         </div>
+      </div>
+
+      <!-- Featured Races  -->
+      <div class="mb-16">
+        <h2 class="mb-8 text-3xl font-bold text-purple-400">Featured Races</h2>
+        <div class="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+          {#each featuredRaces as race}
+            <FeaturedRace {race} />
+          {/each}
+        </div>
+      </div>
+
+      <!-- Featured Carousel -->
+      <div>
+        <h2 class="mb-8 text-3xl font-bold text-purple-400">Learn More</h2>
+        <FeaturedCarousel slides={featuredSlides} />
       </div>
 
       <!-- Desktop App Section -->

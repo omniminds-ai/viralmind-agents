@@ -1,14 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    Trophy,
-    Timer,
-    MessagesSquare,
-    ArrowRight,
-    BellRing,
     Palette,
     Video,
-    Layout,
     FileSpreadsheet,
     Globe2,
     MousePointer,
@@ -134,7 +128,7 @@
   });
 </script>
 
-<div class="min-h-screen bg-black pb-24 text-white">
+<div class="min-h-screen bg-black pb-24 pt-12 text-white">
   <div class="relative flex min-h-screen flex-col items-start justify-center overflow-hidden">
     <!-- Content Container -->
     <div class="relative z-10 mx-auto w-full max-w-[1400px] px-8">
