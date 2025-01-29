@@ -1,7 +1,8 @@
 <!-- Navbar.svelte -->
 <script lang="ts">
   import logo from '$lib/assets/logo.png';
-  import { Dumbbell, Trophy, HelpCircle, Book, Coins, Menu, X } from 'lucide-svelte';
+  import logoTitle from '$lib/assets/logo_title.png';
+  import { Dumbbell, Trophy, HelpCircle, Book, Coins, Menu, X, Github } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
   import { slide } from 'svelte/transition';
@@ -37,12 +38,17 @@
           <img
             src={logo}
             alt="ViralMind"
-            class="h-8 w-8 transition-transform group-hover:scale-105"
+            class="hidden h-8 w-8 transition-transform group-hover:scale-105 lg:block"
+          />
+          <img
+            src={logoTitle}
+            alt="ViralMind"
+            class="lg:hiddne h-8 transition-transform group-hover:scale-105 lg:hidden"
           />
         </a>
 
         <!-- Desktop Navigation -->
-        <nav class="hidden items-center space-x-8 md:flex">
+        <nav class="hidden items-center space-x-8 lg:flex">
           <a
             href="/tournaments"
             class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
@@ -51,11 +57,19 @@
             Tournaments
           </a>
           <a
-            href="/#faq"
+            href="/viral"
             class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
-            <HelpCircle class="h-4 w-4 transition-transform group-hover:scale-110" />
-            FAQ
+            <Coins class="h-4 w-4 transition-transform group-hover:scale-110" />
+            $VIRAL
+          </a>
+          <a
+            href="https://github.com/viralmind-ai/viralmind-agents"
+            target="_blank"
+            class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
+          >
+            <Github class="h-4 w-4 transition-transform group-hover:scale-110" />
+            Github
           </a>
           <a
             href="https://viralmind.gitbook.io/viralmind.ai"
@@ -66,11 +80,11 @@
             Docs
           </a>
           <a
-            href="/viral"
+            href="/#faq"
             class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
-            <Coins class="h-4 w-4 transition-transform group-hover:scale-110" />
-            $VIRAL
+            <HelpCircle class="h-4 w-4 transition-transform group-hover:scale-110" />
+            FAQ
           </a>
         </nav>
       </div>
@@ -78,13 +92,13 @@
       <!-- Right side -->
       <div class="flex items-center space-x-4">
         <!-- Wallet Button -->
-        <div class="hidden md:block">
+        <div class="hidden sm:block">
           <WalletMultiButton />
         </div>
         <!-- Training Gym CTA -->
         <a
           href="/gym"
-          class="group hidden items-center gap-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 py-1 pl-4 pr-5 text-sm font-medium text-black shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:from-amber-400 hover:to-yellow-400 hover:shadow-amber-500/30 md:flex"
+          class="group hidden items-center gap-3 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 py-1 pl-4 pr-5 text-sm font-medium text-black shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:from-amber-400 hover:to-yellow-400 hover:shadow-amber-500/30 sm:flex"
         >
           <div class="rounded-full bg-black/10 p-1">
             <Dumbbell class="h-4 w-4 transition-transform group-hover:scale-110" />
@@ -98,7 +112,7 @@
 
         <!-- Mobile menu button -->
         <button
-          class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white md:hidden"
+          class="rounded-full p-2 text-gray-300 transition-colors hover:bg-white/5 hover:text-white lg:hidden"
           onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
         >
           {#if isMobileMenuOpen}
@@ -126,12 +140,20 @@
             Tournaments
           </a>
           <a
-            href="/#faq"
+            href="/viral"
             onclick={() => (isMobileMenuOpen = false)}
             class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
-            <HelpCircle class="h-5 w-5" />
-            FAQ
+            <Coins class="h-5 w-5" />
+            $VIRAL
+          </a>
+          <a
+            href="https://github.com/viralmind-ai/viralmind-agents"
+            target="_blank"
+            class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
+          >
+            <Github class="h-5 w-5" />
+            Github
           </a>
           <a
             href="https://viralmind.gitbook.io/viralmind.ai"
@@ -142,12 +164,12 @@
             Docs
           </a>
           <a
-            href="/viral"
+            href="/#faq"
             onclick={() => (isMobileMenuOpen = false)}
             class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >
-            <Coins class="h-5 w-5" />
-            $VIRAL
+            <HelpCircle class="h-5 w-5" />
+            FAQ
           </a>
           <a
             href="/gym"

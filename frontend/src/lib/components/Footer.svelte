@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Twitter, MessageCircle, BarChart } from 'lucide-svelte';
+  import { Twitter, MessageCircle, BarChart, Github } from 'lucide-svelte';
 </script>
 
 <!-- Spacer to prevent content from going under fixed navbar -->
@@ -21,6 +21,14 @@
           class="flex items-center gap-2 transition-colors hover:text-white"
         >
           <Twitter class="h-5 w-5" />
+        </a>
+
+        <a
+          href="https://github.com/viralmind-ai/viralmind-agents"
+          target="_blank"
+          class="flex items-center gap-2 transition-colors hover:text-white"
+        >
+          <Github class="h-5 w-5" />
         </a>
 
         <a

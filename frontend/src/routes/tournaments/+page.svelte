@@ -92,22 +92,127 @@
         </div>
       </div>
     {:else}
-      <!-- Concluded Tournament Header -->
-      <div class="my-16 text-center">
-        <h1 class="mb-4 text-4xl font-bold md:text-5xl">Tournament Concluded</h1>
-        <p class="mb-8 text-gray-400">
-          Our latest tournament has concluded. Join our Telegram for updates on the next one!
-        </p>
+      <!-- Tournament Section -->
+      <div class="mx-auto max-w-6xl px-4 py-24">
+        <div class="rounded-3xl bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-12">
+          <div class="text-center">
+            <h2 class="mb-8 text-4xl font-bold md:text-5xl">Gaming Tournaments</h2>
+            <p class="mx-auto mb-12 max-w-2xl text-xl text-gray-300">
+              Watch humans compete against AI in exciting live-streamed matches
+            </p>
 
-        <a
-          href="https://t.me/viralmind"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-3 font-semibold transition-opacity hover:opacity-90"
-        >
-          <MessageCircle class="mr-2 h-5 w-5" />
-          Join Telegram for Updates
-        </a>
+            <!-- Tournament Stats -->
+            <div class="mx-auto mb-12 grid max-w-3xl grid-cols-3 gap-8">
+              <div class="space-y-2">
+                <div class="mb-2 flex justify-center">
+                  <MessageCircle class="h-8 w-8 text-purple-400" />
+                </div>
+                <div class="text-2xl font-bold md:text-3xl">{data?.breakAttempts || 0}</div>
+                <div class="text-sm text-gray-400">Total Prompts</div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="mb-2 flex justify-center">
+                  <Trophy class="h-8 w-8 text-purple-400" />
+                </div>
+                <div class="text-2xl font-bold md:text-3xl">
+                  ${data?.treasury?.toFixed(2) || '0.00'}
+                </div>
+                <div class="text-sm text-gray-400">Prize Pool</div>
+              </div>
+
+              <div class="space-y-2">
+                <div class="mb-2 flex justify-center">
+                  <Coins class="h-8 w-8 text-purple-400" />
+                </div>
+                <div class="text-2xl font-bold md:text-3xl">
+                  ${data?.total_payout?.toFixed(2) || '0.00'}
+                </div>
+                <div class="text-sm text-gray-400">Total Paid Out</div>
+              </div>
+            </div>
+
+            <div class="mb-12 rounded-xl bg-black/40 p-8">
+              <h3 class="mb-4 text-2xl font-bold text-purple-400">Next Tournament Loading...</h3>
+              <p class="mb-6 text-gray-400">Don't miss out on the next chance to win big!</p>
+              <ButtonCTA class="mx-auto w-1/4" href="https://t.me/viralmind">
+                <MessageCircle class="h-5 w-5" />
+                Get Notified
+              </ButtonCTA>
+            </div>
+
+            <!-- Previous Tournament -->
+            {#if data?.concludedChallenges?.[0]}
+              <div class="space-y-4">
+                <h3 class="text-xl font-bold text-purple-400">
+                  {data?.activeChallenge ? 'Previous' : 'Latest'} Tournament
+                </h3>
+
+                <div class="mx-auto max-w-3xl rounded-xl bg-black/30 p-6">
+                  <div class="mb-4">
+                    <h4 class="text-lg font-bold">{data.concludedChallenges[0].title}</h4>
+                    <p class="mt-1 text-sm text-gray-400">
+                      {data.concludedChallenges[0].label}
+                    </p>
+                  </div>
+
+                  <div class="mb-6 grid gap-4 md:grid-cols-2">
+                    <div class="flex items-center gap-3">
+                      <Trophy class="h-5 w-5 text-purple-400" />
+                      <div>
+                        <div class="text-sm text-gray-400">Winner</div>
+                        <div class="font-mono">
+                          {data.concludedChallenges[0].winning_address?.slice(0, 5)}...
+                          {data.concludedChallenges[0].winning_address?.slice(-4)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                      <Coins class="h-5 w-5 text-purple-400" />
+                      <div>
+                        <div class="text-sm text-gray-400">Prize</div>
+                        <div class="flex items-center gap-2">
+                          <span>{data.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span>
+                          <span class="text-gray-400">
+                            (${data.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="rounded-lg bg-black/30 p-4">
+                    <div class="text-xs text-gray-400">Transaction Hash</div>
+                    <div class="mt-1 break-all font-mono text-sm">
+                      {data.concludedChallenges[0].winning_txn}
+                    </div>
+                  </div>
+
+                  <div class="mt-4 flex items-center justify-between text-sm">
+                    <span class="text-gray-400">
+                      Concluded {new Date(data.concludedChallenges[0].expiry).toLocaleDateString(
+                        'en-US',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }
+                      )}
+                    </span>
+                    <a
+                      href={`https://solscan.io/tx/${data.concludedChallenges[0].winning_txn}`}
+                      target="_blank"
+                      class="text-purple-400 hover:text-purple-300"
+                    >
+                      View on Solscan →
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {/if}
+          </div>
+        </div>
       </div>
     {/if}
 

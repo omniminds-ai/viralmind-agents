@@ -11,28 +11,13 @@
     ChevronUp,
     ArrowRight,
     Gamepad2,
-    Brain,
     MonitorPlay,
-    Clock,
-    FileSpreadsheet,
-    Video,
-    Play,
     Bot,
-    User,
-    Send,
-    FileText,
-    MousePointer,
-    ScanSearch
+    User
   } from 'lucide-svelte';
-  import solIcon from '$lib/assets/solIcon.png';
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
   import ContractInfo from '$lib/components/ContractInfo.svelte';
-  import TournamentCountdown from '$lib/components/tournaments/TournamentCountdown.svelte';
-  import GymCountdown from '$lib/components/gym/GymCountdown.svelte';
-  import TournamentStream from '$lib/components/tournaments/TournamentStream.svelte';
   import type { SettingsRes } from '$lib/types';
-  import TournamentActiveCard from '$lib/components/tournaments/TournamentActiveCard.svelte';
-  import { findFastestRegion } from '$lib/utils';
 
   let settings: SettingsRes;
   let faqOpen = Array(4).fill(false);
@@ -77,11 +62,11 @@
       <div
         class="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4"
       >
-        <div class="grid items-center gap-12 md:grid-cols-2">
+        <div class="grid items-center gap-12 lg:grid-cols-2">
           <!-- Left Content -->
           <div class="text-left">
             <h1 class="mb-8 text-6xl font-bold leading-tight md:text-7xl lg:text-8xl">
-              Play. Earn. Train <span class="text-purple-400">Computer-Use Agents.</span>
+              Play. Earn. Train. <span class="text-purple-400">Computer-Use Agents.</span>
             </h1>
             <p class="mb-4 text-xl text-gray-300 md:text-2xl">
               Turn powerful foundation models into capable computer-use agents.
@@ -92,7 +77,7 @@
               state-of-the-art models like DeepSeek and Qwen VL into powerful computer-use agents.
               Get instantly rewarded for contributing to the future of AI.
             </p>
-            <div class="flex gap-4">
+            <div class="flex flex-col gap-4 sm:flex-row">
               <ButtonCTA href="/gym">
                 Start Training
                 <ArrowRight class="h-5 w-5" />
@@ -174,8 +159,8 @@
             <div class="absolute inset-0">
               <!-- Video 1 -->
               <div
-                class="animate-float-1 absolute h-32 w-48 overflow-hidden rounded-lg"
-                style="top: 10%; left: 60%; transform: perspective(1000px) rotateX(10deg) rotateY(-20deg);"
+                class="animate-float-1 absolute left-[30%] top-[10%] h-32 w-48 overflow-hidden rounded-lg sm:left-[45%]"
+                style="transform: perspective(1000px) rotateX(10deg) rotateY(-20deg);"
               >
                 <video autoplay loop muted playsinline class="h-full w-full object-cover">
                   <source src="https://cdn.viralmind.ai/demo.mp4" type="video/mp4" />
@@ -185,7 +170,7 @@
 
               <!-- Video 2 -->
               <div
-                class="animate-float-2 absolute h-32 w-48 overflow-hidden rounded-lg"
+                class="animate-float-2 absolute hidden h-32 w-48 overflow-hidden rounded-lg sm:block"
                 style="top: 40%; right: 65%; transform: perspective(1000px) rotateX(-15deg) rotateY(25deg);"
               >
                 <img
@@ -198,8 +183,8 @@
 
               <!-- Video 3 -->
               <div
-                class="animate-float-3 absolute h-32 w-48 overflow-hidden rounded-lg"
-                style="bottom: 15%; left: 55%; transform: perspective(1000px) rotateX(20deg) rotateY(-15deg);"
+                class="animate-float-3 absolute bottom-[5%] right-[40%] h-32 w-48 overflow-hidden rounded-lg lg:bottom-[15%] lg:left-[55%]"
+                style="transform: perspective(1000px) rotateX(20deg) rotateY(-15deg);"
               >
                 <video autoplay loop muted playsinline class="h-full w-full object-cover">
                   <source src="https://cdn.viralmind.ai/gym_demo.mp4" type="video/mp4" />
@@ -262,23 +247,41 @@
   </div>
 
   <!-- VM-1 Section with Video Background -->
-  <div class="relative min-h-screen">
-    <!-- Video Background -->
-    <div class="absolute inset-0 z-0">
-      <video autoplay loop muted playsinline class="h-full w-full object-cover opacity-20">
-        <source src="https://cdn.viralmind.ai/demo.mp4" type="video/mp4" />
-      </video>
-      <div
-        class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-purple-900"
-      ></div>
-    </div>
+  <div class="bg-gradient-to-t from-transparent via-black/70 to-purple-900">
+    <!-- Right Content -->
+    <div class="mx-auto flex max-w-6xl flex-col lg:flex-row-reverse">
+      <div class="mx-auto w-full p-4 lg:w-1/2">
+        <div class="mt-8">
+          <h1 class="mb-8 text-6xl font-bold">
+            <span
+              class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent"
+            >
+              Meet VM-1
+            </span>
+          </h1>
+          <p class="mb-4 text-xl text-gray-300">
+            Coming soon: Your AI companion that controls the full desktop - locally or in the cloud.
+            Run on anything from games to productivity apps, and continually learning skills from
+            the Training Gym. Join the telegram to be first in line.
+          </p>
+        </div>
+        <div class="mt-8 flex flex-col gap-4 md:flex-row">
+          <ButtonCTA href="/tournaments">
+            <Gamepad2 class="h-5 w-5" />
+            Play Against AI
+          </ButtonCTA>
+          <ButtonCTA href="/gym" variant="secondary">
+            Build Your Agent
+            <ArrowRight class="h-5 w-5" />
+          </ButtonCTA>
+        </div>
+      </div>
 
-    <!-- Main Content -->
-    <div class="relative z-10 mx-auto flex min-h-screen max-w-6xl px-4">
-      <div class="grid items-center gap-12 md:grid-cols-2">
+      <!-- Main Content -->
+      <div class="relative z-10 mx-auto w-full space-x-8 px-4 py-5 lg:w-1/2 lg:flex-row">
         <!-- Chat UI -->
         <div
-          class="space-y-3 rounded-xl border border-purple-500/20 bg-white/5 p-6 shadow-lg backdrop-blur-sm"
+          class="my-8 w-full space-y-3 rounded-xl border border-purple-500/20 bg-white/5 p-6 shadow-lg backdrop-blur-sm"
         >
           <!-- Bot Welcome -->
           <div class="flex items-start gap-2">
@@ -331,33 +334,6 @@
             <div class="absolute inset-0 flex items-center justify-center bg-black/10">
               <Gamepad2 class="h-8 w-8 animate-pulse text-white" />
             </div>
-          </div>
-        </div>
-
-        <!-- Right Content -->
-        <div>
-          <h1 class="mb-8 text-6xl font-bold">
-            <span
-              class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent"
-            >
-              Meet VM-1
-            </span>
-          </h1>
-          <p class="mb-4 text-xl text-gray-300">
-            Coming soon: Your AI companion that controls the full desktop - locally or in the cloud.
-            Run on anything from games to productivity apps, and continually learning skills from
-            the Training Gym. Join the telegram to be first in line.
-          </p>
-
-          <div class="mt-8 flex gap-4">
-            <ButtonCTA href="/gym">
-              Build Your Agent
-              <ArrowRight class="h-5 w-5" />
-            </ButtonCTA>
-            <ButtonCTA href="/tournaments" variant="secondary">
-              <Gamepad2 class="h-5 w-5" />
-              Play Against AI
-            </ButtonCTA>
           </div>
         </div>
       </div>
@@ -415,7 +391,7 @@
           </ol>
           <div class="flex justify-center pt-8">
             <ButtonCTA href="https://viralmind.gitbook.io/viralmind.ai/train-your-own-agentic-lams">
-              See the Docs
+              View the Docs
               <ArrowRight class="h-5 w-5" />
             </ButtonCTA>
           </div>
@@ -425,7 +401,7 @@
   </div>
 
   <!-- VM-1 Roadmap Section -->
-  <div class="mx-auto max-w-6xl px-4 py-24">
+  <div class="mx-auto max-w-6xl px-4 py-6">
     <div class="text-center">
       <!-- Contract Info -->
       <div class="mb-8 rounded-xl bg-stone-900/30 p-6 backdrop-blur-md">
@@ -543,12 +519,13 @@
           Join us in building the next generation of AI agents - capable of using any computer
           interface just like humans do.
         </p>
-        <div class="mt-8 flex justify-center gap-4">
+        <div class="mt-8 flex flex-col justify-center gap-4 md:flex-row">
           <ButtonCTA href="/gym">
             Start Training
             <ArrowRight class="h-5 w-5" />
           </ButtonCTA>
-          <ButtonCTA href="https://t.me/viralmind" variant="secondary">Join Community</ButtonCTA>
+          <ButtonCTA href="https://t.me/viralmind" variant="secondary">Join our Community</ButtonCTA
+          >
         </div>
       </div>
     </div>
@@ -576,219 +553,6 @@
           </ButtonCTA>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Tournament Section -->
-  <div class="mx-auto max-w-6xl px-4 py-24">
-    <div class="rounded-3xl bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-12">
-      <div class="text-center">
-        <h2 class="mb-8 text-4xl font-bold md:text-5xl">Gaming Tournaments</h2>
-        <p class="mx-auto mb-12 max-w-2xl text-xl text-gray-300">
-          Watch humans compete against AI in exciting live-streamed matches
-        </p>
-
-        <!-- Tournament Stats -->
-        <div class="mx-auto mb-12 grid max-w-3xl grid-cols-3 gap-8">
-          <div class="space-y-2">
-            <div class="mb-2 flex justify-center">
-              <MessageCircle class="h-8 w-8 text-purple-400" />
-            </div>
-            <div class="text-2xl font-bold md:text-3xl">{settings?.breakAttempts || 0}</div>
-            <div class="text-sm text-gray-400">Total Prompts</div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="mb-2 flex justify-center">
-              <Trophy class="h-8 w-8 text-purple-400" />
-            </div>
-            <div class="text-2xl font-bold md:text-3xl">
-              ${settings?.treasury?.toFixed(2) || '0.00'}
-            </div>
-            <div class="text-sm text-gray-400">Prize Pool</div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="mb-2 flex justify-center">
-              <Coins class="h-8 w-8 text-purple-400" />
-            </div>
-            <div class="text-2xl font-bold md:text-3xl">
-              ${settings?.total_payout?.toFixed(2) || '0.00'}
-            </div>
-            <div class="text-sm text-gray-400">Total Paid Out</div>
-          </div>
-        </div>
-
-        {#if settings?.activeChallenge}
-          <!-- Active Tournament Card -->
-          <div class="mb-12 rounded-xl bg-black/40 p-8">
-            <div class="space-y-6">
-              <h3 class="text-2xl font-bold text-purple-400">
-                {settings.activeChallenge.title}
-              </h3>
-
-              <div class="flex flex-col items-center gap-6 md:flex-row md:justify-center">
-                <!-- Challenge Image -->
-                <div class="h-40 w-40 overflow-hidden rounded-lg">
-                  <img
-                    src={settings.activeChallenge.image}
-                    alt="Tournament"
-                    class="h-full w-full object-cover"
-                  />
-                </div>
-
-                <!-- Challenge Details -->
-                <div class="grid grid-cols-2 gap-6 md:gap-12">
-                  <div class="flex items-center gap-3">
-                    <Dumbbell class="h-5 w-5 text-purple-400" />
-                    <div>
-                      <div class="text-sm text-gray-400">Difficulty</div>
-                      <div class="font-bold">{settings.activeChallenge.level}</div>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-3">
-                    <MessageCircle class="h-5 w-5 text-purple-400" />
-                    <div>
-                      <div class="text-sm text-gray-400">Messages</div>
-                      <div class="font-bold">{settings.breakAttempts}</div>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-3">
-                    <Coins class="h-5 w-5 text-purple-400" />
-                    <div>
-                      <div class="text-sm text-gray-400">Entry Fee</div>
-                      <div class="font-bold">{settings.activeChallenge.entryFee} SOL</div>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-3">
-                    <Trophy class="h-5 w-5 text-purple-400" />
-                    <div>
-                      <div class="text-sm text-gray-400">Prize Pool</div>
-                      <div class="font-bold">{settings.activeChallenge.prize} SOL</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex justify-center">
-                <ButtonCTA href={`/tournaments/${settings.activeChallenge.name}`}>
-                  <Trophy class="h-5 w-5 group-hover:animate-bounce" />
-                  Join Tournament
-                  <span
-                    class="text-white transition-transform duration-200 group-hover:translate-x-1"
-                    >→</span
-                  >
-                </ButtonCTA>
-              </div>
-            </div>
-          </div>
-        {:else}
-          <!-- Tournament Teaser -->
-          <div class="mb-12 rounded-xl bg-black/40 p-8">
-            <h3 class="mb-4 text-2xl font-bold text-purple-400">Next Tournament Loading...</h3>
-            <p class="mb-6 text-gray-400">Don't miss out on the next chance to win big!</p>
-            <ButtonCTA class="mx-auto w-1/3" href="https://t.me/viralmind">
-              <MessageCircle class="h-5 w-5" />
-              Get Notified
-            </ButtonCTA>
-          </div>
-        {/if}
-
-        <!-- Previous Tournament -->
-        {#if settings?.concludedChallenges?.[0]}
-          <div class="space-y-4">
-            <h3 class="text-xl font-bold text-purple-400">
-              {settings?.activeChallenge ? 'Previous' : 'Latest'} Tournament
-            </h3>
-
-            <div class="mx-auto max-w-3xl rounded-xl bg-black/30 p-6">
-              <div class="mb-4">
-                <h4 class="text-lg font-bold">{settings.concludedChallenges[0].title}</h4>
-                <p class="mt-1 text-sm text-gray-400">{settings.concludedChallenges[0].label}</p>
-              </div>
-
-              <div class="mb-6 grid gap-4 md:grid-cols-2">
-                <div class="flex items-center gap-3">
-                  <Trophy class="h-5 w-5 text-purple-400" />
-                  <div>
-                    <div class="text-sm text-gray-400">Winner</div>
-                    <div class="font-mono">
-                      {settings.concludedChallenges[0].winning_address?.slice(0, 5)}...
-                      {settings.concludedChallenges[0].winning_address?.slice(-4)}
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-3">
-                  <Coins class="h-5 w-5 text-purple-400" />
-                  <div>
-                    <div class="text-sm text-gray-400">Prize</div>
-                    <div class="flex items-center gap-2">
-                      <span>{settings.concludedChallenges[0].prize?.toFixed(2) || '0.00'} SOL</span>
-                      <span class="text-gray-400">
-                        (${settings.concludedChallenges[0].usdPrize?.toFixed(2) || '0.00'})
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="rounded-lg bg-black/30 p-4">
-                <div class="text-xs text-gray-400">Transaction Hash</div>
-                <div class="mt-1 break-all font-mono text-sm">
-                  {settings.concludedChallenges[0].winning_txn}
-                </div>
-              </div>
-
-              <div class="mt-4 flex items-center justify-between text-sm">
-                <span class="text-gray-400">
-                  Concluded {new Date(settings.concludedChallenges[0].expiry).toLocaleDateString(
-                    'en-US',
-                    {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }
-                  )}
-                </span>
-                <a
-                  href={`https://solscan.io/tx/${settings.concludedChallenges[0].winning_txn}`}
-                  target="_blank"
-                  class="text-purple-400 hover:text-purple-300"
-                >
-                  View on Solscan →
-                </a>
-              </div>
-            </div>
-          </div>
-        {/if}
-
-        <!-- View All Link -->
-        <div class="mt-8 flex justify-center">
-          <a href="/tournaments" class="flex items-center gap-2 text-gray-400 hover:text-white">
-            <History class="h-5 w-5" />
-            View All Tournaments
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CTA Section -->
-  <div class="mx-auto max-w-6xl px-4 py-24 text-center">
-    <h2 class="mb-8 text-4xl font-bold">Ready to Build Real AI?</h2>
-    <p class="mb-12 text-xl text-gray-400">
-      Join our community of researchers, developers, and AI enthusiasts
-    </p>
-    <div class="flex justify-center gap-4">
-      <ButtonCTA href="/gym">
-        Start Training
-        <ArrowRight class="h-5 w-5" />
-      </ButtonCTA>
-      <ButtonCTA href="https://viralmind.gitbook.io/viralmind.ai">Read Docs</ButtonCTA>
     </div>
   </div>
 
