@@ -13,7 +13,8 @@
     Gamepad2,
     MonitorPlay,
     Bot,
-    User
+    User,
+    Star
   } from 'lucide-svelte';
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
   import ContractInfo from '$lib/components/ContractInfo.svelte';
@@ -83,6 +84,15 @@
                 <ArrowRight class="h-5 w-5" />
               </ButtonCTA>
               <ButtonCTA href="https://docs.viralmind.ai" variant="secondary">View Docs</ButtonCTA>
+            </div>
+            <div class="py-4">
+              <ButtonCTA
+                href="https://github.com/viralmind-ai/viralmind-agents"
+                variant="secondary"
+              >
+                <Star />
+                Star on GitHub
+              </ButtonCTA>
             </div>
           </div>
 
