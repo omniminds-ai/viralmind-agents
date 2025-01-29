@@ -25,9 +25,6 @@
     ScanSearch
   } from 'lucide-svelte';
   import solIcon from '$lib/assets/solIcon.png';
-  import demoVideo from '$lib/assets/demo.mp4';
-  import gymVideo from '$lib/assets/gym_demo.mp4';
-  import demoGif from '$lib/assets/csgo-ai.gif';
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
   import ContractInfo from '$lib/components/ContractInfo.svelte';
   import TournamentCountdown from '$lib/components/tournaments/TournamentCountdown.svelte';
@@ -74,96 +71,99 @@
 </script>
 
 <div class="min-h-screen bg-black text-white">
-  
   <!-- Hero Section -->
   <div class="relative min-h-screen">
     <div class="bg-gradient-to-b from-black via-black to-purple-900">
-      <div class="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4">
-        <div class="grid md:grid-cols-2 gap-12 items-center">
+      <div
+        class="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4"
+      >
+        <div class="grid items-center gap-12 md:grid-cols-2">
           <!-- Left Content -->
           <div class="text-left">
-            <h1 class="mb-8 text-6xl font-bold md:text-7xl lg:text-8xl leading-tight">
+            <h1 class="mb-8 text-6xl font-bold leading-tight md:text-7xl lg:text-8xl">
               Play. Earn. Train <span class="text-purple-400">Computer-Use Agents.</span>
             </h1>
             <p class="mb-4 text-xl text-gray-300 md:text-2xl">
               Turn powerful foundation models into capable computer-use agents.
             </p>
             <p class="mb-12 text-lg text-gray-400">
-              Open-source has ZERO desktop computer-use datasets. We're changing that with the Training Gym - the ONLY platform that collects high-quality data for fine-tuning state-of-the-art models like DeepSeek and Qwen VL into powerful computer-use agents. Get instantly rewarded for contributing to the future of AI.
+              Open-source has ZERO desktop computer-use datasets. We're changing that with the
+              Training Gym - the ONLY platform that collects high-quality data for fine-tuning
+              state-of-the-art models like DeepSeek and Qwen VL into powerful computer-use agents.
+              Get instantly rewarded for contributing to the future of AI.
             </p>
             <div class="flex gap-4">
               <ButtonCTA href="/gym">
                 Start Training
                 <ArrowRight class="h-5 w-5" />
               </ButtonCTA>
-              <ButtonCTA href="https://docs.viralmind.ai" variant="secondary">
-                View Docs
-              </ButtonCTA>
+              <ButtonCTA href="https://docs.viralmind.ai" variant="secondary">View Docs</ButtonCTA>
             </div>
           </div>
-          
+
           <!-- Right Content - Abstract Sphere -->
           <div class="relative aspect-square">
-            <svg viewBox="0 0 400 400" class="w-full h-full">
+            <svg viewBox="0 0 400 400" class="h-full w-full">
               <defs>
                 <radialGradient id="sphereGradient" cx="50%" cy="50%" r="50%">
                   <stop offset="0%" stop-color="rgb(147, 51, 234)" stop-opacity="0.6" />
                   <stop offset="100%" stop-color="rgb(147, 51, 234)" stop-opacity="0" />
                 </radialGradient>
                 <filter id="glow">
-                  <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+                  <feGaussianBlur stdDeviation="8" result="coloredBlur" />
                   <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
                   </feMerge>
                 </filter>
               </defs>
-              
+
               <!-- Base Sphere -->
-              <circle cx="200" cy="200" r="150" 
+              <circle
+                cx="200"
+                cy="200"
+                r="150"
                 fill="url(#sphereGradient)"
                 filter="url(#glow)"
                 class="animate-pulse"
               />
-              
+
               <!-- Orbital Rings -->
               <g class="animate-spin" style="transform-origin: center; animation-duration: 20s;">
-                <circle cx="200" cy="200" r="180" 
-                  fill="none" 
-                  stroke="rgba(147, 51, 234, 0.3)" 
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="180"
+                  fill="none"
+                  stroke="rgba(147, 51, 234, 0.3)"
                   stroke-width="1"
                   stroke-dasharray="4 4"
                 />
               </g>
-              
+
               <g class="animate-spin" style="transform-origin: center; animation-duration: 15s;">
-                <circle cx="200" cy="200" r="160" 
-                  fill="none" 
-                  stroke="rgba(147, 51, 234, 0.4)" 
+                <circle
+                  cx="200"
+                  cy="200"
+                  r="160"
+                  fill="none"
+                  stroke="rgba(147, 51, 234, 0.4)"
                   stroke-width="1"
                   stroke-dasharray="4 4"
                 />
               </g>
-              
+
               <!-- Floating Particles -->
               <circle cx="320" cy="200" r="4" fill="rgb(147, 51, 234)" class="animate-pulse">
-                <animateMotion 
-                  dur="8s"
-                  repeatCount="indefinite"
-                  path="M 0 0 C 50 -50 50 50 0 0"
-                />
+                <animateMotion dur="8s" repeatCount="indefinite" path="M 0 0 C 50 -50 50 50 0 0" />
               </circle>
-              
+
               <circle cx="200" cy="80" r="3" fill="rgb(147, 51, 234)" class="animate-pulse">
-                <animateMotion 
-                  dur="6s"
-                  repeatCount="indefinite"
-                  path="M 0 0 C -30 30 30 30 0 0"
-                />
+                <animateMotion dur="6s" repeatCount="indefinite" path="M 0 0 C -30 30 30 30 0 0" />
               </circle>
-              
+
               <circle cx="80" cy="200" r="5" fill="rgb(147, 51, 234)" class="animate-pulse">
-                <animateMotion 
+                <animateMotion
                   dur="10s"
                   repeatCount="indefinite"
                   path="M 0 0 C 40 -40 -40 40 0 0"
@@ -173,28 +173,38 @@
             <!-- Floating Video Elements -->
             <div class="absolute inset-0">
               <!-- Video 1 -->
-              <div class="absolute w-48 h-32 rounded-lg overflow-hidden animate-float-1" 
-                   style="top: 10%; left: 60%; transform: perspective(1000px) rotateX(10deg) rotateY(-20deg);">
-                <video autoplay loop muted playsinline class="w-full h-full object-cover">
-                  <source src={demoVideo} type="video/mp4" />
+              <div
+                class="animate-float-1 absolute h-32 w-48 overflow-hidden rounded-lg"
+                style="top: 10%; left: 60%; transform: perspective(1000px) rotateX(10deg) rotateY(-20deg);"
+              >
+                <video autoplay loop muted playsinline class="h-full w-full object-cover">
+                  <source src="https://cdn.viralmind.ai/demo.mp4" type="video/mp4" />
                 </video>
-                <div class="absolute inset-0 bg-purple-500/20 backdrop-blur-xs"></div>
+                <div class="backdrop-blur-xs absolute inset-0 bg-purple-500/20"></div>
               </div>
-              
+
               <!-- Video 2 -->
-              <div class="absolute w-48 h-32 rounded-lg overflow-hidden animate-float-2"
-                  style="top: 40%; right: 65%; transform: perspective(1000px) rotateX(-15deg) rotateY(25deg);">
-                <img src={demoGif} alt="Demo" class="w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-purple-500/20 backdrop-blur-xs"></div>
+              <div
+                class="animate-float-2 absolute h-32 w-48 overflow-hidden rounded-lg"
+                style="top: 40%; right: 65%; transform: perspective(1000px) rotateX(-15deg) rotateY(25deg);"
+              >
+                <img
+                  src="https://cdn.viralmind.ai/csgo-ai.gif"
+                  alt="Demo"
+                  class="h-full w-full object-cover"
+                />
+                <div class="backdrop-blur-xs absolute inset-0 bg-purple-500/20"></div>
               </div>
-                
+
               <!-- Video 3 -->
-              <div class="absolute w-48 h-32 rounded-lg overflow-hidden animate-float-3"
-                   style="bottom: 15%; left: 55%; transform: perspective(1000px) rotateX(20deg) rotateY(-15deg);">
-                <video autoplay loop muted playsinline class="w-full h-full object-cover">
-                  <source src={gymVideo} type="video/mp4" />
+              <div
+                class="animate-float-3 absolute h-32 w-48 overflow-hidden rounded-lg"
+                style="bottom: 15%; left: 55%; transform: perspective(1000px) rotateX(20deg) rotateY(-15deg);"
+              >
+                <video autoplay loop muted playsinline class="h-full w-full object-cover">
+                  <source src="https://cdn.viralmind.ai/gym_demo.mp4" type="video/mp4" />
                 </video>
-                <div class="absolute inset-0 bg-purple-500/20 backdrop-blur-xs"></div>
+                <div class="backdrop-blur-xs absolute inset-0 bg-purple-500/20"></div>
               </div>
             </div>
           </div>
@@ -202,7 +212,6 @@
       </div>
     </div>
   </div>
-  
 
   <!-- Collective Intelligence Section -->
   <div class="bg-gradient-to-b from-purple-900/20 to-black">
@@ -220,27 +229,31 @@
             </div>
             <h3 class="mb-4 text-2xl font-bold">Play Tasks</h3>
             <p class="text-gray-400">
-              Jump into our Training Gym and complete AI-generated computer tasks. From games to apps, every click and action contributes to something bigger.
+              Jump into our Training Gym and complete AI-generated computer tasks. From games to
+              apps, every click and action contributes to something bigger.
             </p>
           </div>
-        
+
           <div class="rounded-xl bg-black/30 p-8">
             <div class="mb-4 flex justify-center">
               <Coins class="h-12 w-12 text-purple-400" />
             </div>
             <h3 class="mb-4 text-2xl font-bold">Earn Instantly</h3>
             <p class="text-gray-400">
-              Your gameplay automatically becomes high-quality training data. We augment UI with reasoning, and you get $VIRAL tokens instantly for your contributions.
+              Your gameplay automatically becomes high-quality training data. We augment UI with
+              reasoning, and you get $VIRAL tokens instantly for your contributions.
             </p>
           </div>
-        
+
           <div class="rounded-xl bg-black/30 p-8">
             <div class="mb-4 flex justify-center">
               <Bot class="h-12 w-12 text-purple-400" />
             </div>
             <h3 class="mb-4 text-2xl font-bold">Create Agents</h3>
             <p class="text-gray-400">
-              Turn your data into powerful computer-use agents that understand any UI. One-click trains DeepSeek into your own LAM that can reason, navigate, and execute tasks just like you do.
+              Turn your data into powerful computer-use agents that understand any UI. One-click
+              trains DeepSeek into your own LAM that can reason, navigate, and execute tasks just
+              like you do.
             </p>
           </div>
         </div>
@@ -248,94 +261,108 @@
     </div>
   </div>
 
-  
-  
-<!-- VM-1 Section with Video Background -->
-<div class="relative min-h-screen">
-  <!-- Video Background -->
-  <div class="absolute inset-0 z-0">
-    <video autoplay loop muted playsinline class="h-full w-full object-cover opacity-20">
-      <source src={demoVideo} type="video/mp4" />
-    </video>
-    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-purple-900"></div>
-  </div>
+  <!-- VM-1 Section with Video Background -->
+  <div class="relative min-h-screen">
+    <!-- Video Background -->
+    <div class="absolute inset-0 z-0">
+      <video autoplay loop muted playsinline class="h-full w-full object-cover opacity-20">
+        <source src="https://cdn.viralmind.ai/demo.mp4" type="video/mp4" />
+      </video>
+      <div
+        class="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-purple-900"
+      ></div>
+    </div>
 
-  <!-- Main Content -->
-  <div class="relative z-10 mx-auto flex min-h-screen max-w-6xl px-4">
-    <div class="grid md:grid-cols-2 gap-12 items-center">
-      <!-- Chat UI -->
-      <div class="space-y-3 rounded-xl border border-purple-500/20 bg-white/5 p-6 backdrop-blur-sm shadow-lg">
-        <!-- Bot Welcome -->
-        <div class="flex items-start gap-2">
-          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-            <Bot class="h-4 w-4 text-purple-600" />
-          </div>
-          <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
-            <p>Ready to help! What are we playing today? 🎮</p>
-          </div>
-        </div>
-
-        <!-- User CSGO Request -->
-        <div class="flex flex-row-reverse items-start gap-2">
-          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
-            <User class="h-4 w-4 text-blue-600" />
-          </div>
-          <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
-            <p>Join my CS:GO match <span class="font-mono text-gray-600">192.168.1.1:27015</span></p>
-            <p>Play like Gold Nova 1 so I can practice!</p>
-          </div>
-        </div>
-
-        <!-- Bot Response -->
-        <div class="flex items-start gap-2">
-          <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-            <Bot class="h-4 w-4 text-purple-600" />
-          </div>
-          <div class="space-y-2">
+    <!-- Main Content -->
+    <div class="relative z-10 mx-auto flex min-h-screen max-w-6xl px-4">
+      <div class="grid items-center gap-12 md:grid-cols-2">
+        <!-- Chat UI -->
+        <div
+          class="space-y-3 rounded-xl border border-purple-500/20 bg-white/5 p-6 shadow-lg backdrop-blur-sm"
+        >
+          <!-- Bot Welcome -->
+          <div class="flex items-start gap-2">
+            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
+              <Bot class="h-4 w-4 text-purple-600" />
+            </div>
             <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
-              <p>Let's crush it! 🎯</p>
+              <p>Ready to help! What are we playing today? 🎮</p>
             </div>
-            <div class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600">
-              <MonitorPlay class="h-4 w-4 animate-pulse" />
-              Launching csgo.exe
+          </div>
+
+          <!-- User CSGO Request -->
+          <div class="flex flex-row-reverse items-start gap-2">
+            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
+              <User class="h-4 w-4 text-blue-600" />
+            </div>
+            <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
+              <p>
+                Join my CS:GO match <span class="font-mono text-gray-600">192.168.1.1:27015</span>
+              </p>
+              <p>Play like Gold Nova 1 so I can practice!</p>
+            </div>
+          </div>
+
+          <!-- Bot Response -->
+          <div class="flex items-start gap-2">
+            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
+              <Bot class="h-4 w-4 text-purple-600" />
+            </div>
+            <div class="space-y-2">
+              <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                <p>Let's crush it! 🎯</p>
+              </div>
+              <div
+                class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600"
+              >
+                <MonitorPlay class="h-4 w-4 animate-pulse" />
+                Launching csgo.exe
+              </div>
+            </div>
+          </div>
+
+          <!-- Game Preview -->
+          <div class="relative ml-8 aspect-video overflow-hidden rounded-lg bg-black/5">
+            <img
+              src="https://cdn.viralmind.ai/csgo-ai.gif"
+              alt="CSGO Gameplay"
+              class="absolute inset-0 h-full w-full object-cover blur-[2px]"
+            />
+            <div class="absolute inset-0 flex items-center justify-center bg-black/10">
+              <Gamepad2 class="h-8 w-8 animate-pulse text-white" />
             </div>
           </div>
         </div>
 
-        <!-- Game Preview -->
-        <div class="relative ml-8 aspect-video overflow-hidden rounded-lg bg-black/5">
-          <img src={demoGif} alt="CSGO Gameplay" class="absolute inset-0 h-full w-full object-cover blur-[2px]" />
-          <div class="absolute inset-0 flex items-center justify-center bg-black/10">
-            <Gamepad2 class="h-8 w-8 animate-pulse text-white" />
-          </div>
-        </div>
-      </div>
+        <!-- Right Content -->
+        <div>
+          <h1 class="mb-8 text-6xl font-bold">
+            <span
+              class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent"
+            >
+              Meet VM-1
+            </span>
+          </h1>
+          <p class="mb-4 text-xl text-gray-300">
+            Coming soon: Your AI companion that controls the full desktop - locally or in the cloud.
+            Run on anything from games to productivity apps, and continually learning skills from
+            the Training Gym. Join the telegram to be first in line.
+          </p>
 
-      <!-- Right Content -->
-      <div>
-        <h1 class="mb-8 text-6xl font-bold">
-          <span class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Meet VM-1
-          </span>
-        </h1>
-        <p class="mb-4 text-xl text-gray-300">
-          Coming soon: Your AI companion that controls the full desktop - locally or in the cloud. Run on anything from games to productivity apps, and continually learning skills from the Training Gym. Join the telegram to be first in line.
-        </p>
-        
-        <div class="flex gap-4 mt-8">
-          <ButtonCTA href="/gym">
-            Build Your Agent
-            <ArrowRight class="h-5 w-5" />
-          </ButtonCTA>
-          <ButtonCTA href="/tournaments" variant="secondary">
-            <Gamepad2 class="h-5 w-5" />
-            Play Against AI
-          </ButtonCTA>
+          <div class="mt-8 flex gap-4">
+            <ButtonCTA href="/gym">
+              Build Your Agent
+              <ArrowRight class="h-5 w-5" />
+            </ButtonCTA>
+            <ButtonCTA href="/tournaments" variant="secondary">
+              <Gamepad2 class="h-5 w-5" />
+              Play Against AI
+            </ButtonCTA>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
   <!-- "Don't Believe Us?" Section -->
   <div class="bg-gradient-to-b from-purple-900/20 to-black">
@@ -805,31 +832,45 @@
   ></div>
 </div>
 
-
 <style>
   @keyframes float-1 {
-    0%, 100% { transform: perspective(1000px) rotateX(10deg) rotateY(-20deg) translateY(0px); }
-    50% { transform: perspective(1000px) rotateX(10deg) rotateY(-20deg) translateY(-20px); }
+    0%,
+    100% {
+      transform: perspective(1000px) rotateX(10deg) rotateY(-20deg) translateY(0px);
+    }
+    50% {
+      transform: perspective(1000px) rotateX(10deg) rotateY(-20deg) translateY(-20px);
+    }
   }
-  
+
   @keyframes float-2 {
-    0%, 100% { transform: perspective(1000px) rotateX(-15deg) rotateY(25deg) translateY(0px); }
-    50% { transform: perspective(1000px) rotateX(-15deg) rotateY(25deg) translateY(-15px); }
+    0%,
+    100% {
+      transform: perspective(1000px) rotateX(-15deg) rotateY(25deg) translateY(0px);
+    }
+    50% {
+      transform: perspective(1000px) rotateX(-15deg) rotateY(25deg) translateY(-15px);
+    }
   }
-  
+
   @keyframes float-3 {
-    0%, 100% { transform: perspective(1000px) rotateX(20deg) rotateY(-15deg) translateY(0px); }
-    50% { transform: perspective(1000px) rotateX(20deg) rotateY(-15deg) translateY(-25px); }
+    0%,
+    100% {
+      transform: perspective(1000px) rotateX(20deg) rotateY(-15deg) translateY(0px);
+    }
+    50% {
+      transform: perspective(1000px) rotateX(20deg) rotateY(-15deg) translateY(-25px);
+    }
   }
-  
+
   .animate-float-1 {
     animation: float-1 6s ease-in-out infinite;
   }
-  
+
   .animate-float-2 {
     animation: float-2 8s ease-in-out infinite;
   }
-  
+
   .animate-float-3 {
     animation: float-3 7s ease-in-out infinite;
   }
