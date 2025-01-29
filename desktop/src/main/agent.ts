@@ -17,6 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(dirname(__dirname), '../.env') });
 
+const MODEL = process.env.VITE_MODEL;
 const ENDPOINT_URL = process.env.VITE_ENDPOINT_URL;
 const API_KEY = process.env.VITE_API_KEY;
 
@@ -29,7 +30,7 @@ const client = new OpenAI({
   apiKey: API_KEY
 });
 
-const uiModel = new UIModel(client);
+const uiModel = new UIModel(client, MODEL!);
 
 export const setupAgentHandlers = (ipcMain: IpcMain, mainWindow: Electron.BrowserWindow) => {
   ipcMain.handle(
