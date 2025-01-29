@@ -493,7 +493,7 @@ router.post('/:id/start', async (req: Request, res: Response) => {
 
     // Construct Guacamole URL with encoded client ID
     const guacURL = `${
-      process.env.GUACAMOLE_URL || 'http://localhost/guacamole'
+      process.env.GUACAMOLE_URL || '/guacamole'
     }/#/client/${clientId}?token=${authToken}`;
 
     res.json({
