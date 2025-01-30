@@ -51,7 +51,7 @@ export interface Message {
 }
 
 export interface ProcessedEvent {
-    type: 'keydown' | 'keyup' | 'mousedown' | 'mouseup' | 'mousedrag' | 'frame' | 'quest' | 'hint' | 'mouseclick' | 'type' | 'hotkey' | 'dense_caption' | 'state_transition' | 'structured_data';
+    type: 'keydown' | 'keyup' | 'mousedown' | 'mouseup' | 'mousedrag' | 'frame' | 'quest' | 'hint' | 'mouseclick' | 'type' | 'hotkey' | 'dense_caption' | 'state_transition' | 'structured_data' | 'reasoning';
     timestamp: number;
     data: {
         x?: number;

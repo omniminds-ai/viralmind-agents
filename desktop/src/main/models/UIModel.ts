@@ -16,6 +16,7 @@ import { ActionInputs, PredictionParsed } from '../../shared/types.js';
 
 export const FACTOR = 1000;
 export const MAX_PIXELS = 1350 * 28 * 28;
+export const CONTROL_POINTS = 8; // Fixed number of control points for each spline
 
 const prompt = `You are a GUI agent. You are given a task and your action history, with screenshots. You need to perform the next action to complete the task.
 
@@ -44,6 +45,80 @@ call_user() # Submit the task and call the user when the task is unsolvable, or 
 
 ## User Instruction
 `;
+
+
+
+// B-spline curve helper functions
+function bsplineBasis(t: number, degree: number, i: number, knots: number[]): number {
+  if (degree === 0) {
+    return (t >= knots[i] && t < knots[i + 1]) ? 1 : 0;
+  }
+  
+  let w1 = 0, w2 = 0;
+  
+  if (knots[i + degree] - knots[i] !== 0) {
+    w1 = ((t - knots[i]) / (knots[i + degree] - knots[i])) * 
+         bsplineBasis(t, degree - 1, i, knots);
+  }
+  
+  if (knots[i + degree + 1] - knots[i + 1] !== 0) {
+    w2 = ((knots[i + degree + 1] - t) / (knots[i + degree + 1] - knots[i + 1])) * 
+         bsplineBasis(t, degree - 1, i + 1, knots);
+  }
+  
+  return w1 + w2;
+}
+
+function generateBsplinePoints(controlPoints: [number, number][], numPoints = 100): [number, number][] {
+  const degree = 3;
+  const n = controlPoints.length - 1;
+  
+  // Generate knot vector
+  const knots: number[] = [];
+  for (let i = 0; i <= n + degree + 1; i++) {
+    knots.push(i);
+  }
+  
+  const curvePoints: [number, number][] = [];
+  const tStart = knots[degree];
+  const tEnd = knots[n + 1];
+  
+  for (let i = 0; i <= numPoints; i++) {
+    const t = tStart + (i / numPoints) * (tEnd - tStart);
+    let x = 0, y = 0;
+    
+    for (let j = 0; j <= n; j++) {
+      const basis = bsplineBasis(t, degree, j, knots);
+      x += controlPoints[j][0] * basis;
+      y += controlPoints[j][1] * basis;
+    }
+    
+    curvePoints.push([x, y]);
+  }
+  
+  return curvePoints;
+}
+
+// Normalize control points to have exactly CONTROL_POINTS points
+function normalizeControlPoints(points: [number, number][]): [number, number][] {
+  // if (points.length === CONTROL_POINTS) {
+  //   return points;
+  // }
+  
+  const normalized: [number, number][] = [];
+  for (let i = 0; i < CONTROL_POINTS; i++) {
+    const index = (i / (CONTROL_POINTS - 1)) * (points.length - 1);
+    const lower = Math.floor(index);
+    const upper = Math.min(lower + 1, points.length - 1);
+    const fraction = index - lower;
+    
+    const x = points[lower][0] * (1 - fraction) + points[upper][0] * fraction;
+    const y = points[lower][1] * (1 - fraction) + points[upper][1] * fraction;
+    normalized.push([x, y]);
+  }
+  
+  return normalized;
+}
 
 /**
  * boxStr convert to screen coords
@@ -261,11 +336,13 @@ type Message = ChatCompletionMessageParam & {
 
 export class UIModel {
   private client: OpenAI;
+  private model: string;
   private messages: Message[] = [];
   private MAX_HISTORY = 10;
 
-  constructor(client: OpenAI) {
+  constructor(client: OpenAI, model: string) {
     this.client = client;
+    this.model = model;
   }
 
   private addMessage(message: Message) {
@@ -301,7 +378,7 @@ export class UIModel {
 
   async generate(message: string, base64Image: string): Promise<PredictionParsed[]> {
     console.log('[UIModel] Generating predictions for message:', message);
-
+    
     // Add user message to history with system prompt prefix
     this.addMessage({
       role: 'user',
@@ -315,27 +392,26 @@ export class UIModel {
         },
       ]
     });
-
+  
     const response = await this.client.chat.completions.create({
-      model: 'tgi',
+      model: this.model,
       messages: this.messages,
       max_tokens: 500,
     });
-
+  
     const content = response.choices[0]?.message?.content || '';
     console.log('[UIModel] Raw model response:', content);
     const predictions = parseActionVlm(content);
     console.log('[UIModel] Parsed predictions:', predictions);
-
+  
     // Add assistant response to history
     this.addMessage({
       role: 'assistant',
       content: content
     });
-
+  
     return predictions;
   }
-
   async runAgentLoop(
     message: string, 
     base64Image: string, 
@@ -343,7 +419,7 @@ export class UIModel {
     getScreenshot: () => Promise<string>
   ) {
     console.log('[UIModel] Starting agent loop');
-    const MAX_ACTIONS = 3;
+    const MAX_ACTIONS = 8;
     let actionCount = 0;
     let currentImage = base64Image;
     
@@ -493,6 +569,36 @@ export class UIModel {
               straightTo(centerOf(new Region(startX, startY, diffX, diffY))),
             );
           }
+        }
+        break;
+      }
+      
+      case 'spline_drag': {
+        logger.info('[device] spline_drag', action_inputs);
+        const controlPointsStr = action_inputs?.control_points;
+        
+        if (controlPointsStr) {
+          const controlPoints: [number, number][] = JSON.parse(controlPointsStr).map(
+            (point: string) => {
+              const coords = parseBoxToScreenCoords(point, screenWidth, screenHeight);
+              return [coords.x * scaleFactor, coords.y * scaleFactor];
+            }
+          );
+
+          // Generate curve points from control points
+          const curvePoints = generateBsplinePoints(controlPoints);
+          
+          // Move to start position
+          await moveStraightTo(curvePoints[0][0], curvePoints[0][1]);
+          await mouse.pressButton(Button.LEFT);
+          
+          // Follow the curve
+          for (const [x, y] of curvePoints.slice(1)) {
+            await moveStraightTo(x, y);
+            await sleep(10); // Small delay for smoother drawing
+          }
+          
+          await mouse.releaseButton(Button.LEFT);
         }
         break;
       }
