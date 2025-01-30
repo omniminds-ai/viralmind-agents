@@ -8,6 +8,8 @@ import { IPC_CHANNELS } from '../shared/types.js';
 import OpenAI from 'openai';
 import { WindowTracker } from './services/WindowTracker.js';
 import { UIModel } from './models/UIModel.js';
+import { GymModel } from './models/GymModel.js';
+
 import { resizeImage } from './utils/image.js';
 import { Region, screen } from '@computer-use/nut-js';
 import sharp from 'sharp';
@@ -20,6 +22,7 @@ dotenv.config({ path: join(dirname(__dirname), '../.env') });
 const MODEL = process.env.VITE_MODEL;
 const ENDPOINT_URL = process.env.VITE_ENDPOINT_URL;
 const API_KEY = process.env.VITE_API_KEY;
+const ACTION_SPACE = process.env.VITE_PROVIDER;
 
 if (!ENDPOINT_URL || !API_KEY) {
   throw new Error('Missing required environment variables');
@@ -30,7 +33,10 @@ const client = new OpenAI({
   apiKey: API_KEY
 });
 
-const uiModel = new UIModel(client, MODEL!);
+const uiModel = 
+  ACTION_SPACE == 'uground' ? new UIModel(client, MODEL!) :
+  ACTION_SPACE == 'gym' ? new GymModel(client, MODEL!) :
+  new GymModel(client, MODEL!);
 
 export const setupAgentHandlers = (ipcMain: IpcMain, mainWindow: Electron.BrowserWindow) => {
   ipcMain.handle(

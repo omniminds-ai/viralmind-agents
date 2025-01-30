@@ -23,6 +23,7 @@
     "dotenv": "^16.4.7",
     "electron": "^34.0.1",
     "lucide-svelte": "^0.474.0",
+    "node-global-key-listener": "^0.3.0",
     "openai": "^4.80.1",
     "screenshot-desktop": "^1.15.1",
     "sharp": "^0.33.5",

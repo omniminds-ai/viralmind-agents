@@ -99,10 +99,20 @@ export class MessageFormatter implements PipelineStage<ProcessedEvent[], Message
                     });
                     break;
 
+                case "quest":
                 case "hint":
                     messages.push({
                         role: "user",
-                        content: event.data.text || "",
+                        content: event.data.text || event.data.message || "",
+                        timestamp: event.timestamp
+                    });
+                    break;
+
+
+                case "reasoning":
+                    messages.push({
+                        role: "assistant",
+                        content: event.data.text || event.data.message || "",
                         timestamp: event.timestamp
                     });
                     break;

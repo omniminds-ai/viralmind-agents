@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, globalShortcut } from 'electron';
+import { mouse } from '@computer-use/nut-js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { setupScreenshotHandlers } from './screenshot.js';
@@ -49,11 +50,28 @@ app.whenReady().then(() => {
   
   // Initialize window tracker
   WindowTracker.getInstance().init();
+
+  // Register global shortcut for coordinate logging
+  globalShortcut.register('Alt+C', async () => {
+    const mousePos = await mouse.getPosition(); // nut-js mouse
+    const lastWindow = WindowTracker.getInstance().getLastNonAgentWindow();
+    
+    if (lastWindow && lastWindow.region) {
+      const normalizedX = Math.round((mousePos.x / lastWindow.region.width) * 1000) / 1000;
+      const normalizedY = Math.round((mousePos.y / lastWindow.region.height) * 1000) / 1000;
+      console.log('[Debug] Normalized coordinates:', `[${normalizedX.toFixed(4)}, ${normalizedY.toFixed(4)}]`);
+    } else {
+      console.log('[Debug] No active window region found');
+    }
+  });
 });
 
 app.on('before-quit', () => {
   // Clean up window tracker
   WindowTracker.getInstance().cleanup();
+  
+  // Unregister shortcuts
+  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => {
