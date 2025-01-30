@@ -1,11 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    MousePointerClick,
-    Trophy,
     Coins,
-    History,
-    Dumbbell,
     MessageCircle,
     ChevronDown,
     ChevronUp,
@@ -14,11 +10,22 @@
     MonitorPlay,
     Bot,
     User,
-    Star
+    Star,
+    Sparkles,
+    Activity,
+    Dumbbell,
+    Trophy
   } from 'lucide-svelte';
   import ButtonCTA from '$lib/components/ButtonCTA.svelte';
   import ContractInfo from '$lib/components/ContractInfo.svelte';
   import type { SettingsRes } from '$lib/types';
+  import ViralMetrics from '$lib/components/ViralMetrics.svelte';
+  import Card from '$lib/components/Card.svelte';
+
+  const TOKEN_DATA = {
+    contractAddress: 'HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump',
+    dexscreenerUrl: 'https://dexscreener.com/solana/HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump'
+  };
 
   let settings: SettingsRes;
   let faqOpen = Array(4).fill(false);
@@ -56,10 +63,10 @@
   });
 </script>
 
-<div class="min-h-screen bg-black text-white">
+<div class="min-h-screen text-white">
   <!-- Hero Section -->
   <div class="relative min-h-screen">
-    <div class="bg-gradient-to-b from-black via-black to-purple-900">
+    <div class="from-primary-500 via-primary-500 bg-gradient-to-b to-purple-900">
       <div
         class="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4"
       >
@@ -209,7 +216,7 @@
   </div>
 
   <!-- Collective Intelligence Section -->
-  <div class="bg-gradient-to-b from-purple-900/20 to-black">
+  <div class="bg-primary-500">
     <div class="mx-auto max-w-6xl px-4 py-24">
       <div class="text-center">
         <h2 class="mb-8 text-4xl font-bold md:text-5xl">Collective Intelligence Platform</h2>
@@ -218,9 +225,9 @@
           ecosystem
         </p>
         <div class="grid gap-8 md:grid-cols-3">
-          <div class="rounded-xl bg-black/30 p-8">
+          <div class="bg-primary-300 rounded-xl p-8">
             <div class="mb-4 flex justify-center">
-              <Gamepad2 class="h-12 w-12 text-purple-400" />
+              <Gamepad2 class="text-secondary-100 h-12 w-12" />
             </div>
             <h3 class="mb-4 text-2xl font-bold">Play Tasks</h3>
             <p class="text-gray-400">
@@ -229,9 +236,9 @@
             </p>
           </div>
 
-          <div class="rounded-xl bg-black/30 p-8">
+          <div class="bg-primary-300 rounded-xl p-8">
             <div class="mb-4 flex justify-center">
-              <Coins class="h-12 w-12 text-purple-400" />
+              <Coins class="text-secondary-100 h-12 w-12" />
             </div>
             <h3 class="mb-4 text-2xl font-bold">Earn Instantly</h3>
             <p class="text-gray-400">
@@ -240,9 +247,9 @@
             </p>
           </div>
 
-          <div class="rounded-xl bg-black/30 p-8">
+          <div class="bg-primary-300 rounded-xl p-8">
             <div class="mb-4 flex justify-center">
-              <Bot class="h-12 w-12 text-purple-400" />
+              <Bot class="text-secondary-100 h-12 w-12" />
             </div>
             <h3 class="mb-4 text-2xl font-bold">Create Agents</h3>
             <p class="text-gray-400">
@@ -252,19 +259,24 @@
             </p>
           </div>
         </div>
+
+        <div class="bg-primary-300 mt-8 rounded-xl p-6 backdrop-blur-md">
+          <h2 class="mb-8 text-4xl font-bold">$VIRAL Ecosystem</h2>
+          <ContractInfo />
+        </div>
       </div>
     </div>
   </div>
 
   <!-- VM-1 Section with Video Background -->
-  <div class="bg-gradient-to-t from-transparent via-black/70 to-purple-900">
+  <div class="via-primary-500/70 bg-gradient-to-t from-transparent to-purple-900">
     <!-- Right Content -->
     <div class="mx-auto flex max-w-6xl flex-col lg:flex-row-reverse">
       <div class="mx-auto w-full p-4 lg:w-1/2">
         <div class="mt-8">
           <h1 class="mb-8 text-6xl font-bold">
             <span
-              class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent"
+              class="from-secondary-200 to-secondary-600 bg-gradient-to-r bg-clip-text text-transparent"
             >
               Meet VM-1
             </span>
@@ -296,7 +308,7 @@
           <!-- Bot Welcome -->
           <div class="flex items-start gap-2">
             <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-              <Bot class="h-4 w-4 text-purple-600" />
+              <Bot class="text-secondary-100 h-4 w-4" />
             </div>
             <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
               <p>Ready to help! What are we playing today? 🎮</p>
@@ -319,7 +331,7 @@
           <!-- Bot Response -->
           <div class="flex items-start gap-2">
             <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-              <Bot class="h-4 w-4 text-purple-600" />
+              <Bot class="text-secondary-100 h-4 w-4" />
             </div>
             <div class="space-y-2">
               <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
@@ -351,51 +363,51 @@
   </div>
 
   <!-- "Don't Believe Us?" Section -->
-  <div class="bg-gradient-to-b from-purple-900/20 to-black">
-    <div class="mx-auto max-w-6xl px-4 py-24">
+  <div class="to-primary-500 bg-gradient-to-b from-purple-900/20">
+    <div class="mx-auto max-w-6xl px-4 pb-32 pt-24">
       <h2 class="mb-4 text-center text-4xl font-bold">Don't Believe Us?</h2>
       <p class="mb-16 text-center text-xl text-gray-400">
         Train your own LAM in minutes. Keep the weights.
       </p>
 
       <div class="grid gap-8 md:grid-cols-2">
-        <div class="rounded-xl bg-black/30 p-8">
+        <div class="bg-primary-300 rounded-xl p-8">
           <div class="mb-8">
-            <span class="text-5xl font-bold text-purple-400">30%</span>
+            <span class="text-secondary-100 text-5xl font-bold">30%</span>
             <p class="mt-2 text-gray-400">
               Success rate on office UI tasks vs 0% with traditional OCR - tested on real
               computer-use benchmarks
             </p>
           </div>
           <div class="mb-8">
-            <span class="text-5xl font-bold text-purple-400">50</span>
+            <span class="text-secondary-100 text-5xl font-bold">50</span>
             <p class="mt-2 text-gray-400">
               Tasks to train a capable agent through our Training Gym
             </p>
           </div>
           <div class="mb-8">
-            <span class="text-5xl font-bold text-purple-400">1-Click</span>
+            <span class="text-secondary-100 text-5xl font-bold">1-Click</span>
             <p class="mt-2 text-gray-400">Deploy your trained agent to any task</p>
           </div>
         </div>
 
-        <div class="space-y-6 rounded-xl bg-black/30 p-8">
-          <h3 class="text-2xl font-bold text-purple-400">Build Your Own LAM</h3>
+        <div class="bg-primary-300 space-y-6 rounded-xl p-8">
+          <h3 class="text-secondary-100 text-2xl font-bold">Build Your Own LAM</h3>
           <ol class="space-y-4 text-gray-300">
             <li class="flex items-start gap-2">
-              <span class="mt-1 rounded-full bg-purple-500/20 px-2 text-sm">1</span>
+              <span class="bg-secondary-400/20 mt-1 rounded-full px-2 text-sm">1</span>
               Play games & complete tasks in our Training Gym
             </li>
             <li class="flex items-start gap-2">
-              <span class="mt-1 rounded-full bg-purple-500/20 px-2 text-sm">2</span>
+              <span class="bg-secondary-400/20 mt-1 rounded-full px-2 text-sm">2</span>
               Your gameplay becomes high-quality training data
             </li>
             <li class="flex items-start gap-2">
-              <span class="mt-1 rounded-full bg-purple-500/20 px-2 text-sm">3</span>
+              <span class="bg-secondary-400/20 mt-1 rounded-full px-2 text-sm">3</span>
               One-click fine-tuning creates your custom LAM
             </li>
             <li class="flex items-start gap-2">
-              <span class="mt-1 rounded-full bg-purple-500/20 px-2 text-sm">4</span>
+              <span class="bg-secondary-400/20 mt-1 rounded-full px-2 text-sm">4</span>
               Deploy & earn $VIRAL as others use your agent
             </li>
           </ol>
@@ -410,132 +422,78 @@
     </div>
   </div>
 
-  <!-- VM-1 Roadmap Section -->
-  <div class="mx-auto max-w-6xl px-4 py-6">
-    <div class="text-center">
-      <!-- Contract Info -->
-      <div class="mb-8 rounded-xl bg-stone-900/30 p-6 backdrop-blur-md">
-        <h2 class="mb-8 text-4xl font-bold">$VIRAL Ecosystem</h2>
-        <ContractInfo />
-      </div>
-      <p class="mx-auto mb-16 max-w-2xl text-xl text-gray-400">
-        Building the future of AI agents through collective intelligence
-      </p>
-
-      <div class="grid gap-8 md:grid-cols-2">
-        <!-- Key Growth Drivers -->
-        <div class="space-y-8">
-          <!-- Token Utility Section -->
-          <div class="rounded-xl bg-black/30 p-8">
-            <h3 class="mb-6 text-2xl font-bold text-purple-400">Data Economy</h3>
-            <ul class="space-y-4 text-left text-gray-300">
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span
-                  >Fair compensation for high-quality training data - users earn $VIRAL for
-                  contributing validated behavioral demonstrations</span
-                >
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span
-                  >Cost-effective data collection through token incentives reduces training costs
-                  compared to traditional methods</span
-                >
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span
-                  >Transparent data marketplace where contributors maintain ownership and earn from
-                  dataset usage</span
-                >
-              </li>
-            </ul>
-          </div>
-
-          <div class="rounded-xl bg-black/30 p-8">
-            <h3 class="mb-6 text-2xl font-bold text-purple-400">Frontier Tech Development</h3>
-            <ul class="space-y-4 text-left text-gray-300">
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span
-                  >Building next-gen LAMs that understand any UI, game, or application, essential
-                  for business automation</span
-                >
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span>Advanced research into behavioral learning & real-time action prediction</span
-                >
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span
-                  >Revolutionary AI companion tech - your agent plays games with you in real-time</span
-                >
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Deployment Vision -->
-        <div class="space-y-8">
-          <div class="rounded-xl bg-black/30 p-8">
-            <h3 class="mb-6 text-2xl font-bold text-purple-400">Technical Architecture</h3>
-            <ul class="space-y-4 text-left text-gray-300">
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span
-                  >Behavioral cloning with automated validation ensures high-quality demonstrations</span
-                >
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span
-                  >One-click deployment handled by our infrastructure - we manage the complexity so
-                  you don't have to</span
-                >
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span>Native integration with all major agent frameworks & crypto platforms</span>
-              </li>
-            </ul>
-          </div>
-
-          <div class="rounded-xl bg-black/30 p-8">
-            <h3 class="mb-6 text-2xl font-bold text-purple-400">Community-Driven Growth</h3>
-            <ul class="space-y-4 text-left text-gray-300">
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span>Massive dataset expansion through gamified Training Gym</span>
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span>Strategic partnerships with gaming studios & crypto projects</span>
-              </li>
-              <li class="flex items-start gap-3">
-                <ArrowRight class="mt-1 h-5 w-5 flex-shrink-0 text-purple-400" />
-                <span>Accelerating AI agent ecosystem through $VIRAL incentives</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-12 rounded-xl bg-purple-500/10 p-8">
-        <p class="text-xl font-bold text-purple-400">The Future is Here</p>
-        <p class="mt-2 text-gray-300">
-          Join us in building the next generation of AI agents - capable of using any computer
-          interface just like humans do.
-        </p>
-        <div class="mt-8 flex flex-col justify-center gap-4 md:flex-row">
-          <ButtonCTA href="/gym">
-            Start Training
-            <ArrowRight class="h-5 w-5" />
-          </ButtonCTA>
-          <ButtonCTA href="https://t.me/viralmind" variant="secondary">Join our Community</ButtonCTA
+  <div>
+    <div class="bg-black pb-24 text-white">
+      <div class="mx-auto max-w-6xl px-4 pt-24">
+        <!-- Hero Section -->
+        <div class="mb-16 text-center">
+          <h1
+            class="mb-4 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent md:text-4xl"
           >
+            $VIRAL Token
+          </h1>
+          <p class="mx-auto mb-8 max-w-2xl text-xl text-gray-400">
+            The utility token powering tournaments, VM-1 training, and governance.
+          </p>
+          <div class="flex justify-center gap-4">
+            <ButtonCTA href={TOKEN_DATA.dexscreenerUrl} target="_blank">
+              <Coins class="h-5 w-5" />
+              Trade $VIRAL
+            </ButtonCTA>
+            <ButtonCTA href={TOKEN_DATA.dexscreenerUrl} target="_blank" variant="secondary">
+              <Activity class="h-5 w-5" />
+              Live Chart
+            </ButtonCTA>
+          </div>
+        </div>
+
+        <ViralMetrics />
+
+        <!-- Token Utility Section -->
+        <div class="my-16 grid gap-8 md:grid-cols-2">
+          <!-- Training -->
+          <Card>
+            <h3 class="mb-6 flex items-center gap-2 text-xl font-bold">
+              <Dumbbell class="h-6 w-6 text-purple-400" />
+              Training & Rewards
+            </h3>
+            <ul class="space-y-4 text-gray-300">
+              <li class="flex gap-2">
+                <ArrowRight class="h-5 w-5 flex-shrink-0 text-purple-400" />
+                <span>Hold $VIRAL to participate in free training races</span>
+              </li>
+              <li class="flex gap-2">
+                <ArrowRight class="h-5 w-5 flex-shrink-0 text-purple-400" />
+                <span>Stake tokens for access to high-reward races</span>
+              </li>
+              <li class="flex gap-2">
+                <ArrowRight class="h-5 w-5 flex-shrink-0 text-purple-400" />
+                <span>Earn rewards for quality demonstrations</span>
+              </li>
+            </ul>
+          </Card>
+
+          <!-- Tournaments -->
+          <Card>
+            <h3 class="mb-6 flex items-center gap-2 text-xl font-bold">
+              <Trophy class="h-6 w-6 text-purple-400" />
+              Tournaments & Inference
+            </h3>
+            <ul class="space-y-4 text-gray-300">
+              <li class="flex gap-2">
+                <ArrowRight class="h-5 w-5 flex-shrink-0 text-purple-400" />
+                <span>Enter tournaments with prize pools</span>
+              </li>
+              <li class="flex gap-2">
+                <ArrowRight class="h-5 w-5 flex-shrink-0 text-purple-400" />
+                <span>Vote on future VM-1 development</span>
+              </li>
+              <li class="flex gap-2">
+                <ArrowRight class="h-5 w-5 flex-shrink-0 text-purple-400" />
+                <span>Access VM-1 inference for your AI applications</span>
+              </li>
+            </ul>
+          </Card>
         </div>
       </div>
     </div>
@@ -544,7 +502,7 @@
   <!-- Who We Are Section -->
   <div class="bg-gradient-to-b from-purple-900/20 to-black">
     <div class="mx-auto max-w-6xl px-4 py-24">
-      <div class="rounded-3xl bg-black/30 p-12">
+      <div class="p-12">
         <h2 class="mb-8 text-center text-4xl font-bold">Who We Are</h2>
         <div class="mx-auto max-w-3xl text-center">
           <p class="mb-8 text-xl text-gray-300">
@@ -567,34 +525,36 @@
   </div>
 
   <!-- FAQ Section -->
-  <div class="mx-auto max-w-6xl px-4 py-24">
-    <div class="rounded-3xl bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-12">
-      <div class="text-center">
-        <h2 class="mb-8 text-4xl font-bold">Frequently Asked Questions</h2>
+  <div class="bg-primary-400 px-4 py-24">
+    <div class="mx-auto max-w-6xl">
+      <div class="rounded-3xl bg-gradient-to-r from-purple-900/30 to-blue-900/30 p-12">
+        <div class="text-center">
+          <h2 class="mb-8 text-4xl font-bold">Frequently Asked Questions</h2>
 
-        {#if settings?.faq}
-          {#each settings.faq as faq, i}
-            <div class="mb-4">
-              <button
-                class="flex w-full items-center justify-between rounded-xl border border-purple-600/30 bg-black/30 p-4 transition-colors hover:bg-black/40"
-                on:click={() => toggleFaq(i)}
-              >
-                <span class="font-semibold">{faq.question}</span>
+          {#if settings?.faq}
+            {#each settings.faq as faq, i}
+              <div class="mb-4">
+                <button
+                  class="flex w-full items-center justify-between rounded-xl border border-purple-600/30 bg-black/30 p-4 transition-colors hover:bg-black/40"
+                  on:click={() => toggleFaq(i)}
+                >
+                  <span class="font-semibold">{faq.question}</span>
+                  {#if faqOpen[i]}
+                    <ChevronUp class="h-5 w-5" />
+                  {:else}
+                    <ChevronDown class="h-5 w-5" />
+                  {/if}
+                </button>
+
                 {#if faqOpen[i]}
-                  <ChevronUp class="h-5 w-5" />
-                {:else}
-                  <ChevronDown class="h-5 w-5" />
+                  <div class="p-4 text-gray-400">
+                    {faq.answer}
+                  </div>
                 {/if}
-              </button>
-
-              {#if faqOpen[i]}
-                <div class="p-4 text-gray-400">
-                  {faq.answer}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        {/if}
+              </div>
+            {/each}
+          {/if}
+        </div>
       </div>
     </div>
   </div>

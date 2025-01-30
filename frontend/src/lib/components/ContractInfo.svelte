@@ -15,16 +15,16 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <div class="flex items-center justify-center gap-2 rounded-lg bg-black/30 py-4">
-    <code class="truncate font-mono text-purple-400">{TOKEN_DATA.contractAddress}</code>
+  <div class="bg-primary-400 flex items-center justify-center gap-2 rounded-lg py-4">
+    <code class="text-secondary-100 truncate font-mono">{TOKEN_DATA.contractAddress}</code>
     <button
       class="rounded-lg p-2 transition-colors hover:bg-purple-500/40 hover:text-purple-200"
       on:click={copyAddress}
     >
       {#if copied}
-        <Check class="h-4 w-4 text-purple-400" />
+        <Check class="text-secondary-200 h-4 w-4" />
       {:else}
-        <Copy class="h-4 w-4 text-purple-400" />
+        <Copy class="text-secondary-200 h-4 w-4" />
       {/if}
     </button>
   </div>
