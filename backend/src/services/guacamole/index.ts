@@ -1,8 +1,9 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, isAxiosError } from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { handleAxiosError } from '../util.ts';
 
 const execAsync = promisify(exec);
 
@@ -109,6 +110,7 @@ export class GuacamoleService {
   private async getAdminToken(): Promise<string> {
     try {
       const params = new URLSearchParams();
+      console.log(`Getting Guac Admin Token for ${this.adminUsername}, ${this.adminPassword}`);
       params.append('username', this.adminUsername);
       params.append('password', this.adminPassword);
 
@@ -125,7 +127,7 @@ export class GuacamoleService {
 
       return response.data.authToken;
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('Auth error.');
       throw error;
     }
   }
@@ -214,14 +216,10 @@ export class GuacamoleService {
       // console.log(`Granted permissions to user ${username}`);
     } catch (error) {
       console.log('Error in Guac createUser.');
-      if ((error as Error).message.includes('AxiosError')) {
-        const err = error as AxiosError;
-        console.log({
-          code: err.code,
-          status: err.response?.status,
-          message: err.response?.statusText,
-          details: err.response?.data
-        });
+      if (isAxiosError(error)) {
+        handleAxiosError(error);
+      } else {
+        console.log(error);
       }
     }
   }
@@ -250,14 +248,8 @@ export class GuacamoleService {
       return response.data.authToken;
     } catch (error) {
       console.log('Error getting guac user token');
-      if ((error as Error).message.includes('AxiosError')) {
-        const err = error as AxiosError;
-        console.log({
-          code: err.code,
-          status: err.response?.status,
-          message: err.response?.statusText,
-          details: err.response?.data
-        });
+      if (isAxiosError(error)) {
+        handleAxiosError(error);
       }
       throw error;
     }
@@ -361,8 +353,8 @@ export class GuacamoleService {
       return createResponse.data.identifier;
     } catch (error) {
       console.error('Connection creation/update error:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('Response data:', error.response?.data);
+      if (isAxiosError(error)) {
+        handleAxiosError(error);
       }
       throw error;
     }
@@ -420,7 +412,7 @@ export class GuacamoleService {
         clientId
       };
     } catch (error) {
-      console.error('Error creating Guacamole session:', error);
+      console.error('Error creating Guacamole session');
       throw error;
     }
   }
@@ -586,7 +578,7 @@ export class GuacamoleService {
           message: err.response?.statusText,
           details: err.response?.data
         });
-      }
+      } else console.log(error);
 
       return null;
     }

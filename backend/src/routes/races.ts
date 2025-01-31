@@ -19,7 +19,8 @@ import { VPSRegion } from '../services/gym-vps/types.ts';
 import { TreasuryService } from '../services/treasury/index.ts';
 import { AWSS3Service } from '../services/aws/index.ts';
 import { unlink } from 'fs/promises';
-import { AxiosError } from 'axios';
+import { isAxiosError } from 'axios';
+import { handleAxiosError } from '../services/util.ts';
 
 async function generateQuest(imageUrl: string, prompt: string, session: RaceSessionDocument) {
   try {
@@ -505,14 +506,8 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     });
   } catch (error) {
     // parse axios errors because they're wildly long
-    if ((error as Error).name.includes('AxiosError')) {
-      const err = error as AxiosError;
-      console.log({
-        code: err.code,
-        status: err.response?.status,
-        message: err.response?.statusText,
-        details: err.response?.data
-      });
+    if (isAxiosError(error)) {
+      handleAxiosError(error);
     } else {
       console.error('Error starting race:', error);
     }
@@ -573,7 +568,6 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
     status: 'expired',
     updated_at: new Date()
   });
-
 
   // Initialize total rewards
   let totalRewards = 0;
@@ -649,14 +643,8 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
       } catch (error) {
         console.log('Error cleaning up Guacamole session.');
         // parse axios errors because they're wildly long
-        if ((error as Error).name.includes('AxiosError')) {
-          const err = error as AxiosError;
-          console.log({
-            code: err.code,
-            status: err.response?.status,
-            message: err.response?.statusText,
-            details: err.response?.data
-          });
+        if (isAxiosError(error)) {
+          handleAxiosError(error);
         } else {
           console.log(error);
         }
@@ -667,7 +655,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
     totalRewards = rewardEvents.reduce((sum, event) => {
       return sum + (event.metadata?.rewardValue || 0);
     }, 0);
-    
+
     // If there are rewards, transfer the total amount
     if (totalRewards > 0) {
       // Transfer total rewards from treasury
@@ -990,7 +978,10 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       res.json(result);
     }
   } catch (error) {
-    console.error('Error generating hint:', error);
+    console.error('Error generating hint.');
+    if (isAxiosError(error)) {
+      handleAxiosError(error);
+    } else console.log(error);
     res.status(500).json({ error: 'Failed to generate hint' });
   }
 });

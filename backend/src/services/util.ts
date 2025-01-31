@@ -1,3 +1,5 @@
+import { AxiosError } from 'axios';
+
 type EventListener = (...args: any[]) => void;
 
 export class EventEmitter {
@@ -42,3 +44,14 @@ export class EventEmitter {
     this.events[event].forEach((listener) => listener(...args));
   }
 }
+
+export const handleAxiosError = (error: AxiosError) => {
+  console.log({
+    code: error.code,
+    url: error.response?.config.url,
+    data: error.response?.config.data,
+    status: error.response?.status,
+    message: error.response?.statusText,
+    details: error.response?.data
+  });
+};
