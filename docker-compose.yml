@@ -206,6 +206,7 @@ services:
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - GUACAMOLE_PASSWORD=${GUACAMOLE_PASSWORD}
+      - GUACAMOLE_USERNAME=${GUACAMOLE_USERNAME}
     depends_on:
       - mongodb
       - guacd
