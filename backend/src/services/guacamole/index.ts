@@ -110,7 +110,6 @@ export class GuacamoleService {
   private async getAdminToken(): Promise<string> {
     try {
       const params = new URLSearchParams();
-      console.log(`Getting Guac Admin Token for ${this.adminUsername}, ${this.adminPassword}`);
       params.append('username', this.adminUsername);
       params.append('password', this.adminPassword);
 
@@ -369,11 +368,9 @@ export class GuacamoleService {
     try {
       // Get admin token first
       const adminToken = await this.getAdminToken();
-      console.log('Got admin token');
 
       // Create/verify user exists and has permissions
       await this.createUser(adminToken, address);
-      console.log('User created/verified');
 
       // Create or get existing RDP connection using admin token
       const connectionId = await this.createOrGetRDPConnection(adminToken, ip, username, password);

@@ -1,4 +1,4 @@
-import { NodeSSH } from 'node-ssh';
+import { NodeSSH, SSHExecCommandOptions } from 'node-ssh';
 import { generate } from 'random-words';
 import DatabaseService from '../db/index.ts';
 
@@ -17,7 +17,8 @@ export class GymVPSService {
   }
 
   public async initNewTrainer(
-    address: string
+    address: string,
+    streamId: string
   ): Promise<{ username: string; password: string; ip: string }> {
     // ssh in and add the new user
     const ssh = new NodeSSH();
@@ -31,6 +32,12 @@ export class GymVPSService {
       console.log('SSH error:', e);
     }
 
+    const sshCommand = async (givenCommand: string, options?: SSHExecCommandOptions) => {
+      const res = await ssh.execCommand(givenCommand, options);
+      console.log(res);
+      return res;
+    };
+
     console.log('Adding new user to VPS for RDP access.');
 
     // generate user information from the user's address
@@ -42,15 +49,83 @@ export class GymVPSService {
       }) as string[]
     ).join('-');
 
-    // create user
-    await ssh.execCommand(`sudo su root -c "useradd -m -s /bin/bash \'${username}'"`);
-    // set password
-    await ssh.execCommand(`sudo su root -c "echo '${username}:${password}' | chpasswd"`);
+    // Create user
+    await sshCommand(`sudo su root -c "useradd -m -s /bin/bash '${username}'"`);
+    await sshCommand(`sudo su root -c "echo '${username}:${password}' | chpasswd"`);
+    // send the uploader script
+    await sshCommand(`sudo -u ${username} mkdir -p /home/${username}/.scripts/`);
+
+    console.log(streamId);
+    const endpoint = `https://viralmind.ai/api/streams/races/${streamId}/data?secret=${process.env.AX_PARSER_SECRET}`;
+    const scriptContent = `#!/bin/bash
+ENDPOINT="${endpoint}"
+TEMP_FILE=$(mktemp)
+echo "Started sending data to \$ENDPOINT"
+while true; do
+    echo "Generating new data..."
+    JSON_DATA=$(gjs -m /usr/local/bin/dump-tree.js)
+
+    # Skip if no JSON_DATA
+    if [ -z "\$JSON_DATA" ]; then
+        echo "No data received, skipping..."
+        sleep 1
+        continue
+    fi
+    
+    echo "{\\"data\\": \$JSON_DATA, \\"type\\": \\"accessibility-tree\\", \\"platform\\": \\"linux\\"}" > "\$TEMP_FILE"
+    echo "Sending data..."
+    curl -X POST \\
+        -H "Content-Type: application/json" \\
+        --data-binary @"\$TEMP_FILE" \\
+        "\$ENDPOINT"
+    echo "Data sent, waiting 1 second..."
+    sleep 1
+done
+rm "\$TEMP_FILE"`;
+
+    // Create script in multiple steps
+    await sshCommand(`sudo -u ${username} touch /home/${username}/.scripts/ax-uploader.sh`);
+    await sshCommand(`sudo -u ${username} tee /home/${username}/.scripts/ax-uploader.sh > /dev/null << 'EOSCRIPT'
+${scriptContent}
+EOSCRIPT`);
+    await sshCommand(`sudo chmod +x /home/${username}/.scripts/ax-uploader.sh`);
+    await sshCommand(`sudo -u ${username} mkdir -p /home/${username}/.config/systemd/user`);
+
+    const serviceContent = `[Unit]
+Description=AX Uploader Service
+After=default.target
+[Service]
+Type=simple
+ExecStart=/home/${username}/.scripts/ax-uploader.sh
+RemainAfterExit=no
+[Install]
+WantedBy=default.target`;
+
+    // Create the service file without heredoc
+    await sshCommand(
+      `sudo -u ${username} bash -c "echo '${serviceContent.replace(
+        /'/g,
+        "'\\''"
+      )}' > /home/${username}/.config/systemd/user/ax-uploader.service"`
+    );
+
+    const profileContent = `# If this is the first login
+if [ ! -f ~/.service-enabled ]; then
+    systemctl --user daemon-reload
+    systemctl --user enable ax-uploader.service
+    systemctl --user start ax-uploader.service
+    touch ~/.service-enabled
+fi`;
+
+    // Create the profile file without heredoc
+    await sshCommand(
+      `sudo bash -c "echo '${profileContent.replace(/'/g, "'\\''")}' > /home/${username}/.profile"`
+    );
+    await sshCommand(`sudo chown "${username}:${username}" "/home/${username}/.profile"`);
+
     // close the connection
     ssh.dispose();
-    // todo: create a usergroup that prevents breaking the system but allows installing packages
-    // add to usergroup
-    // await ssh.execCommand(`usermod -aG sudo "${username}"`);
+
     await DatabaseService.addGymVPSUser(this.ip, username, password);
     console.log(`Added user ${username} with password ${password} to the server.`);
     return { ip: this.ip, username, password };

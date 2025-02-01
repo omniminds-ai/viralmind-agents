@@ -396,6 +396,15 @@ class DataBaseService extends EventEmitter {
     }
   }
 
+  async getRaceSessionByStream(streamId: string): Promise<RaceSessionDocument | null> {
+    try {
+      return await RaceSession.findOne({ stream_id: streamId });
+    } catch (error) {
+      console.error('Database Service Error:', error);
+      return null;
+    }
+  }
+
   // Training event methods
   async createTrainingEvent(eventData: any): Promise<any> {
     try {
