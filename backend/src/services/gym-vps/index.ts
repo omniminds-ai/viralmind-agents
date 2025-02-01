@@ -72,7 +72,7 @@ while true; do
         continue
     fi
     
-    echo "{\\"data\\": \$JSON_DATA, \\"type\\": \\"accessibility-tree\\", \\"platform\\": \\"linux\\"}" > "\$TEMP_FILE"
+    echo "{\\"data\\": \$JSON_DATA, \\"type\\": \\"ax-tree\\", \\"platform\\": \\"linux\\"}" > "\$TEMP_FILE"
     echo "Sending data..."
     curl -X POST \\
         -H "Content-Type: application/json" \\

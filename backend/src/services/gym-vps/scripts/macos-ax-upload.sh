@@ -14,7 +14,7 @@ while true; do
     JSON_DATA=$(python3 /usr/local/bin/dump-tree.py)
 
     # Create the payload and save to temp file
-    echo "{\"data\": $JSON_DATA, \"type\": \"accessibility-tree\", \"platform\": \"macos\"}" > "$TEMP_FILE"
+    echo "{\"data\": $JSON_DATA, \"type\": \"ax-tree\", \"platform\": \"macos\"}" > "$TEMP_FILE"
 
     # Send the data using curl with binary data
     echo "Sending data..."
