@@ -1,8 +1,9 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import DatabaseService from '../services/db/index.ts';
-import bodyParser from 'body-parser';
+import zstd from '@mongodb-js/zstd';
 import { writeFile } from 'fs/promises';
+import { AWSS3Service } from '../services/aws/index.ts';
 dotenv.config();
 
 const router = express.Router();
@@ -136,8 +137,22 @@ const processAndCleanup = async (sid: string) => {
           tree: data.data
         };
       });
-      await writeFile(`./trees/tree-${sid}.json`, JSON.stringify(processedResults));
-      //todo: store to s3
+      const compressedResults = await zstd.compress(
+        Buffer.from(JSON.stringify(processedResults)),
+        10
+      );
+      const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
+      console.log('Uploading ax tree to s3...');
+      // wrap this function so the user doesn't have to wait for this
+      (async () => {
+        await s3Service.saveItem({
+          bucket: 'training-gym',
+          file: compressedResults,
+          name: `tree-${sid}.json.zst`
+        });
+
+        console.log('done.');
+      })();
     } catch (error) {
       console.error(`Error processing data for session ${sid}:`, error);
     }
@@ -147,8 +162,18 @@ const processAndCleanup = async (sid: string) => {
 };
 
 // POST endpoint to handle data
-router.post('/races/:sid/data', async (req: Request, res: Response) => {
-  const sid = req.params.sid;
+router.post('/races/:stream/data', async (req: Request, res: Response) => {
+  const streamId = req.params.stream; // linux username for the user
+  const session = await DatabaseService.getRaceSessionByStream(streamId);
+  if (req.query.secret !== process.env.AX_PARSER_SECRET) {
+    res.status(400).send({ error: 'Incorrect AX Parser secret. Unauthorized.' });
+    return;
+  }
+  if (!session) {
+    res.status(400).send({ error: 'No username session present.' });
+    return;
+  }
+  const sid = session._id!.toString();
 
   try {
     const data: RaceStreamData = req.body;

@@ -130,6 +130,7 @@ services:
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - GUACAMOLE_PASSWORD=${GUACAMOLE_PASSWORD}
       - GUACAMOLE_USERNAME=${GUACAMOLE_USERNAME}
+      - AX_PARSER_SECRET=${AX_PARSER_SECRET}
     depends_on:
       - mongodb
       # - windows
@@ -207,6 +208,7 @@ services:
       - AWS_SECRET_KEY=${AWS_SECRET_KEY}
       - GUACAMOLE_PASSWORD=${GUACAMOLE_PASSWORD}
       - GUACAMOLE_USERNAME=${GUACAMOLE_USERNAME}
+      - AX_PARSER_SECRET=${AX_PARSER_SECRET}
     depends_on:
       - mongodb
       - guacd

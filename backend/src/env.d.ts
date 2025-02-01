@@ -13,5 +13,6 @@ declare namespace NodeJS {
     GYM_TREASURY_WEBHOOK?: string;
     AWS_ACCESS_KEY?: string;
     AWS_SECRET_KEY?: string;
+    AX_PARSER_SECRET?: string;
   }
 }

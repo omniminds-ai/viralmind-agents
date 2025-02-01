@@ -32,7 +32,8 @@ export const raceSessionSchema = new mongoose.Schema(
     preview: { type: String }, // Base64 encoded screenshot
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
-    transaction_signature: { type: String, required: false }
+    transaction_signature: { type: String, required: false },
+    stream_id: { type: String }
   },
   { collection: 'race_sessions' }
 );

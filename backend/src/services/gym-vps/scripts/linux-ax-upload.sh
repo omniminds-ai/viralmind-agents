@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ENDPOINT="http://192.168.64.1/api/streams/races/sid/data"
+ENDPOINT="http://192.168.64.1/api/streams/races/username/data?secret=parser_secret_here"
 
 # Create a temp file that we'll reuse
 TEMP_FILE=$(mktemp)
@@ -11,10 +11,10 @@ echo "Started sending data to $ENDPOINT"
 while true; do
     # Generate new data
     echo "Generating new data..."
-    JSON_DATA=$(python3 /usr/local/bin/dump-tree.py)
+    JSON_DATA=$(gjs -m /usr/local/bin/dump-tree.js)
 
     # Create the payload and save to temp file
-    echo "{\"data\": $JSON_DATA, \"type\": \"accessibility-tree\", \"platform\": \"macos\"}" > "$TEMP_FILE"
+    echo "{\"data\": $JSON_DATA, \"type\": \"accessibility-tree\", \"platform\": \"linux\"}" > "$TEMP_FILE"
 
     # Send the data using curl with binary data
     echo "Sending data..."

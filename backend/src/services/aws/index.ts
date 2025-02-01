@@ -18,6 +18,7 @@ export class AWSS3Service {
     if (typeof options.file === 'string') {
       data = await fs.readFile(options.file);
     } else {
+      // data is a buffer
       data = options.file;
     }
     const command = new PutObjectCommand({

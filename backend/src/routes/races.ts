@@ -451,7 +451,15 @@ router.post('/:id/start', async (req: Request, res: Response) => {
       username: instance.username,
       privateKey: instance.ssh_keypair.private
     });
-    const vps = await vpsService.initNewTrainer(address);
+    let streamId = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    let counter = 0;
+    while (counter < 16) {
+      streamId += characters.charAt(Math.floor(Math.random() * charactersLength));
+      counter += 1;
+    }
+    const vps = await vpsService.initNewTrainer(address, streamId);
 
     // Create Guacamole session with RDP connection
     const {
@@ -480,7 +488,8 @@ router.post('/:id/start', async (req: Request, res: Response) => {
       },
       created_at: now,
       updated_at: now,
-      category: 'creative' as RaceCategory
+      category: 'creative' as RaceCategory,
+      stream_id: streamId
     };
 
     const session = await DatabaseService.createRaceSession(sessionData);
