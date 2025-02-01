@@ -14,7 +14,7 @@ while true; do
     JSON_DATA=$(gjs -m /usr/local/bin/dump-tree.js)
 
     # Create the payload and save to temp file
-    echo "{\"data\": $JSON_DATA, \"type\": \"accessibility-tree\", \"platform\": \"linux\"}" > "$TEMP_FILE"
+    echo "{\"data\": $JSON_DATA, \"type\": \"ax-tree\", \"platform\": \"linux\"}" > "$TEMP_FILE"
 
     # Send the data using curl with binary data
     echo "Sending data..."
