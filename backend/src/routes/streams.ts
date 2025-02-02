@@ -177,8 +177,6 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
   }
   const sid = session._id!.toString();
 
-  console.log('stream sesesion id: ', sid);
-
   try {
     const data: RaceStreamData = req.body;
 
@@ -188,7 +186,7 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
         timeoutId: setTimeout(() => {
           console.log(`streams: Connection ${sid} timed out`);
           processAndCleanup(sid);
-        }, 20000),
+        }, 10000),
         data: []
       };
     }
@@ -205,7 +203,7 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
 
     raceDataStreams.set(sid, connection);
 
-    console.log('streams: got and saved data!', data.data.length);
+    console.log('streams: got and saved data for session', sid);
 
     res.status(200).json({
       status: 'data_received',

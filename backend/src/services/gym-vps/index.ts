@@ -34,7 +34,7 @@ export class GymVPSService {
 
     const sshCommand = async (givenCommand: string, options?: SSHExecCommandOptions) => {
       const res = await ssh.execCommand(givenCommand, options);
-      console.log(res);
+      //console.log(givenCommand.slice(0, 5), res);
       return res;
     };
 
@@ -55,7 +55,6 @@ export class GymVPSService {
     // send the uploader script
     await sshCommand(`sudo -u ${username} mkdir -p /home/${username}/.scripts/`);
 
-    console.log(streamId);
     const endpoint = `https://viralmind.ai/api/streams/races/${streamId}/data?secret=${process.env.AX_PARSER_SECRET}`;
     const scriptContent = `#!/bin/bash
 ENDPOINT="${endpoint}"
@@ -119,9 +118,12 @@ fi`;
 
     // Create the profile file without heredoc
     await sshCommand(
-      `sudo bash -c "echo '${profileContent.replace(/'/g, "'\\''")}' > /home/${username}/.profile"`
+      `sudo bash -c "echo '${profileContent.replace(
+        /'/g,
+        "'\\''"
+      )}' > /home/${username}/.xsessionrc"`
     );
-    await sshCommand(`sudo chown "${username}:${username}" "/home/${username}/.profile"`);
+    await sshCommand(`sudo chown "${username}:${username}" "/home/${username}/.xsessionrc"`);
 
     // close the connection
     ssh.dispose();
