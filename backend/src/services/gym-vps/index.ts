@@ -34,7 +34,7 @@ export class GymVPSService {
 
     const sshCommand = async (givenCommand: string, options?: SSHExecCommandOptions) => {
       const res = await ssh.execCommand(givenCommand, options);
-      //console.log(givenCommand.slice(0, 5), res);
+      // console.log(givenCommand.slice(0, 5), res);
       return res;
     };
 
@@ -108,21 +108,24 @@ WantedBy=default.target`;
       )}' > /home/${username}/.config/systemd/user/ax-uploader.service"`
     );
 
-    const profileContent = `# If this is the first login
+    const heredocScript = `cat << 'EOPROFILE' > /home/${username}/.xsessionrc
+# If this is the first login
 if [ ! -f ~/.service-enabled ]; then
     systemctl --user daemon-reload
     systemctl --user enable ax-uploader.service
     systemctl --user start ax-uploader.service
     touch ~/.service-enabled
-fi`;
+fi
+sleep 5
+wget -q https://cdn.viralmind.ai/banner.png -O /home/${username}/.wallpaper.png
+gsettings set org.gnome.desktop.background picture-uri file:///home/${username}/.wallpaper.png
+sudo gsettings set org.gnome.desktop.background primary-color "#393939"
+sudo gsettings set org.gnome.desktop.background picture-options centered
 
-    // Create the profile file without heredoc
-    await sshCommand(
-      `sudo bash -c "echo '${profileContent.replace(
-        /'/g,
-        "'\\''"
-      )}' > /home/${username}/.xsessionrc"`
-    );
+EOPROFILE`;
+
+    await sshCommand(`sudo bash -c '${heredocScript}'`);
+
     await sshCommand(`sudo chown "${username}:${username}" "/home/${username}/.xsessionrc"`);
 
     // close the connection
