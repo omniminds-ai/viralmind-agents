@@ -203,8 +203,6 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
 
     raceDataStreams.set(sid, connection);
 
-    console.log('streams: got and saved data for session', sid);
-
     res.status(200).json({
       status: 'data_received',
       timestamp: new Date().toISOString(),
