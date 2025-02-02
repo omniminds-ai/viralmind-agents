@@ -74,7 +74,11 @@ Return as JSON with these keys:
 
     throw new Error('No valid JSON found in response');
   } catch (error) {
-    console.error('Error generating quest:', error);
+    if ((error as Error).message.includes('Invalid MIME type'))
+      console.log(
+        'Error generating quest: Invalid MIME type. Likely tried to send an empty frame.'
+      );
+    else console.error('Error generating quest:', error);
 
     return {
       reasoning: 'Failed to analyze screen, providing a generic task within theme',
