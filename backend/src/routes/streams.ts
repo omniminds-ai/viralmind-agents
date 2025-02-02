@@ -163,17 +163,21 @@ const processAndCleanup = async (sid: string) => {
 
 // POST endpoint to handle data
 router.post('/races/:stream/data', async (req: Request, res: Response) => {
-  const streamId = req.params.stream; // linux username for the user
-  const session = await DatabaseService.getRaceSessionByStream(streamId);
   if (req.query.secret !== process.env.AX_PARSER_SECRET) {
+    console.log('Streams: Incorrect AX Parser Secret.');
     res.status(400).send({ error: 'Incorrect AX Parser secret. Unauthorized.' });
     return;
   }
+  const streamId = req.params.stream; // linux username for the user
+  const session = await DatabaseService.getRaceSessionByStream(streamId);
   if (!session) {
-    res.status(400).send({ error: 'No username session present.' });
+    console.log('Streams: No session found.');
+    res.status(400).send({ error: `No session present for ${streamId}.` });
     return;
   }
   const sid = session._id!.toString();
+
+  console.log('stream sesesion id: ', sid);
 
   try {
     const data: RaceStreamData = req.body;
@@ -182,7 +186,7 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
     if (!connection) {
       connection = {
         timeoutId: setTimeout(() => {
-          console.log(`Connection ${sid} timed out`);
+          console.log(`streams: Connection ${sid} timed out`);
           processAndCleanup(sid);
         }, 20000),
         data: []
@@ -200,6 +204,8 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
     }, 20000);
 
     raceDataStreams.set(sid, connection);
+
+    console.log('streams: got and saved data!', data.data.length);
 
     res.status(200).json({
       status: 'data_received',
