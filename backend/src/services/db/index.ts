@@ -5,11 +5,13 @@ import {
   Pages,
   RaceSession,
   Race,
+  GymSession,
   chatSchema,
   challengeSchema,
   pageSchema,
   raceSessionSchema,
-  raceSchema
+  raceSchema,
+  gymSessionSchema
 } from '../../models/Models.ts';
 import { TrainingEvent } from '../../models/TrainingEvent.ts';
 import dotenv from 'dotenv';
@@ -23,6 +25,7 @@ export type PageDocument = InferSchemaType<typeof pageSchema>;
 export type RaceSessionDocument = InferSchemaType<typeof raceSessionSchema>;
 export type RaceDocument = InferSchemaType<typeof raceSchema>;
 export type GymVPSDocument = InferSchemaType<typeof gymVPSSchema>;
+export type GymSessionDocument = InferSchemaType<typeof gymSessionSchema>;
 
 dotenv.config();
 
@@ -523,6 +526,37 @@ class DataBaseService extends EventEmitter {
     const vps = await GymVPS.findOne({ region });
     if (!vps) throw Error('Could not find a VPS for region ' + region);
     return vps;
+  }
+
+  // Gym session methods
+  async getGymSession(address: string): Promise<GymSessionDocument | null> {
+    try {
+      return await GymSession.findOne({ address, status: 'active' });
+    } catch (error) {
+      console.error('Database Service Error:', error);
+      return null;
+    }
+  }
+
+  async createGymSession(sessionData: GymSessionDocument): Promise<GymSessionDocument | false> {
+    try {
+      return await GymSession.create(sessionData);
+    } catch (error) {
+      console.error('Database Service Error:', error);
+      return false;
+    }
+  }
+
+  async updateGymSession(
+    id: string,
+    updateData: Partial<GymSessionDocument>
+  ): Promise<GymSessionDocument | null> {
+    try {
+      return await GymSession.findByIdAndUpdate(id, updateData, { new: true });
+    } catch (error) {
+      console.error('Database Service Error:', error);
+      return null;
+    }
   }
 }
 

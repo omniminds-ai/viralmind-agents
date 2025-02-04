@@ -31,6 +31,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use(function (req, res, next) {
   // Origin to allow
   const allowedOrigins = [
+    'http://localhost:1420',
     'http://localhost:3000',
     'http://localhost:8001',
     'http://18.157.122.205',
@@ -81,6 +82,7 @@ import { conversationRoute } from './routes/conversation.ts';
 import { settingsRoute } from './routes/settings.ts';
 import { minecraftRoute } from './routes/minecraft.ts';
 import { racesRoute } from './routes/races.ts';
+import { gymRoute } from './routes/gym.ts';
 
 // TEST:
 // import { testRoute } from "./test/conversation.ts";
@@ -94,6 +96,7 @@ app.use('/api/conversation', conversationRoute);
 app.use('/api/settings', settingsRoute);
 app.use('/api/minecraft', minecraftRoute);
 app.use('/api/races', racesRoute);
+app.use('/api/gym', gymRoute);
 app.use('/api/json/v1/tournaments', tournamentsAPI);
 app.use('/api/json/v1/conversations', conversationsAPI);
 

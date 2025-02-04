@@ -9,6 +9,9 @@ export { Race, raceSchema };
 import { GymVPS, gymVPSSchema } from "./GymVPS.ts";
 export { GymVPS, gymVPSSchema };
 
+import { GymSession, gymSessionSchema } from "./GymSession.ts";
+export { GymSession, gymSessionSchema };
+
 export const challengeSchema = new mongoose.Schema(
   {
     _id: String,

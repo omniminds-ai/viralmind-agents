@@ -21,7 +21,7 @@
       class="app-region-no-drag bg-stone-100/60 dark:bg-stone-800/60 backdrop-blur-md rounded-xl px-3 py-1.5 text-sm border border-white/10 text-stone-700 dark:text-stone-300 focus:outline-none focus:border-purple-500/50"
       bind:value={$selectedModel}
     >
-      <option value="deepseek-viralmind-dpo">DeepSeek-ViralMind-DPO-72B</option>
+      <option value="deepseek-viralmind-dpo">ft:gpt-4o-2024-08-06:personal:computer-use-primary:ATPyQWxf</option>
     </select>
   </div>
 <style>
