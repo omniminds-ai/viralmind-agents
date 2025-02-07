@@ -83,6 +83,7 @@ import { settingsRoute } from './routes/settings.ts';
 import { minecraftRoute } from './routes/minecraft.ts';
 import { racesRoute } from './routes/races.ts';
 import { gymRoute } from './routes/gym.ts';
+import { forgeRoute } from './routes/forge.ts';
 
 // TEST:
 // import { testRoute } from "./test/conversation.ts";
@@ -97,6 +98,7 @@ app.use('/api/settings', settingsRoute);
 app.use('/api/minecraft', minecraftRoute);
 app.use('/api/races', racesRoute);
 app.use('/api/gym', gymRoute);
+app.use('/api/forge', forgeRoute);
 app.use('/api/json/v1/tournaments', tournamentsAPI);
 app.use('/api/json/v1/conversations', conversationsAPI);
 

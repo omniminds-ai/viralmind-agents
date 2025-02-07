@@ -14,8 +14,131 @@ const openai = new OpenAI({
 // Track sessions with hint generation in progress
 const generatingHints = new Set<string>();
 
-async function generateQuest(imageUrl: string, installed_applications: string, prompt: string, sessionId: string) {
+// Cache to store generated instruction lists
+const cacheExpiryMs = 2 * 60 * 60 * 1000;
+const instructionCache = new Map<string, {
+  instructions: string[];
+  timestamp: number;
+  expiryMs: number;
+}>();
+
+// Meta prompt to turn a training-pool prompt into a json list of instruction
+async function generateInstructionList(pool_prompt: string): Promise<string[]> {
   try {
+    // Generate cache key from pool prompt
+    const cacheKey = Buffer.from(pool_prompt).toString('base64');
+    
+    // Check cache
+    const cached = instructionCache.get(cacheKey);
+    const now = Date.now();
+    
+    if (cached && (now - cached.timestamp) < cached.expiryMs) {
+      console.log('Using cached instructions');
+      return cached.instructions;
+    }
+
+    const system_prompt = `You are an AI assistant that converts high-level skills and subtasks into natural user instructions. Your task is to:
+
+1. For each skill/subtask in the input, generate 3-5 different ways a user might ask for help with that specific task
+2. Maintain the exact context and terminology from the input skills - if a skill mentions specific software, features, or processes, include those details
+3. Write instructions as if a user is asking a desktop assistant for help (e.g. "Could you help me...", "Can you show me how to...")
+4. Keep the original meaning and intent of each skill while varying the phrasing
+5. Output the instructions as a JSON array of strings
+6. Focus on tasks that could be accomplished through a computer interface
+7. Write as if the user is asking an assistant to help them configure these tools
+8. Include realistic details that a crypto/Telegram community admin would care about
+9. Maintain consistent context across related tasks
+10. Format each instruction as a request for computer assistance
+
+Pool prompt to convert:
+${pool_prompt}
+
+Generate a JSON array of natural user instructions based on the skills and sub-skills in this pool prompt. Each instruction should be a string representing a realistic user request.
+
+The output should follow this format:
+[
+  "Can you help me change the default search engine to Bing?",
+  "Please help me clear my browsing history and remove tracking cookies",
+  "I accidentally closed an important tab, can you help me get it back?",
+  ...
+]
+
+Remember to:
+- Phrase instructions conversationally
+- Vary the language and word choice
+- Include specific details where appropriate
+- Keep instructions realistic and natural
+- Focus on common user tasks
+- Avoid technical jargon unless necessary
+- Make instructions actionable and clear`;
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: system_prompt
+        }
+      ]
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error('Empty response from OpenAI');
+    }
+
+    // Try to parse JSON array from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch && jsonMatch[0]) {
+      const instructions = JSON.parse(jsonMatch[0]);
+      console.log(instructions);
+
+      // Cache the results
+      instructionCache.set(cacheKey, {
+        instructions,
+        timestamp: now,
+        expiryMs: cacheExpiryMs
+      });
+      
+      return instructions;
+    }
+    // Fallback: split pool prompt into lines and filter empty lines
+    const lines = pool_prompt.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('-') && !line.startsWith('#'));
+
+    return lines;
+  } catch (error) {
+    console.error('Error generating instruction list:', error);
+    // Fallback: split pool prompt into lines
+    const lines = pool_prompt.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('-') && !line.startsWith('#'));
+    return lines;
+  }
+}
+
+// Function to clear expired cache entries
+function cleanupCache() {
+  const now = Date.now();
+  for (const [key, value] of instructionCache.entries()) {
+    if ((now - value.timestamp) >= value.expiryMs) {
+      instructionCache.delete(key);
+    }
+  }
+}
+
+// Clean up cache periodically (every hour)
+setInterval(cleanupCache, 60 * 60 * 1000);
+
+async function generateQuest(imageUrl: string, installed_applications: string, pool_prompt: string, sessionId: string) {
+  try {
+    // First generate instruction list from pool prompt
+    const instructions = await generateInstructionList(pool_prompt);
+    
+    // Select random instruction
+    const randomIndex = Math.floor(Math.random() * instructions.length);
+    const selectedInstruction = instructions[randomIndex];
+
     const response = await openai.chat.completions.create({
       model: 'o3-mini',
       reasoning_effort: 'medium',
@@ -30,7 +153,7 @@ Convert abstract computer usage instructions into concrete, reproducible scenari
 
 INPUT:
 1. INSTALLED_APPLICATIONS: ${installed_applications}
-2. INSTRUCTION: ${prompt}
+2. INSTRUCTION: ${selectedInstruction}
 
 OUTPUT:
 {
@@ -158,174 +281,16 @@ RULES:
   }
 }
 
-async function generateHint(
-  imageUrl: string,
-  installed_applications: string, 
-  currentQuest: string,
-  prompt: string,
-  sessionId: string,
-  hintHistory: string[] = []
-) {
-  try {
-    // Check if hint is already being generated for this session
-    if (generatingHints.has(sessionId)) {
-      console.log('Hint generation already in progress for session:', sessionId);
-      return {
-        hint: 'Please wait, generating hint...',
-        reasoning: 'Hint generation in progress',
-        isCompleted: false,
-        events: []
-      };
-    }
-
-    // Mark this session as generating a hint
-    generatingHints.add(sessionId);
-
-    const recentHint = await TrainingEvent.findOne(
-      {
-        session: sessionId,
-        type: 'hint',
-        timestamp: { $gt: Date.now() - 10000 }
-      },
-      {},
-      { sort: { timestamp: -1 } }
-    );
-
-    if (recentHint) {
-      return {
-        hint: recentHint.message,
-        reasoning: 'Using cached hint',
-        isCompleted: false,
-        events: []
-      };
-    }
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Current quest: ${currentQuest}
-Previous hints: ${hintHistory.slice(-3).join(', ')}
-
-First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details.
-
-Then provide a single actionable hint (if needed) that helps guide the user toward completing the task.
-
-Output as JSON with three fields:
-1. "reasoning": Your analysis of what's been accomplished vs core requirements
-2. "isCompleted": Boolean based on basic task completion
-3. "hint": A single sentence hint if not completed`
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: imageUrl
-              }
-            }
-          ]
-        }
-      ],
-      max_tokens: 250
-    });
-
-    const jsonMatch = response.choices[0].message.content?.match(/{[\s\S]*}/);
-    let parsedResponse = { hint: '', reasoning: '', isCompleted: false };
-    if (jsonMatch) {
-      try {
-        parsedResponse = JSON.parse(jsonMatch[0]);
-      } catch (e) {
-        console.error('Error parsing JSON from response:', e);
-      }
-    }
-
-    // If quest is completed, generate new quest
-    if (parsedResponse.isCompleted) {
-      console.log('Quest completed! Generating new quest...');
-      const questData = await generateQuest(imageUrl, installed_applications, prompt, sessionId);
-      const questEvent = {
-        type: 'quest',
-        message: questData.quest,
-        session: sessionId,
-        frame: 0,
-        timestamp: Date.now()
-      };
-      await DatabaseService.createTrainingEvent(questEvent);
-
-      return {
-        hint: parsedResponse.hint,
-        reasoning: parsedResponse.reasoning,
-        isCompleted: true,
-        newQuest: questData.quest,
-        events: [questEvent]
-      };
-    }
-
-    // Create hint and reasoning events
-    const hintEvent = {
-      type: 'hint',
-      message: parsedResponse.hint || '(empty)',
-      session: sessionId,
-      frame: 0,
-      timestamp: Date.now()
-    };
-    await DatabaseService.createTrainingEvent(hintEvent);
-
-    const reasoningEvent = {
-      type: 'reasoning',
-      message: parsedResponse.reasoning || '(empty)',
-      session: sessionId,
-      frame: 0,
-      timestamp: Date.now()
-    };
-    await DatabaseService.createTrainingEvent(reasoningEvent);
-
-    return {
-      hint: parsedResponse.hint,
-      reasoning: parsedResponse.reasoning,
-      isCompleted: false,
-      events: [hintEvent, reasoningEvent]
-    };
-  } catch (error) {
-    console.error('Error generating hint:', error);
-    const fallbackHint = 'Try a different approach to complete the task';
-
-    const errorEvent = {
-      type: 'hint',
-      message: fallbackHint,
-      session: sessionId,
-      frame: 0,
-      timestamp: Date.now()
-    };
-    await DatabaseService.createTrainingEvent(errorEvent);
-
-    // Clear generating hint flag on error
-    generatingHints.delete(sessionId);
-
-    return {
-      hint: fallbackHint,
-      reasoning: 'Error occurred during analysis',
-      isCompleted: false,
-      events: [errorEvent]
-    };
-  } finally {
-    // Always clear the generating hint flag
-    generatingHints.delete(sessionId);
-  }
-}
-
 const router = express.Router();
 
 // Request a quest/hint
 router.post('/quest', async (req: Request, res: Response) => {
   try {
-    const { screenshot, address, prompt, installed_applications } = req.body;
+    const { address, prompt, installed_applications } = req.body;
+    const screenshot = ''; // TODO: remove
 
-    if (!screenshot || !address || !prompt) {
-      res.status(400).json({ error: 'Screenshot, address and prompt are required' });
+    if (!address || !prompt) {
+      res.status(400).json({ error: 'address and prompt are required' });
       return;
     }
 
@@ -378,36 +343,6 @@ router.post('/quest', async (req: Request, res: Response) => {
     const questData = await generateQuest(screenshot, installed_applications || '', prompt, sessionId);
 
     res.json(questData);
-    // If no quest exists, generate initial quest
-  //   if (!latestQuestEvent) {
-  //     console.log('No quest found for session:', sessionId, 'generating initial quest...');
-  //     const questData = await generateQuest(screenshot, installed_applications || '', prompt, sessionId);
-  //     const questEvent = {
-  //       type: 'quest',
-  //       message: JSON.stringify(questData),
-  //       session: sessionId,
-  //       frame: 0,
-  //       timestamp: Date.now()
-  //     };
-  //     await DatabaseService.createTrainingEvent(questEvent);
-
-  //     res.json({
-  //       quest: questData,
-  //       events: [questEvent]
-  //     });
-  //   } else {
-  //     // Generate hint for existing quest
-  //     const result = await generateHint(
-  //       screenshot,
-  //       installed_applications || '', 
-  //       latestQuestEvent.message,
-  //       prompt,
-  //       sessionId,
-  //       hintHistory
-  //     );
-
-  //     res.json(result);
-  //   }
   } catch (error) {
     console.error('Error handling quest/hint request:', error);
     res.status(500).json({ error: 'Failed to handle quest/hint request' });
