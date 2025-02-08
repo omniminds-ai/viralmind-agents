@@ -122,10 +122,11 @@ async function connectToDatabase() {
     };
     const clientOptions: ConnectOptions = {
       serverApi: { version: '1', strict: true, deprecationErrors: true },
-      ...(process.env.NODE_EV == 'development' ? {} : productionOptions)
+      ...(process.env.NODE_ENV == 'development' ? {} : productionOptions)
     };
     console.log(clientOptions);
     if (!dbURI) throw Error('No DB URI passed to connect.');
+    console.log('connecting');
     await mongoose.connect(dbURI, clientOptions);
     console.log('connected');
     await mongoose.connection.db?.admin().command({ ping: 1 });
