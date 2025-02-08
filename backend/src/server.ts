@@ -112,14 +112,19 @@ async function connectToDatabase() {
     // Create a Mongoose client with a MongoClientOptions object to set the Stable API version
     const dbURI = process.env.DB_URI;
     console.log(dbURI);
-    const clientOptions: ConnectOptions = {
-      serverApi: { version: '1', strict: true, deprecationErrors: true },
+    const productionOptions: ConnectOptions = {
       tls: true,
       tlsAllowInvalidHostnames: true,
-      tlsCAFile:
-        // only use the tls file in production to connect to the aws mongo instance
-        process.env.NODE_EV == 'development' ? undefined : tlsCAFile
+      readPreference: 'secondaryPreferred',
+      retryWrites: false,
+      replicaSet: 'rs0',
+      tlsCAFile: tlsCAFile
     };
+    const clientOptions: ConnectOptions = {
+      serverApi: { version: '1', strict: true, deprecationErrors: true },
+      ...(process.env.NODE_EV == 'development' ? {} : productionOptions)
+    };
+    console.log(clientOptions);
     if (!dbURI) throw Error('No DB URI passed to connect.');
     await mongoose.connect(dbURI, clientOptions);
     await mongoose.connection.db?.admin().command({ ping: 1 });
