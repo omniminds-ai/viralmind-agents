@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 export const gymVPSSchema = new mongoose.Schema(
   {
@@ -9,21 +9,21 @@ export const gymVPSSchema = new mongoose.Schema(
     ssh_keypair: {
       type: {
         public: { type: String, required: true },
-        private: { type: String, required: true },
+        private: { type: String, required: true }
       },
-      required: true,
+      required: true
     },
     users: {
       type: [
         {
           username: { type: String, required: true },
-          password: { type: String, required: true },
-        },
+          password: { type: String, required: true }
+        }
       ],
-      required: true,
-    },
+      required: true
+    }
   },
-  { collection: "gym-servers" }
+  { collection: 'gym_servers' }
 );
 
-export const GymVPS = mongoose.model("GymVPS", gymVPSSchema);
+export const GymVPS = mongoose.model('GymVPS', gymVPSSchema);
