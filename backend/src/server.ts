@@ -127,7 +127,9 @@ async function connectToDatabase() {
     console.log(clientOptions);
     if (!dbURI) throw Error('No DB URI passed to connect.');
     await mongoose.connect(dbURI, clientOptions);
+    console.log('connected');
     await mongoose.connection.db?.admin().command({ ping: 1 });
+    console.log('pinged');
     console.log('Database connected!');
   } catch (err) {
     console.error('Error connecting to MongoDB:', err);
