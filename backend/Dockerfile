@@ -7,7 +7,7 @@ COPY jailbreak-pool/Anchor.toml ./
 COPY jailbreak-pool/target ./target
 
 # pull the aws documentdb cert
-RUN curl https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o ./aws-global-bundle.pem
+ADD https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem ./aws-global-bundle.pem
 
 # Install dependencies including guacamole build requirements
 RUN apt-get update && \

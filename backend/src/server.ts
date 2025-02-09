@@ -113,11 +113,6 @@ async function connectToDatabase() {
     const dbURI = process.env.DB_URI;
     console.log(dbURI);
     const productionOptions: ConnectOptions = {
-      tls: true,
-      tlsAllowInvalidHostnames: true,
-      readPreference: 'secondaryPreferred',
-      retryWrites: false,
-      replicaSet: 'rs0',
       tlsCAFile: tlsCAFile
     };
     const clientOptions: ConnectOptions = {
