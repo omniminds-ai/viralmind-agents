@@ -1,8 +1,6 @@
 # Production
 services:
   # Multi-Env Services
-
-
   guacd:
     image: guacamole/guacd
     platform: linux/amd64
@@ -93,12 +91,14 @@ services:
     tty: true
     ports:
       - "8001:8001"
-    command:  sh -c "npm run build && npm run start"
+    command: npm run start
     volumes:
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
       - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
     environment:
+      - NODE_ENV=production
       - DB_URI=${DB_URI}
+      - DB_NAME=${DB_NAME}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPEN_AI_SECRET=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
@@ -132,12 +132,14 @@ services:
       context: frontend
     container_name: frontend
     working_dir: /usr/src/app/frontend
+    environment:
+      - NODE_ENV=production
     networks:
       - node-network
     tty: true
     ports:
       - "5173:5173"
-    command: sh -c "npm run build && npm run preview -- --host 0.0.0.0 --port 5173"
+    command: npm run preview -- --host 0.0.0.0 --port 5173
     
   # Development Services
   nginx-dev:
@@ -188,7 +190,9 @@ services:
       - ./backend/public/screenshots:/usr/src/app/backend/public/screenshots
       - ./guacamole/recordings:/var/lib/guacamole/recordings:rw
     environment:
+      - NODE_ENV=development
       - DB_URI=${DB_URI}
+      - DB_NAME=${DB_NAME}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPEN_AI_SECRET=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}

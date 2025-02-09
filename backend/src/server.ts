@@ -100,33 +100,33 @@ catchErrors();
 
 async function connectToDatabase() {
   // Production configuration
-  const tlsCAFile = path.resolve('./aws-global-bundle.pem');
-
-  // Verify the certificate file exists
-  if (!fs.existsSync(tlsCAFile)) {
-    throw new Error(
-      'TLS CA File not found. Please ensure aws-global-bundle.pem is present in the root directory'
-    );
-  }
   try {
-    // Create a Mongoose client with a MongoClientOptions object to set the Stable API version
+    let clientOptions: ConnectOptions = {
+      dbName: process.env.DB_NAME
+    };
+    if (process.env.NODE_ENV === 'production') {
+      // Create a Mongoose client with a MongoClientOptions object to set the Stable API version
+      const tlsCAFile = path.resolve('./aws-global-bundle.pem');
+      // Verify the certificate file exists
+      if (!fs.existsSync(tlsCAFile)) {
+        throw new Error(
+          'TLS CA File not found. Please ensure aws-global-bundle.pem is present in the root directory'
+        );
+      }
+      clientOptions = {
+        tls: true,
+        tlsAllowInvalidHostnames: false,
+        readPreference: 'secondaryPreferred',
+        retryWrites: false,
+        replicaSet: 'rs0',
+        tlsCAFile: tlsCAFile,
+        ...clientOptions
+      };
+    }
     const dbURI = process.env.DB_URI;
-    const productionOptions: ConnectOptions = {
-      tls: true,
-      tlsAllowInvalidHostnames: true,
-      readPreference: 'secondaryPreferred',
-      retryWrites: false,
-      replicaSet: 'rs0',
-      tlsCAFile: tlsCAFile
-    };
-    const clientOptions: ConnectOptions = {
-      ...(process.env.NODE_ENV == 'development' ? {} : productionOptions)
-    };
     if (!dbURI) throw Error('No DB URI passed to connect.');
     await mongoose.connect(dbURI, clientOptions);
     await mongoose.connection.db?.admin().command({ ping: 1 });
-    console.log(await mongoose.connection.listCollections());
-    console.log((await mongoose.connection.collection('races')).countDocuments());
     console.log('Database connected!');
   } catch (err) {
     console.error('Error connecting to MongoDB:', err);
