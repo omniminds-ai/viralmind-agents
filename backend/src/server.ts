@@ -55,17 +55,6 @@ app.use(function (req, res, next) {
 import { streamsRoute } from './routes/streams.ts';
 app.use('/api/streams', streamsRoute);
 
-var forceSSL = function (req: Request, res: Response, next: NextFunction) {
-  if (req.headers['x-forwarded-proto'] !== 'https') {
-    return res.redirect(['https://', req.get('Host'), req.url].join(''));
-  }
-  return next();
-};
-
-if (!dev) {
-  app.use(forceSSL);
-}
-
 app.disable('x-powered-by');
 app.set('trust proxy', true);
 
