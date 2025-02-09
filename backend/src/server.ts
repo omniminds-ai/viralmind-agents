@@ -1,7 +1,7 @@
 import express, { NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import mongoose, { ConnectOptions } from 'mongoose';
+import mongoose, { ConnectOptions, mongo } from 'mongoose';
 import { catchErrors } from './hooks/errors.ts';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -125,6 +125,8 @@ async function connectToDatabase() {
     if (!dbURI) throw Error('No DB URI passed to connect.');
     await mongoose.connect(dbURI, clientOptions);
     await mongoose.connection.db?.admin().command({ ping: 1 });
+    console.log(await mongoose.connection.listCollections());
+    console.log((await mongoose.connection.collection('races')).countDocuments());
     console.log('Database connected!');
   } catch (err) {
     console.error('Error connecting to MongoDB:', err);
