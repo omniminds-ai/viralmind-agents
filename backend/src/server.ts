@@ -116,7 +116,7 @@ async function connectToDatabase() {
       tlsCAFile: tlsCAFile
     };
     const clientOptions: ConnectOptions = {
-      serverApi: { version: '1', strict: true, deprecationErrors: true },
+      // serverApi: { version: '1', strict: true, deprecationErrors: true },
       ...(process.env.NODE_ENV == 'development' ? {} : productionOptions)
     };
     console.log(clientOptions);
