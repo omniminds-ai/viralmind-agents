@@ -6,6 +6,9 @@ COPY package*.json ./
 COPY jailbreak-pool/Anchor.toml ./
 COPY jailbreak-pool/target ./target
 
+# pull the aws documentdb cert
+ADD https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem ./aws-global-bundle.pem
+
 # Install dependencies including guacamole build requirements
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -49,5 +52,7 @@ RUN apt-get update && \
 RUN npm install
 
 COPY . .
+
+RUN npm run build
 
 EXPOSE 8001

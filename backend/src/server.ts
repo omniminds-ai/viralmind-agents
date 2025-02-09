@@ -1,17 +1,14 @@
 import express, { NextFunction, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import mongoose, { ConnectOptions } from 'mongoose';
+import mongoose, { ConnectOptions, mongo } from 'mongoose';
 import { catchErrors } from './hooks/errors.ts';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
+import fs from 'fs';
 
 dotenv.config();
-const dbURI = process.env.DB_URI;
-const clientOptions: ConnectOptions = {
-  serverApi: { version: '1', strict: true, deprecationErrors: true }
-};
 
 const app = express();
 const dev = app.get('env') !== 'production';
@@ -85,9 +82,6 @@ import { racesRoute } from './routes/races.ts';
 import { gymRoute } from './routes/gym.ts';
 import { forgeRoute } from './routes/forge.ts';
 
-// TEST:
-// import { testRoute } from "./test/conversation.ts";
-
 // API:
 import { tournamentsAPI } from './api/tournaments.ts';
 import { conversationsAPI } from './api/conversation.ts';
@@ -102,15 +96,34 @@ app.use('/api/forge', forgeRoute);
 app.use('/api/json/v1/tournaments', tournamentsAPI);
 app.use('/api/json/v1/conversations', conversationsAPI);
 
-// if (dev) {
-//   app.use("/api/test", testRoute);
-// }
-
 catchErrors();
 
 async function connectToDatabase() {
+  // Production configuration
   try {
-    // Create a Mongoose client with a MongoClientOptions object to set the Stable API version
+    let clientOptions: ConnectOptions = {
+      dbName: process.env.DB_NAME
+    };
+    if (process.env.NODE_ENV === 'production') {
+      // Create a Mongoose client with a MongoClientOptions object to set the Stable API version
+      const tlsCAFile = path.resolve('./aws-global-bundle.pem');
+      // Verify the certificate file exists
+      if (!fs.existsSync(tlsCAFile)) {
+        throw new Error(
+          'TLS CA File not found. Please ensure aws-global-bundle.pem is present in the root directory'
+        );
+      }
+      clientOptions = {
+        tls: true,
+        tlsAllowInvalidHostnames: false,
+        readPreference: 'secondaryPreferred',
+        retryWrites: false,
+        replicaSet: 'rs0',
+        tlsCAFile: tlsCAFile,
+        ...clientOptions
+      };
+    }
+    const dbURI = process.env.DB_URI;
     if (!dbURI) throw Error('No DB URI passed to connect.');
     await mongoose.connect(dbURI, clientOptions);
     await mongoose.connection.db?.admin().command({ ping: 1 });
@@ -121,6 +134,6 @@ async function connectToDatabase() {
 }
 
 httpServer.listen(port, () => {
-  console.log(`Jailbreak app listening on port ${port}`);
+  console.log(`Viralmind backend listening on port ${port}`);
   connectToDatabase().catch(console.dir);
 });

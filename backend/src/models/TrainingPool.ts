@@ -17,31 +17,35 @@ export interface TrainingPool {
   depositPrivateKey: string; // Store private key securely
 }
 
-const trainingPoolSchema = new Schema<TrainingPool>({
-  name: { type: String, required: true },
-  status: { 
-    type: String, 
-    enum: ['live', 'paused', 'out of funds'],
-    default: 'live',
-    required: true 
-  },
-  demonstrations: { type: Number, default: 0 },
-  funds: { type: Number, default: 0 },
-  token: {
-    type: { 
+const trainingPoolSchema = new Schema<TrainingPool>(
+  {
+    name: { type: String, required: true },
+    status: {
       type: String,
-      enum: ['SOL', 'VIRAL', 'CUSTOM'],
-      required: true 
+      enum: ['live', 'paused', 'out of funds'],
+      default: 'live',
+      required: true
     },
-    symbol: { type: String, required: true },
-    address: { type: String, required: true }
+    demonstrations: { type: Number, default: 0 },
+    funds: { type: Number, default: 0 },
+    token: {
+      type: {
+        type: String,
+        enum: ['SOL', 'VIRAL', 'CUSTOM'],
+        required: true
+      },
+      symbol: { type: String, required: true },
+      address: { type: String, required: true }
+    },
+    skills: { type: String, required: true },
+    ownerAddress: { type: String, required: true },
+    depositAddress: { type: String, required: true },
+    depositPrivateKey: { type: String, required: true }
   },
-  skills: { type: String, required: true },
-  ownerAddress: { type: String, required: true },
-  depositAddress: { type: String, required: true },
-  depositPrivateKey: { type: String, required: true }
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+    collection: 'training_pools'
+  }
+);
 
 export const TrainingPoolModel = model<TrainingPool>('TrainingPool', trainingPoolSchema);
