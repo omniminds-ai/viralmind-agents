@@ -413,6 +413,7 @@ router.get('/treasury-balance', async (req, res) => {
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const races = await DatabaseService.getRaces();
+    console.log(races);
     if (!races) {
       res.status(404).json({ error: 'No races found' });
       return;
