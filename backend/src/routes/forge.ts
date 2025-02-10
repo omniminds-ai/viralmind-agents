@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { Keypair } from '@solana/web3.js';
-import { TrainingPoolModel, TrainingPool } from '../models/TrainingPool.js';
+import { TrainingPoolModel, TrainingPool, TrainingPoolStatus } from '../models/TrainingPool.js';
 import { WalletConnectionModel } from '../models/WalletConnection.js';
 import DatabaseService from '../services/db/index.js';
 
@@ -24,7 +24,7 @@ interface CreatePoolBody {
 
 interface UpdatePoolBody {
   id: string;
-  status?: 'live' | 'paused';
+  status?: TrainingPoolStatus.live | TrainingPoolStatus.paused;
   skills?: string;
 }
 
@@ -36,18 +36,14 @@ interface ListPoolsBody {
 router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response) => {
   try {
     const { token, address } = req.body;
-    
+
     if (!token || !address) {
       res.status(400).json({ error: 'Token and address are required' });
       return;
     }
 
     // Store connection token with address
-    await WalletConnectionModel.updateOne(
-      { token },
-      { token, address },
-      { upsert: true }
-    );
+    await WalletConnectionModel.updateOne({ token }, { token, address }, { upsert: true });
 
     res.json({ success: true });
   } catch (error) {
@@ -57,44 +53,48 @@ router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response)
 });
 
 // Check connection status
-router.get('/check-connection', async (req: Request<{}, {}, {}, { token?: string }>, res: Response) => {
-  try {
-    const token = req.query.token;
-    
-    if (!token) {
-      res.status(400).json({ error: 'Token is required' });
-      return;
-    }
+router.get(
+  '/check-connection',
+  async (req: Request<{}, {}, {}, { token?: string }>, res: Response) => {
+    try {
+      const token = req.query.token;
 
-    const connection = await WalletConnectionModel.findOne({ token });
-    
-    res.json({
-      connected: !!connection,
-      address: connection?.address
-    });
-  } catch (error) {
-    console.error('Error checking connection:', error);
-    res.status(500).json({ error: 'Failed to check connection status' });
+      if (!token) {
+        res.status(400).json({ error: 'Token is required' });
+        return;
+      }
+
+      const connection = await WalletConnectionModel.findOne({ token });
+
+      res.json({
+        connected: !!connection,
+        address: connection?.address
+      });
+    } catch (error) {
+      console.error('Error checking connection:', error);
+      res.status(500).json({ error: 'Failed to check connection status' });
+    }
   }
-});
+);
 
 // List training pools
 router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) => {
   try {
     const { address } = req.body;
-    
+
     if (!address) {
       res.status(400).json({ error: 'Wallet address is required' });
       return;
     }
 
-    const pools = await TrainingPoolModel.find({ ownerAddress: address })
-      .select('-depositPrivateKey'); // Exclude private key from response
+    const pools = await TrainingPoolModel.find({ ownerAddress: address }).select(
+      '-depositPrivateKey'
+    ); // Exclude private key from response
 
-    // Update status to 'out of funds' if balance is 0
-    const updatedPools = pools.map(pool => {
-      if (pool.funds === 0 && pool.status !== 'out of funds') {
-        pool.status = 'out of funds';
+    // Update status to 'no-funds' if balance is 0
+    const updatedPools = pools.map((pool) => {
+      if (pool.funds === 0 && pool.status !== TrainingPoolStatus.noFunds) {
+        pool.status = TrainingPoolStatus.noFunds;
         pool.save(); // Save the updated status
       }
       return pool;
@@ -111,7 +111,7 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
 router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
   try {
     const { name, skills, token, ownerAddress } = req.body;
-    
+
     if (!name || !skills || !token || !ownerAddress) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
@@ -127,7 +127,7 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
       skills,
       token,
       ownerAddress,
-      status: 'out of funds',
+      status: TrainingPoolStatus.noFunds,
       demonstrations: 0,
       funds: 0,
       depositAddress,
@@ -150,13 +150,13 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
 router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
   try {
     const { id, status, skills } = req.body;
-    
+
     if (!id) {
       res.status(400).json({ error: 'Pool ID is required' });
       return;
     }
 
-    if (status && !['live', 'paused'].includes(status)) {
+    if (status && ![TrainingPoolStatus.live, TrainingPoolStatus.paused].includes(status)) {
       res.status(400).json({ error: 'Invalid status' });
       return;
     }

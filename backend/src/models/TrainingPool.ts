@@ -1,9 +1,15 @@
 import { Schema, model } from 'mongoose';
 
+export enum TrainingPoolStatus {
+  live = 'live',
+  paused = 'paused',
+  noFunds = 'no-funds'
+}
+
 export interface TrainingPool {
   id: string;
   name: string;
-  status: 'live' | 'paused' | 'out of funds';
+  status: TrainingPoolStatus;
   demonstrations: number;
   funds: number;
   token: {
@@ -22,8 +28,8 @@ const trainingPoolSchema = new Schema<TrainingPool>(
     name: { type: String, required: true },
     status: {
       type: String,
-      enum: ['live', 'paused', 'out of funds'],
-      default: 'live',
+      enum: Object.values(TrainingPoolStatus),
+      default: TrainingPoolStatus.live,
       required: true
     },
     demonstrations: { type: Number, default: 0 },
