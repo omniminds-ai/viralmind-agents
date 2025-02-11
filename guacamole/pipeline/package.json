@@ -3,12 +3,11 @@
   "version": "1.0.0",
   "main": "process.js",
   "scripts": {
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "start": "tsx main.ts"
+    "test": "bun test",
+    "start": "bun run src/main.ts"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "",
   "dependencies": {
     "canvas": "^3.1.0",
@@ -17,13 +16,10 @@
     "openai": "^4.80.1",
     "sharp": "^0.33.5",
     "tesseract.js": "^5.1.1",
-    "tiktoken": "^1.0.18",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "tiktoken": "^1.0.18"
   },
   "devDependencies": {
-    "@types/node": "^22.10.10",
-    "@vitest/ui": "^1.6.0",
-    "vitest": "^1.6.0"
+    "@types/bun": "^1.2.2",
+    "typescript": "^5.7.3"
   }
 }
