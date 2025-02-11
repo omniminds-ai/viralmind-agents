@@ -1,16 +1,14 @@
-const fs = require('fs');
-const https = require('https');
-const { spawn } = require('child_process');
-const path = require('path');
+import fs from 'node:fs';
+import https from 'https';
 
 // add ids of the races you want to process:
-const data = JSON.parse(fs.readFileSync('./data/viralmind.race_sessions.json', 'utf8'));
-const ids = data.map((item) => item._id.$oid);
+const data = JSON.parse(fs.readFileSync('../data/viralmind.race_sessions.json', 'utf8'));
+const ids: string[] = data.map((item: any) => item._id.$oid);
 // or
 // const ids = [ '6791da5569961c80693c7629' ];
 
 // Retry wrapper
-const withRetry = async (fn, retries = 3, delay = 1000) => {
+const withRetry = async (fn: () => Promise<any>, retries = 3, delay = 1000) => {
   for (let i = 0; i < retries; i++) {
     try {
       return await fn();
@@ -23,8 +21,8 @@ const withRetry = async (fn, retries = 3, delay = 1000) => {
 };
 
 // viralmind api - get task prompts
-const get_events = async (id) => {
-  const filepath = `./data/${id}.events.json`;
+const get_events = async (id: string) => {
+  const filepath = `../data/${id}.events.json`;
   if (fs.existsSync(filepath)) {
     console.log(`[${id}] Events exist`);
     return JSON.parse(fs.readFileSync(filepath, 'utf8'));
@@ -56,9 +54,9 @@ const get_events = async (id) => {
 };
 
 // viralmind api - get session recording
-const downloadGuar = (recording_id) =>
+const downloadGuar = (recording_id: string) =>
   new Promise((resolve) => {
-    const filepath = `./data/${recording_id}.guac`;
+    const filepath = `../data/${recording_id}.guac`;
     let data = Buffer.from([]);
 
     if (fs.existsSync(filepath)) {
@@ -92,22 +90,44 @@ const downloadGuar = (recording_id) =>
   });
 
 // .guac -> .m4v
-const encodeVideo = (id) =>
-  new Promise((resolve, reject) => {
-    const outPath = `./data/${id}.guac.m4v`;
+const encodeVideo = (id: string) =>
+  new Promise(async (resolve, reject) => {
+    const outPath = `../data/${id}.guac.m4v`;
     if (fs.existsSync(outPath)) return resolve(true);
 
-    const proc = spawn('guacenc', ['-s', '1280x800', '-r', '6000000', `./data/${id}.guac`]);
+    const proc = Bun.spawn(['guacenc', '-s', '1280x800', '-r', '6000000', `../data/${id}.guac`], {
+      stdout: 'pipe',
+      stderr: 'pipe'
+    });
 
-    proc.stdout.on('data', (data) => console.log(data.toString()));
-    proc.stderr.on('data', (data) => console.error(data.toString()));
+    // Handle stdout using ReadableStream
+    proc.stdout
+      ?.getReader()
+      .read()
+      .then(function process({ done, value }) {
+        if (done) return;
+        if (value) console.log(new TextDecoder().decode(value));
+        return proc.stdout?.getReader().read().then(process);
+      });
 
-    proc.on('close', (code) => (code === 0 ? resolve(true) : reject(code)));
+    // Handle stderr using ReadableStream
+    proc.stderr
+      ?.getReader()
+      .read()
+      .then(function process({ done, value }) {
+        if (done) return;
+        if (value) console.error(new TextDecoder().decode(value));
+        return proc.stderr?.getReader().read().then(process);
+      });
+
+    // Handle process completion
+    await proc.exited // Bun provides a promise for process completion
+      .then((code) => (code === 0 ? resolve(true) : reject(code)));
   });
 
-const processBatch = async (batch) => {
+const processBatch = async (batch: string[]) => {
   return Promise.all(
-    batch.map(async (id) => {
+    batch.map(async (id: string) => {
       try {
         await withRetry(() => get_events(id));
         if (await downloadGuar(id)) {

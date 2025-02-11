@@ -1,7 +1,7 @@
-const fs = require('fs');
+import fs from 'node:fs';
 
 const TOTAL_SESSIONS = 754;
-const data = JSON.parse(fs.readFileSync('./data/viralmind.race_sessions.json', 'utf8'));
+const data = JSON.parse(fs.readFileSync('../data/viralmind.race_sessions.json', 'utf8'));
 const SCALE_FACTOR = TOTAL_SESSIONS / data.length;
 
 // Training Gym Usage Stats
@@ -27,7 +27,7 @@ let totalRewards = 0;
 
 data.forEach((session) => {
   // Input: Text prompts
-  const eventsPath = `./data/${session._id.$oid}.events.json`;
+  const eventsPath = `../data/${session._id.$oid}.events.json`;
   if (fs.existsSync(eventsPath)) {
     const events = JSON.parse(fs.readFileSync(eventsPath, 'utf8'));
     textPrompts += events.events.length;
@@ -42,12 +42,12 @@ data.forEach((session) => {
   }
 
   // Input: Video duration
-  const start = new Date(session.created_at.$date);
-  const end = new Date(session.updated_at.$date);
+  const start = new Date(session.created_at.$date).getTime();
+  const end = new Date(session.updated_at.$date).getTime();
   videoMinutes += (end - start) / (1000 * 60);
 
   // Output: Input events from guac recordings
-  const guacFile = `./data/${session._id.$oid}.guac`;
+  const guacFile = `../data/${session._id.$oid}.guac`;
   if (fs.existsSync(guacFile)) {
     try {
       // Read file in chunks to handle large files
