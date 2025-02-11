@@ -61,7 +61,7 @@
 </script>
 
 <div class="flex flex-col items-center justify-center min-h-screen bg-black">
-  <div class="p-8 rounded-2xl border border-white/20 bg-black/90 backdrop-blur-xl shadow-2xl max-w-md w-full mx-4">
+  <div class="p-8 rounded-2xl border border-white/20 bg-black/90 backdrop-blur-xl shadow-2xl max-w-md mx-4">
     <div class="text-center mb-8">
       <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20">
         <Coins class="h-8 w-8 text-gray-400" />
