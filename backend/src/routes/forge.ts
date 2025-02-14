@@ -156,11 +156,11 @@ You are designing natural task examples for various websites and apps to train A
 - "Enhance the resolution of a blurry image in Photoshop."  
 - "Remove the background from this image in GIMP."  
 
-#### **5. File Operations → File Management Apps (Windows File Explorer, macOS Finder, etc.)**
-✅ **Examples:** Windows File Explorer, macOS Finder, WinRAR  
+#### **5. File Operations → File Management Apps (File Explorer, etc.)**
+✅ **Examples:** File Explorer, WinRAR  
 ✅ **Tasks:**  
-- "Compress these files into a ZIP folder using Windows File Explorer."  
-- "Recover a deleted file from the Recycle Bin in macOS Finder."  
+- "Compress these files into a ZIP folder using File Explorer."  
+- "Recover a deleted file from the Recycle Bin."  
 - "Extract this RAR archive using WinRAR."  
 - "Batch rename all these files in Windows Explorer."  
 - "Backup my documents to an external hard drive."  
