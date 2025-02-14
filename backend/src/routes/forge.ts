@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import axios from 'axios';
 import { TrainingPoolModel, TrainingPool, TrainingPoolStatus } from '../models/TrainingPool.js';
 import { WalletConnectionModel } from '../models/WalletConnection.js';
-import { ForgeRace } from '../models/ForgeRace.js';
+import { ForgeApp } from '../models/ForgeApp.js';
 import DatabaseService from '../services/db/index.js';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
@@ -13,7 +13,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Track active race generation promises
+// Track active generation promises
 const activeGenerations = new Map<string, Promise<void>>();
 
 // Send webhook notification
@@ -29,13 +29,13 @@ async function notifyForgeWebhook(message: string) {
   }
 }
 
-// Generate races for a pool
-async function generateRacesForPool(poolId: string, skills: string): Promise<void> {
+// Generate apps for a pool
+async function generateAppsForPool(poolId: string, skills: string): Promise<void> {
   // Cancel any existing generation for this pool
   const existingPromise = activeGenerations.get(poolId);
   if (existingPromise) {
-    console.log(`Canceling existing race generation for pool ${poolId}`);
-    await notifyForgeWebhook(`🔄 Canceling existing race generation for pool ${poolId}`);
+    console.log(`Canceling existing app generation for pool ${poolId}`);
+    await notifyForgeWebhook(`🔄 Canceling existing app generation for pool ${poolId}`);
     // Let the existing promise continue but we'll ignore its results
     activeGenerations.delete(poolId);
   }
@@ -48,13 +48,13 @@ async function generateRacesForPool(poolId: string, skills: string): Promise<voi
       throw new Error(`Pool ${poolId} not found`);
     }
 
-    await notifyForgeWebhook(`🎬 Starting race generation for pool "${pool.name}" (${poolId})\nSkills: ${skills}`);
+    await notifyForgeWebhook(`🎬 Starting app generation for pool "${pool.name}" (${poolId})\nSkills: ${skills}`);
     try {
-      // Delete existing races for this pool
-      await ForgeRace.deleteMany({ pool_id: poolId });
+      // Delete existing apps for this pool
+      await ForgeApp.deleteMany({ pool_id: poolId });
 
-      // Generate new races using OpenAI
-      const prompt = RACE_GENERATION_PROMPT.replace('{skill list}', skills);
+      // Generate new apps using OpenAI
+      const prompt = APP_TASK_GENERATION_PROMPT.replace('{skill list}', skills);
       const response = await openai.chat.completions.create({
         model: 'o3-mini',
         reasoning_effort: 'medium',
@@ -73,25 +73,25 @@ async function generateRacesForPool(poolId: string, skills: string): Promise<voi
 
       // Only proceed if this is still the active generation
       if (activeGenerations.get(poolId) === generationPromise) {
-          // Parse races from response
-          const races = JSON.parse(content);
+          // Parse apps from response
+          const apps = JSON.parse(content);
           
-          // Store new races
-          for (const race of races) {
-            await ForgeRace.create({
-              ...race,
+          // Store new apps
+          for (const app of apps) {
+            await ForgeApp.create({
+              ...app,
               pool_id: poolId
             });
           }
-          console.log(`Successfully generated races for pool ${poolId}`);
-          await notifyForgeWebhook(`✅ Generated ${races.length} races for pool "${pool.name}" (${poolId})\n${races.map((r: {title: string}) => `- ${r.title}`).join('\n')}`);
+          console.log(`Successfully generated apps for pool ${poolId}`);
+          await notifyForgeWebhook(`✅ Generated ${apps.length} apps for pool "${pool.name}" (${poolId})\n${apps.map((a: {name: string}) => `- ${a.name}`).join('\n')}`);
       } else {
-        console.log(`Race generation was superseded for pool ${poolId}`);
+        console.log(`App generation was superseded for pool ${poolId}`);
       }
     } catch (error) {
         const err = error as Error;
-        console.error('Error generating races:', err);
-        await notifyForgeWebhook(`❌ Error generating races for pool ${poolId}: ${err.message}`);
+        console.error('Error generating apps:', err);
+        await notifyForgeWebhook(`❌ Error generating apps for pool ${poolId}: ${err.message}`);
         throw err;
     } finally {
       // Clean up if this is still the active generation
@@ -107,38 +107,102 @@ async function generateRacesForPool(poolId: string, skills: string): Promise<voi
   return generationPromise;
 }
 
-// Race generation prompt template
-const RACE_GENERATION_PROMPT = `You are designing engaging "races" for the Training Gym, a platform where AI researchers contribute to computer-use datasets through guided demonstrations. Each race represents a type of computer task that users can record themselves completing.
+// App task generation prompt template
+const APP_TASK_GENERATION_PROMPT = `
+You are designing natural task examples for various websites and apps to train AI assistants in helping users navigate digital services effectively.  
 
-Given a list of computer skills, generate race concepts. Each race should:
-1. Focus on a clear theme or workflow (e.g., digital art, office productivity)
-2. Incorporate related skills from the provided list
-3. Be approachable for contributors while covering meaningful interactions
-4. Have a catchy, memorable title that reflects its theme
-5. Include a brief, engaging description (max 60 characters)
-6. Be categorized based on its primary purpose or domain
-7. Have an appropriate icon name from the Lucide icon set
-8. Include a natural, conversational prompt that a user would send to their gym agent to generate personalized quests of this type
+### **Instructions:**  
+- Given a list of computer skills, generate **apps and their associated tasks** that naturally incorporate those skills.  
+- Use **common digital services** unless a specific app/website is provided.  
+- Each app should have at least **5 tasks** representing **real-world user interactions**.  
+- Ensure **tasks align with the provided skills** rather than being random generic actions.  
+- Be as exhaustive as possible, enumerating every relevant app and task given the input skill list.
 
-Output format should be a JSON list where each race follows this structure:
+### **Guidelines for Mapping Skills to Apps:**  
+
+#### **1. Browser Management → Web Browsers (Chrome, Firefox, Edge, Safari, etc.)**
+✅ **Examples:** Google Chrome, Mozilla Firefox, Microsoft Edge  
+✅ **Tasks:**  
+- "Change my default search engine to DuckDuckGo in Chrome."  
+- "Restore all the tabs I accidentally closed in Firefox."  
+- "Clear my browsing history and cookies in Edge."  
+- "Save this webpage as a PDF in Safari."  
+- "Install an ad blocker extension in Chrome."  
+
+#### **2. Office Suite → Office Productivity Apps (Microsoft Office, Google Docs, LibreOffice, etc.)**
+✅ **Examples:** Microsoft Word, Google Docs, LibreOffice Writer  
+✅ **Tasks:**  
+- "Format my document with proper headings in Word."  
+- "Convert this DOCX file to PDF in Google Docs."  
+- "Create a table with merged cells in LibreOffice Writer."  
+- "Set up automatic spell check in Word."  
+- "Insert a graph from an Excel sheet into my Google Docs file."  
+
+#### **3. Email Client → Email Services (Gmail, Outlook, Thunderbird, etc.)**
+✅ **Examples:** Gmail, Microsoft Outlook, Mozilla Thunderbird  
+✅ **Tasks:**  
+- "Set up an email signature in Outlook."  
+- "Create a filter to move all newsletters to a specific folder in Gmail."  
+- "Export my emails from Thunderbird to a backup file."  
+- "Redirect incoming emails to a different address in Outlook."  
+- "Organize my inbox by creating custom labels in Gmail."  
+
+#### **4. Image Editing → Image Editors (Photoshop, GIMP, Canva, etc.)**
+✅ **Examples:** Adobe Photoshop, GIMP, Canva  
+✅ **Tasks:**  
+- "Batch resize all these images in Photoshop."  
+- "Convert a PNG file to JPG in GIMP."  
+- "Apply a vintage filter to my photo in Canva."  
+- "Enhance the resolution of a blurry image in Photoshop."  
+- "Remove the background from this image in GIMP."  
+
+#### **5. File Operations → File Management Apps (Windows File Explorer, macOS Finder, etc.)**
+✅ **Examples:** Windows File Explorer, macOS Finder, WinRAR  
+✅ **Tasks:**  
+- "Compress these files into a ZIP folder using Windows File Explorer."  
+- "Recover a deleted file from the Recycle Bin in macOS Finder."  
+- "Extract this RAR archive using WinRAR."  
+- "Batch rename all these files in Windows Explorer."  
+- "Backup my documents to an external hard drive."  
+
+#### **6. Code Editor → Development Environments (VS Code, Sublime Text, JetBrains, etc.)**
+✅ **Examples:** Visual Studio Code, Sublime Text, JetBrains IntelliJ IDEA  
+✅ **Tasks:**  
+- "Install the Python extension in VS Code."  
+- "Set up a dark theme in Sublime Text."  
+- "Configure my workspace settings in JetBrains IntelliJ."  
+- "Enable line numbers in Visual Studio Code."  
+- "Use keyboard shortcuts to quickly navigate files in Sublime Text."  
+
+### **Output Format (JSON list):**  
+Output format should be a JSON list where each app follows this structure:
 {
-  "title": "Race Name",
-  "description": "Brief engaging description",
-  "category": "Category name",
-  "icon": "IconName",
-  "skills": ["Skill 1", "Skill 2"],
-  "agent_prompt": "Hey, I was thinking of [activity related to skills] and wanted to record some training data. Could you create a quest that would help me practice [specific skills] while contributing to the dataset?"
+  "name": "App Name",
+  "domain": "example.com",
+  "description": "Brief service description",
+  "categories": ["Category1", "Category2"],
+  "tasks": [
+    {
+      "prompt": "Natural user request"
+    }
+  ]
 }
 
-Example race themes to consider:
-- Data organization and cleanup workflows
-- Creative content production
-- System customization and optimization
-- Document processing and conversion
-- Media management and editing
-- Browser optimization and setup
+Example categories to consider:
+- Shopping
+- Travel
+- Delivery
+- Entertainment
+- Productivity
+- Local Services
+- Lifestyle
+- News & Media
 
-Focus on prompts that feel natural and conversational, as if a user is casually asking their personal gym agent to create a quest based on something they already wanted to do.
+Focus on creating tasks that feel like genuine user requests, similar to:
+- "Order dinner for my family of 4"
+- "Book a hotel in Paris for next weekend"
+- "Find running shoes under $100"
+- "Schedule a cleaning service for tomorrow"
 
 <SKILLS>
 {skill list}
@@ -172,10 +236,6 @@ interface UpdatePoolBody {
 
 interface ListPoolsBody {
   address: string;
-}
-
-interface GetRacesParams {
-  poolId: string;
 }
 
 // Store wallet address for token
@@ -221,10 +281,9 @@ router.get('/check-connection',
     }
   }
 );
+
 // System prompt for the AI assistant
 const SYSTEM_PROMPT = `You are playing the role of someone who needs help with a specific computer task. You should act as a realistic user who is not tech-savvy but friendly and appreciative. Stay in character and express your needs naturally and casually.
-
-The computer-use agent (assistant) will guide you through using the specified app. They are helpful and friendly, typically starting responses with phrases like "Sure!", "I'll help you with that!", or "I can assist you with that".
 
 Remember to:
 - Keep your initial request brief and natural
@@ -232,7 +291,7 @@ Remember to:
 - Express appreciation when helped
 - Stay focused on your specific task
 - Ask for clarification if needed
-- When provided context, do a tool call where in the content you must say hi and ask for your task`;
+- When provided context, do a tool call where in the content you must say hi and ask for your task directly (e.g. "Hi! I need to install an ad-blocker in Chrome" rather than "Can you guide me on how to install an ad-blocker?")`;
 
 interface Message {
   role: 'user' | 'assistant' | 'tool';
@@ -293,7 +352,7 @@ const FEW_SHOT_EXAMPLES = [
                 "Apply filters for dates and preferences",
                 "View hotel details and reviews"
               ],
-              content: "Hi! I'm planning a trip to Paris and need help finding a nice hotel. Could you show me how to search on Booking.com?"
+              content: "Hi! I need to find a hotel in Paris for my upcoming trip. Can you help me search on Booking.com?"
             })
           }
         }]
@@ -312,7 +371,7 @@ const FEW_SHOT_EXAMPLES = [
   {
     task_prompt: "Order sushi delivery",
     app: {
-      type: "website",
+      type: "website", 
       name: "Uber Eats",
       url: "ubereats.com"
     },
@@ -336,10 +395,10 @@ const FEW_SHOT_EXAMPLES = [
               objectives: [
                 "Open <app>Uber Eats</app> website in your browser",
                 "Find nearby sushi restaurants",
-                "Select items and customize order",
+                "Select items and customize order", 
                 "Review cart before checkout"
               ],
-              content: "Hey there! I'm craving sushi and want to order delivery through Uber Eats. Could you help me place an order?"
+              content: "Hi! I'm hungry and want to order some sushi from Uber Eats. Can you show me how?"
             })
           }
         }]
@@ -360,7 +419,7 @@ const FEW_SHOT_EXAMPLES = [
     app: {
       type: "website",
       name: "eBay",
-      url: "ebay.com"
+      url: "ebay.com"  
     },
     conversation: [
       {
@@ -385,7 +444,7 @@ const FEW_SHOT_EXAMPLES = [
                 "Apply filters for size and price",
                 "Sort and compare listings"
               ],
-              content: "Hi! I need help finding some tennis shoes on sale on eBay. I've never really used the site before."
+              content: "Hi! I want to buy some tennis shoes on eBay. I've never used the site before - can you help me find a good deal?"
             })
           }
         }]
@@ -431,6 +490,8 @@ router.post('/chat', async (req: Request<{}, {}, ChatBody>, res: Response) => {
       { role: 'user', content: contextMessage },
       ...messages
     ];
+
+    console.log(JSON.stringify(apiMessages, null, 2));
     
     // Call OpenAI API
     const response = await openai.chat.completions.create({
@@ -568,9 +629,9 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
 
     await pool.save();
 
-    // Start initial race generation (non-blocking)
-    generateRacesForPool(pool._id.toString(), skills).catch(error => {
-      console.error('Error generating initial races:', error);
+    // Start initial app generation (non-blocking)
+    generateAppsForPool(pool._id.toString(), skills).catch(error => {
+      console.error('Error generating initial apps:', error);
     });
 
     // Create response object without private key
@@ -620,10 +681,10 @@ router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Respons
       { new: true }
     ).select('-depositPrivateKey'); // Exclude private key from response
 
-    // If skills were updated, start race regeneration (non-blocking)
+    // If skills were updated, start app regeneration (non-blocking)
     if (skills) {
-      generateRacesForPool(id, skills).catch(error => {
-        console.error('Error regenerating races:', error);
+      generateAppsForPool(id, skills).catch(error => {
+        console.error('Error regenerating apps:', error);
       });
     }
 
@@ -634,32 +695,14 @@ router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Respons
   }
 });
 
-// Get all races
-router.get('/races', async (_req: Request, res: Response) => {
+// Get all apps
+router.get('/apps', async (_req: Request, res: Response) => {
   try {
-    const races = await ForgeRace.find({}).populate('pool_id', 'name');
-    res.json(races);
+    const apps = await ForgeApp.find({}).populate('pool_id', 'name');
+    res.json(apps);
   } catch (error) {
-    console.error('Error getting races:', error);
-    res.status(500).json({ error: 'Failed to get races' });
-  }
-});
-
-// Get races for a specific pool
-router.get('/races/:poolId', async (req: Request<GetRacesParams>, res: Response) => {
-  try {
-    const { poolId } = req.params;
-
-    if (!poolId) {
-      res.status(400).json({ error: 'Pool ID is required' });
-      return;
-    }
-
-    const races = await ForgeRace.find({ pool_id: poolId });
-    res.json(races);
-  } catch (error) {
-    console.error('Error getting races:', error);
-    res.status(500).json({ error: 'Failed to get races' });
+    console.error('Error getting apps:', error);
+    res.status(500).json({ error: 'Failed to get apps' });
   }
 });
 
