@@ -199,8 +199,7 @@ router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response)
 });
 
 // Check connection status
-router.get(
-  '/check-connection',
+router.get('/check-connection',
   async (req: Request<{}, {}, {}, { token?: string }>, res: Response) => {
     try {
       const token = req.query.token;
@@ -222,6 +221,290 @@ router.get(
     }
   }
 );
+// System prompt for the AI assistant
+const SYSTEM_PROMPT = `You are playing the role of someone who needs help with a specific computer task. You should act as a realistic user who is not tech-savvy but friendly and appreciative. Stay in character and express your needs naturally and casually.
+
+The computer-use agent (assistant) will guide you through using the specified app. They are helpful and friendly, typically starting responses with phrases like "Sure!", "I'll help you with that!", or "I can assist you with that".
+
+Remember to:
+- Keep your initial request brief and natural
+- Show mild confusion if technical terms are used
+- Express appreciation when helped
+- Stay focused on your specific task
+- Ask for clarification if needed
+- When provided context, do a tool call where in the content you must say hi and ask for your task`;
+
+interface Message {
+  role: 'user' | 'assistant' | 'tool';
+  content: string;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_call_id?: string;
+}
+
+interface AppInfo {
+  type: 'executable' | 'website';
+  name: string;
+  path?: string;
+  url?: string;
+}
+
+interface ChatBody {
+  messages: Message[];
+  task_prompt: string;
+  app: AppInfo;
+}
+
+// Sample few-shot conversation history
+const FEW_SHOT_EXAMPLES = [
+  {
+    task_prompt: "Find a hotel in Paris",
+    app: {
+      type: "website",
+      name: "Booking.com",
+      url: "booking.com"
+    },
+    conversation: [
+      {
+        role: "user",
+        content: "Task: Find a hotel in Paris\nApp: Booking.com (website, URL: booking.com)"
+      },
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [{
+          id: "call_123",
+          type: "function",
+          function: {
+            name: "validate_task_request",
+            arguments: JSON.stringify({
+              title: "Find Paris hotel",
+              app: "Booking.com",
+              icon_url: "https://s2.googleusercontent.com/s2/favicons?domain=booking.com&sz=64",
+              objectives: [
+                "Open <app>Booking.com</app> website in your browser",
+                "Search for Paris hotels",
+                "Apply filters for dates and preferences",
+                "View hotel details and reviews"
+              ],
+              content: "Hi! I'm planning a trip to Paris and need help finding a nice hotel. Could you show me how to search on Booking.com?"
+            })
+          }
+        }]
+      },
+      {
+        role: "tool",
+        tool_call_id: "call_123",
+        content: "accepted"
+      },
+      {
+        role: "user",
+        content: "Sure! I'll help you find a hotel in Paris. Let's start by going to booking.com and entering your travel dates. When are you planning to visit?"
+      }
+    ]
+  },
+  {
+    task_prompt: "Order sushi delivery",
+    app: {
+      type: "website",
+      name: "Uber Eats",
+      url: "ubereats.com"
+    },
+    conversation: [
+      {
+        role: "user",
+        content: "Task: Order sushi delivery\nApp: Uber Eats (website, URL: ubereats.com)"
+      },
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [{
+          id: "call_456",
+          type: "function",
+          function: {
+            name: "validate_task_request",
+            arguments: JSON.stringify({
+              title: "Order sushi delivery",
+              app: "Uber Eats",
+              icon_url: "https://s2.googleusercontent.com/s2/favicons?domain=ubereats.com&sz=64",
+              objectives: [
+                "Open <app>Uber Eats</app> website in your browser",
+                "Find nearby sushi restaurants",
+                "Select items and customize order",
+                "Review cart before checkout"
+              ],
+              content: "Hey there! I'm craving sushi and want to order delivery through Uber Eats. Could you help me place an order?"
+            })
+          }
+        }]
+      },
+      {
+        role: "tool",
+        tool_call_id: "call_456",
+        content: "accepted"
+      },
+      {
+        role: "user",
+        content: "I'll help you order sushi through Uber Eats! First, let's check which sushi restaurants deliver to your location. Could you open ubereats.com and enter your delivery address?"
+      }
+    ]
+  },
+  {
+    task_prompt: "Find tennis shoes on sale",
+    app: {
+      type: "website",
+      name: "eBay",
+      url: "ebay.com"
+    },
+    conversation: [
+      {
+        role: "user",
+        content: "Task: Find tennis shoes on sale\nApp: eBay (website, URL: ebay.com)"
+      },
+      {
+        role: "assistant",
+        content: null,
+        tool_calls: [{
+          id: "call_789",
+          type: "function",
+          function: {
+            name: "validate_task_request",
+            arguments: JSON.stringify({
+              title: "Find tennis shoes",
+              app: "eBay",
+              icon_url: "https://s2.googleusercontent.com/s2/favicons?domain=ebay.com&sz=64",
+              objectives: [
+                "Open <app>eBay</app> website in your browser",
+                "Search for tennis shoes",
+                "Apply filters for size and price",
+                "Sort and compare listings"
+              ],
+              content: "Hi! I need help finding some tennis shoes on sale on eBay. I've never really used the site before."
+            })
+          }
+        }]
+      },
+      {
+        role: "tool",
+        tool_call_id: "call_789",
+        content: "accepted"
+      },
+      {
+        role: "user",
+        content: "I'll help you find tennis shoes on eBay! Let's start by going to ebay.com. Do you have a specific brand or size in mind?"
+      }
+    ]
+  }
+];
+
+// Add route to router
+router.post('/chat', async (req: Request<{}, {}, ChatBody>, res: Response) => {
+  try {
+    const { messages, task_prompt, app } = req.body;
+
+    if (!messages || !Array.isArray(messages) || !task_prompt || !app) {
+      res.status(400).json({ error: 'Messages array, task prompt, and app info are required' });
+      return;
+    }
+
+    // Format context message
+    const contextMessage = `Task: ${task_prompt}\nApp: ${app.name} (${app.type}${
+      app.type === 'executable' ? `, Path: ${app.path}` : `, URL: ${app.url}`
+    })`;
+
+    // Randomly select 3 few-shot examples
+    const randomExamples = [...FEW_SHOT_EXAMPLES]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+
+    // Prepare messages for OpenAI API
+    const apiMessages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      // Include all three random examples
+      ...randomExamples.flatMap(example => example.conversation),
+      { role: 'user', content: contextMessage },
+      ...messages
+    ];
+    
+    // Call OpenAI API
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: apiMessages,
+      tools: [{
+        type: "function",
+        function: {
+          name: "validate_task_request",
+          description: "Validate if the user's task request is appropriate and can be assisted with",
+          parameters: {
+            type: "object",
+            required: ["title", "app", "objectives", "content"],
+            properties: {
+              title: {
+                type: "string",
+                description: "Brief title for the task"
+              },
+              app: {
+                type: "string",
+                description: "Name of the app being used"
+              },
+              icon_url: {
+                type: "string",
+                description: "URL for the app's favicon"
+              },
+              objectives: {
+                type: "array",
+                description: "List of 4 objectives to complete the task (first objective must be opening/navigating to the app with the app name wrapped in <app> tags, stop at checkout for purchases)",
+                items: {
+                  type: "string"
+                }
+              },
+              content: {
+                type: "string",
+                description: "The assistant's message to the user"
+              }
+            }
+          }
+        }
+      }]
+    } as any);
+
+    const assistantMessage = response.choices[0].message;
+    console.log(assistantMessage)
+
+    // Handle tool calls if present
+    if (assistantMessage.tool_calls?.length) {
+      const toolCall = assistantMessage.tool_calls[0];
+      // Add tool call to response
+      res.json({
+        role: 'assistant',
+        content: assistantMessage.content,
+        tool_calls: [{
+          id: toolCall.id,
+          type: "function",
+          function: {
+            name: toolCall.function.name,
+            arguments: toolCall.function.arguments
+          }
+        }]
+      });
+    } else {
+      // Return regular message
+      res.json({
+        role: 'assistant',
+        content: assistantMessage.content
+      });
+    }
+  } catch (error) {
+    console.error('Error handling chat:', error);
+    res.status(500).json({ error: 'Failed to process chat message' });
+  }
+});
 
 // List training pools
 router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) => {
