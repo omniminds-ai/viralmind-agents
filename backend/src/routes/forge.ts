@@ -5,13 +5,24 @@ import axios from 'axios';
 import { TrainingPoolModel, TrainingPool, TrainingPoolStatus } from '../models/TrainingPool.js';
 import { WalletConnectionModel } from '../models/WalletConnection.js';
 import { ForgeApp } from '../models/ForgeApp.js';
+import { ForgeRaceSubmission, ProcessingStatus, addToProcessingQueue } from '../models/ForgeRaceSubmission.js';
 import DatabaseService from '../services/db/index.js';
+import { AWSS3Service } from '../services/aws/index.ts';
+import multer from 'multer';
+import { createReadStream } from 'fs';
+import { mkdir, unlink, copyFile } from 'fs/promises';
+import * as path from 'path';
+import { Extract } from 'unzipper';
+import { createHash } from 'crypto';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+// Configure multer for handling file uploads
+const upload = multer({ dest: 'uploads/' });
 
 // Track active generation promises
 const activeGenerations = new Map<string, Promise<void>>();
@@ -237,6 +248,166 @@ interface UpdatePoolBody {
 interface ListPoolsBody {
   address: string;
 }
+
+// Upload race data endpoint
+// @ts-ignore
+router.post('/upload-race', upload.single('file'), async (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ error: 'No file uploaded' });
+    return;
+  }
+
+  const address = req.headers['x-wallet-address'];
+  if (!address || typeof address !== 'string') {
+    res.status(400).json({ error: 'Wallet address is required' });
+    return;
+  }
+
+  try {
+    const s3Service = new AWSS3Service(
+      process.env.AWS_ACCESS_KEY,
+      process.env.AWS_SECRET_KEY
+    );
+
+    // Create temporary directory for initial extraction
+    const tempDir = path.join('uploads', `temp_${Date.now()}`);
+    await mkdir(tempDir, { recursive: true });
+    
+    // Extract meta.json first to get ID
+    await new Promise((resolve, reject) => {
+      createReadStream(req.file!.path)
+        .pipe(Extract({ path: tempDir }))
+        .on('close', resolve)
+        .on('error', reject);
+    });
+
+    // Read and parse meta.json
+    const metaJson = await new Promise<string>((resolve, reject) => {
+      let data = '';
+      createReadStream(path.join(tempDir, 'meta.json'))
+        .on('data', chunk => data += chunk)
+        .on('end', () => resolve(data))
+        .on('error', reject);
+    });
+    const meta = JSON.parse(metaJson);
+
+    // Create UUID from meta.id + address
+    const uuid = createHash('sha256')
+      .update(`${meta.id}${address}`)
+      .digest('hex');
+
+    // Create final directory with UUID
+    const extractDir = path.join('uploads', `extract_${uuid}`);
+    await mkdir(extractDir, { recursive: true });
+
+    // Move files from temp to final directory
+    const requiredFiles = ['input_log.jsonl', 'meta.json', 'recording.mp4'];
+    for (const file of requiredFiles) {
+      const tempPath = path.join(tempDir, file);
+      const finalPath = path.join(extractDir, file);
+      try {
+        // Use fs.copyFile instead of pipe
+        await copyFile(tempPath, finalPath);
+      } catch (error) {
+        await unlink(req.file.path);
+        await unlink(tempDir).catch(() => {});
+        res.status(400).json({ error: `Missing required file: ${file}` });
+        return;
+      }
+    }
+
+    // Clean up temp directory
+    await unlink(tempDir).catch(() => {});
+
+    // Upload each file to S3
+    const uploads = await Promise.all(
+      requiredFiles.map(async (file) => {
+        const filePath = path.join(extractDir, file);
+        const s3Key = `forge-races/${Date.now()}-${file}`;
+        
+        await s3Service.saveItem({
+          bucket: 'training-gym',
+          file: filePath,
+          name: s3Key
+        });
+
+        return { file, s3Key };
+      })
+    );
+
+
+    // Create submission record
+    const submission = await ForgeRaceSubmission.create({
+      _id: uuid,
+      address,
+      meta,
+      status: ProcessingStatus.PENDING,
+      files: uploads
+    });
+
+    // Add to processing queue
+    addToProcessingQueue(uuid);
+
+    res.json({
+      message: 'Race data uploaded successfully',
+      submissionId: submission._id,
+      files: uploads
+    });
+  } catch (error) {
+    console.error('Error uploading race data:', error);
+    // Clean up temporary file on error
+    if (req.file) {
+      await unlink(req.file.path).catch(() => {});
+    }
+    res.status(500).json({ error: 'Failed to upload race data' });
+  }
+});
+
+// Get submission status
+router.get('/submission/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const submission = await ForgeRaceSubmission.findById(id);
+    
+    if (!submission) {
+      res.status(404).json({ error: 'Submission not found' });
+      return;
+    }
+
+    res.json({
+      status: submission.status,
+      grade_result: submission.grade_result,
+      error: submission.error,
+      meta: submission.meta,
+      files: submission.files,
+      createdAt: submission.createdAt,
+      updatedAt: submission.updatedAt
+    });
+  } catch (error) {
+    console.error('Error getting submission:', error);
+    res.status(500).json({ error: 'Failed to get submission status' });
+  }
+});
+
+// List submissions for an address
+router.get('/submissions', async (req: Request, res: Response) => {
+  try {
+    const address = req.headers['x-wallet-address'];
+    if (!address || typeof address !== 'string') {
+      res.status(400).json({ error: 'Wallet address is required' });
+      return;
+    }
+
+    const submissions = await ForgeRaceSubmission.find({ address })
+      .sort({ createdAt: -1 })
+      .select('-__v');
+
+    res.json(submissions);
+  } catch (error) {
+    console.error('Error listing submissions:', error);
+    res.status(500).json({ error: 'Failed to list submissions' });
+  }
+});
 
 // Store wallet address for token
 router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response) => {

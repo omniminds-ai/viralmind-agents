@@ -41,12 +41,12 @@ app.use(function (req, res, next) {
   }
 
   // Request methods
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
   // Request headers
   res.setHeader('Access-Control-Expose-Headers', 'auth-token, x-forwarded-for');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-Requested-With,content-type,auth-token,cancelToken, responsetype, x-forwarded-for'
+    'X-Requested-With,content-type,auth-token,cancelToken,responsetype,x-forwarded-for,x-wallet-address,content-length'
   );
   next();
 });
