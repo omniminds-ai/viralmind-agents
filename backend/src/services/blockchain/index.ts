@@ -25,9 +25,8 @@ class BlockchainService {
 
   async getTokenBalance(tokenMint: string, walletAddress: string): Promise<number> {
     try {
-      console.log('token mint:', tokenMint)
-      console.log('treasury:', walletAddress)
-
+      // console.log('token mint:', tokenMint)
+      // console.log('treasury:', walletAddress)
       const filters = [
         { dataSize: 165 },
         {
