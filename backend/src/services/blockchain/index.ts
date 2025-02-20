@@ -25,36 +25,27 @@ class BlockchainService {
 
   async getTokenBalance(tokenMint: string, walletAddress: string): Promise<number> {
     try {
-      // console.log('token mint:', tokenMint)
-      // console.log('treasury:', walletAddress)
-      const filters = [
-        { dataSize: 165 },
-        {
-          memcmp: {
-            offset: 32,
-            bytes: walletAddress,
-          },
-        },
-        {
-          memcmp: {
-            offset: 0,
-            bytes: tokenMint,
-          },
-        },
-      ];
-
-      const accounts = await this.connection.getProgramAccounts(
-        TOKEN_PROGRAM_ID,
-        { filters }
+      // Convert string addresses to PublicKeys
+      const mintPubkey = new PublicKey(tokenMint);
+      const walletPubkey = new PublicKey(walletAddress);
+  
+      // Get the associated token account address
+      const tokenAccountAddress = getAssociatedTokenAddressSync(
+        mintPubkey,
+        walletPubkey
       );
-
-      if (accounts.length > 0) {
-        const info = await this.connection.getTokenAccountBalance(
-          accounts[0].pubkey
-        );
-        return info.value.uiAmount || 0;
+  
+      try {
+        // Get the token account info
+        const tokenAccountInfo = await this.connection.getTokenAccountBalance(tokenAccountAddress);
+        return tokenAccountInfo.value.uiAmount || 0;
+      } catch (error) {
+        // If the token account doesn't exist, return 0
+        if ((error as any).message?.includes('could not find token account')) {
+          return 0;
+        }
+        throw error; // Re-throw other errors
       }
-      return 0;
     } catch (error) {
       console.error("Error getting token balance:", error);
       return 0;
