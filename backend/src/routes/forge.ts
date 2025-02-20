@@ -998,7 +998,7 @@ router.get('/balance/:address', async (req: Request, res: Response) => {
     }
 
     const balance = await blockchainService.getTokenBalance(
-      process.env.VIRAL_TOKEN_ADDRESS || '',
+      process.env.VIRAL_TOKEN || '',
       address
     );
 
