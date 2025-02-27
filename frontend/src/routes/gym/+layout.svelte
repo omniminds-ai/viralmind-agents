@@ -11,19 +11,17 @@
   async function checkActiveRace(publicKey: any) {
     try {
       console.log('Checking active race for', publicKey.toBase58());
-      const res = await fetch('/api/races/history', {
+      const res = await fetch('/api/races/active', {
         headers: {
           'x-wallet-address': publicKey.toBase58()
         }
       });
       if (!res.ok) return;
 
-      const races = await res.json();
+      const data = await res.json();
       
-      // Find active race
-      const activeRaceSession = races.find((race: any) => race.status === 'active');
-      if (activeRaceSession) {
-        startPolling(activeRaceSession._id);
+      if (data.active && data.sessionId) {
+        startPolling(data.sessionId);
       }
     } catch (error) {
       console.error('Error checking for active race:', error);

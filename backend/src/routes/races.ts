@@ -12,6 +12,7 @@ const openai = new OpenAI({
 });
 
 import { TrainingEvent } from '../models/TrainingEvent.ts';
+import { RaceSession } from '../models/Models.ts';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
@@ -128,7 +129,7 @@ async function generateHint(
       },
       {},
       { sort: { timestamp: -1 } }
-    ).lean();
+    );
 
     if (recentHint) {
       return {
@@ -147,7 +148,7 @@ async function generateHint(
       },
       {},
       { sort: { timestamp: -1 } }
-    ).lean();
+    );
 
     // Must have a quest to generate hints
     if (!latestQuestEvent) {
@@ -592,7 +593,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
       session: id,
       type: 'reward',
       'metadata.rewardValue': { $exists: true }
-    }).lean();
+    });
 
     // Kill active connections and remove permissions if session has credentials
     if (session.vm_credentials?.guacToken && session.vm_credentials?.guacConnectionId) {
@@ -627,10 +628,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
         // save recording to s3 if we have a video path
         const sessionEvents = await TrainingEvent.find({
           session: id
-        })
-          .sort({ timestamp: 1 })
-          .lean(); // Sort by timestamp ascending
-
+        }).sort({ timestamp: 1 }); // Sort by timestamp ascending
         if (sessionEvents.length > 0) {
           const recordingId = sessionEvents[0].metadata?.recording_id;
 
@@ -792,6 +790,59 @@ router.post('/feedback', async (req: Request, res: Response) => {
   }
 });
 
+// Check for active race session
+router.get('/active', async (req: Request, res: Response) => {
+  try {
+    const walletAddress = req.headers['x-wallet-address'] as string;
+    if (!walletAddress) {
+      res.status(400).json({ error: 'Wallet address is required' });
+      return;
+    }
+
+    // First, handle expired sessions in bulk
+    const now = Date.now();
+    const expiryTime = now - 15 * 60 * 1000; // 15 minutes ago
+    const inactiveTime = now - 60 * 1000; // 1 minute ago
+
+    // Update expired sessions in a single operation - only those that are actually expired
+    await RaceSession.updateMany(
+      {
+        address: walletAddress,
+        status: 'active',
+        $or: [
+          { created_at: { $lt: new Date(expiryTime) } },
+          { updated_at: { $lt: new Date(inactiveTime) } }
+        ]
+      },
+      {
+        $set: {
+          status: 'expired',
+          updated_at: new Date()
+        }
+      }
+    );
+
+    // Find active race session - this will only find sessions that are still active after the update
+    const activeRaceSession = await RaceSession.findOne({
+      address: walletAddress,
+      status: 'active'
+    });
+
+    if (!activeRaceSession) {
+      res.json({ active: false });
+      return;
+    }
+
+    res.json({
+      active: true,
+      sessionId: activeRaceSession._id
+    });
+  } catch (error) {
+    console.error('Error checking for active race:', error);
+    res.status(500).json({ error: 'Failed to check for active race' });
+  }
+});
+
 // List all race sessions
 router.get('/history', async (req: Request, res: Response) => {
   try {
@@ -801,65 +852,141 @@ router.get('/history', async (req: Request, res: Response) => {
       return;
     }
 
-    let races = await DatabaseService.getRaceSessions({ address: walletAddress });
-    if (!races) {
-      res.status(404).json({ error: 'No races found' });
-      return;
-    }
+    // First, handle expired sessions in bulk
+    const now = Date.now();
+    const expiryTime = now - 15 * 60 * 1000; // 15 minutes ago
+    const inactiveTime = now - 60 * 1000; // 1 minute ago
 
-    // Check for and update any expired sessions
-    await Promise.all(
-      races.map(async (race) => {
-        if (race.status === 'active' && race._id) {
-          await checkRaceExpiration(race._id.toString());
+    // Update expired sessions in a single operation
+    await RaceSession.updateMany(
+      {
+        address: walletAddress,
+        status: 'active',
+        $or: [
+          { created_at: { $lt: new Date(expiryTime) } },
+          { updated_at: { $lt: new Date(inactiveTime) } }
+        ]
+      },
+      {
+        $set: {
+          status: 'expired',
+          updated_at: new Date()
         }
-      })
+      }
     );
 
-    // Refresh the race list after expiry checks
-    races = await DatabaseService.getRaceSessions({ address: walletAddress });
-    if (!races) {
+    // Use MongoDB aggregation to get all data in a single query
+    const aggregationPipeline = [
+      // Match sessions for this wallet
+      {
+        $match: {
+          address: walletAddress
+        }
+      },
+      // Sort by creation date descending (using type assertion to satisfy TypeScript)
+      {
+        $sort: {
+          created_at: -1 as -1
+        }
+      },
+      // Project only the fields we need
+      {
+        $project: {
+          _id: 1,
+          status: 1,
+          challenge: 1,
+          category: 1,
+          video_path: 1,
+          created_at: 1,
+          transaction_signature: 1,
+          preview: 1
+        }
+      },
+      // Lookup training events for each session
+      {
+        $lookup: {
+          from: 'training_events',
+          localField: '_id',
+          foreignField: 'session',
+          as: 'events'
+        }
+      },
+      // Add computed fields
+      {
+        $addFields: {
+          actionTokens: { $size: '$events' },
+          // Find quest events
+          questEvents: {
+            $filter: {
+              input: '$events',
+              as: 'event',
+              cond: { $eq: ['$$event.type', 'quest'] }
+            }
+          },
+          // Find reward events
+          rewardEvents: {
+            $filter: {
+              input: '$events',
+              as: 'event',
+              cond: {
+                $and: [
+                  { $eq: ['$$event.type', 'reward'] },
+                  { $ne: ['$$event.metadata.rewardValue', null] }
+                ]
+              }
+            }
+          }
+        }
+      },
+      // Calculate earnings and get title
+      {
+        $addFields: {
+          earnings: {
+            $reduce: {
+              input: '$rewardEvents',
+              initialValue: 0,
+              in: { $add: ['$$value', { $ifNull: ['$$this.metadata.rewardValue', 0] }] }
+            }
+          },
+          title: {
+            $cond: {
+              if: { $gt: [{ $size: '$questEvents' }, 0] },
+              then: { $arrayElemAt: ['$questEvents.message', 0] },
+              else: { $concat: ['Race ', '$challenge'] }
+            }
+          }
+        }
+      },
+      // Final projection to clean up response - only include fields we want
+      {
+        $project: {
+          _id: 1,
+          status: 1,
+          challenge: 1,
+          category: 1,
+          video_path: 1,
+          created_at: 1,
+          transaction_signature: 1,
+          preview: 1,
+          actionTokens: 1,
+          earnings: 1,
+          title: 1
+          // Removed exclusions to avoid MongoDB error
+        }
+      }
+    ];
+
+    const enrichedRaces = await RaceSession.aggregate(aggregationPipeline);
+
+    if (!enrichedRaces || enrichedRaces.length === 0) {
       res.status(404).json({ error: 'No races found' });
       return;
     }
-
-    // Get training events for all sessions
-    const enrichedRaces = await Promise.all(
-      races.map(async (race) => {
-        // Get all training events for this session
-        const events = await TrainingEvent.find({ session: race._id });
-        const actionTokens = events.length; // Total number of events
-
-        // Get reward events with metadata
-        const rewardEvents = events.filter(
-          (event) =>
-            event.type === 'reward' &&
-            event.metadata &&
-            typeof event.metadata.rewardValue === 'number' &&
-            typeof event.metadata.scoreValue === 'number'
-        );
-
-        // Find first quest event for title
-        const questEvent = events.find((event) => event.type === 'quest');
-        const title = questEvent ? questEvent.message : `Race ${race.challenge}`;
-
-        // Calculate earnings
-        const earnings = rewardEvents.reduce((sum, event) => sum + event.metadata.rewardValue, 0);
-
-        return {
-          race,
-          actionTokens,
-          earnings,
-          title,
-          transaction_signature: race.transaction_signature
-        };
-      })
-    );
 
     res.json(enrichedRaces);
   } catch (error) {
-    console.error('Error fetching races:', error);
-    res.status(500).json({ error: 'Failed to fetch races' });
+    console.error('Error fetching history:', error);
+    res.status(500).json({ error: 'Failed to fetch history' });
   }
 });
 
@@ -902,7 +1029,7 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
         { session: id, type: 'quest' },
         {},
         { sort: { timestamp: -1 } }
-      ).lean();
+      );
 
       if (!latestQuestEvent) {
         res.status(202).json({
@@ -927,14 +1054,14 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       { session: id, type: 'quest' },
       {},
       { sort: { timestamp: -1 } }
-    ).lean();
+    );
 
     // Get hint history
     const hintEvents = await TrainingEvent.find(
       { session: id, type: 'hint' },
       { message: 1 },
       { sort: { timestamp: -1 }, limit: 3 }
-    ).lean();
+    );
     const hintHistory = hintEvents.map((e) => e.message);
 
     // Get current max reward from latest quest event
@@ -1020,10 +1147,7 @@ router.get('/export', async (req: Request, res: Response) => {
     // Get all events for this session
     const sessionEvents = await TrainingEvent.find({
       session: session._id
-    })
-      .sort({ timestamp: 1 })
-      .lean(); // Sort by timestamp ascending
-
+    }).sort({ timestamp: 1 }); // Sort by timestamp ascending
     // Transform events into a more readable format
     const events = sessionEvents.map((event) => ({
       session_id: session._id,
@@ -1079,10 +1203,7 @@ router.post('/export', async (req: Request, res: Response) => {
       sessions.map(async (session) => {
         const sessionEvents = await TrainingEvent.find({
           session: session._id
-        })
-          .sort({ timestamp: 1 })
-          .lean(); // Sort by timestamp ascending
-
+        }).sort({ timestamp: 1 }); // Sort by timestamp ascending
         // Transform events into a more readable format
         const events = sessionEvents.map((event) => ({
           session_id: session._id,
