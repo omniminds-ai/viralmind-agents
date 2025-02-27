@@ -17,23 +17,26 @@ const generatingHints = new Set<string>();
 
 // Cache to store generated instruction lists
 const cacheExpiryMs = 2 * 60 * 60 * 1000;
-const instructionCache = new Map<string, {
-  instructions: string[];
-  timestamp: number;
-  expiryMs: number;
-}>();
+const instructionCache = new Map<
+  string,
+  {
+    instructions: string[];
+    timestamp: number;
+    expiryMs: number;
+  }
+>();
 
 // Meta prompt to turn a training-pool prompt into a json list of instruction
 async function generateInstructionList(pool_prompt: string): Promise<string[]> {
   try {
     // Generate cache key from pool prompt
     const cacheKey = Buffer.from(pool_prompt).toString('base64');
-    
+
     // Check cache
     const cached = instructionCache.get(cacheKey);
     const now = Date.now();
-    
-    if (cached && (now - cached.timestamp) < cached.expiryMs) {
+
+    if (cached && now - cached.timestamp < cached.expiryMs) {
       console.log('Using cached instructions');
       return cached.instructions;
     }
@@ -99,21 +102,23 @@ Remember to:
         timestamp: now,
         expiryMs: cacheExpiryMs
       });
-      
+
       return instructions;
     }
     // Fallback: split pool prompt into lines and filter empty lines
-    const lines = pool_prompt.split('\n')
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('-') && !line.startsWith('#'));
+    const lines = pool_prompt
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('-') && !line.startsWith('#'));
 
     return lines;
   } catch (error) {
     console.error('Error generating instruction list:', error);
     // Fallback: split pool prompt into lines
-    const lines = pool_prompt.split('\n')
-      .map(line => line.trim())
-      .filter(line => line && !line.startsWith('-') && !line.startsWith('#'));
+    const lines = pool_prompt
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('-') && !line.startsWith('#'));
     return lines;
   }
 }
@@ -122,7 +127,7 @@ Remember to:
 function cleanupCache() {
   const now = Date.now();
   for (const [key, value] of instructionCache.entries()) {
-    if ((now - value.timestamp) >= value.expiryMs) {
+    if (now - value.timestamp >= value.expiryMs) {
       instructionCache.delete(key);
     }
   }
@@ -131,11 +136,16 @@ function cleanupCache() {
 // Clean up cache periodically (every hour)
 setInterval(cleanupCache, 60 * 60 * 1000);
 
-async function generateQuest(imageUrl: string, installed_applications: string, pool_prompt: string, sessionId: string) {
+async function generateQuest(
+  imageUrl: string,
+  installed_applications: string,
+  pool_prompt: string,
+  sessionId: string
+) {
   try {
     // First generate instruction list from pool prompt
     const instructions = await generateInstructionList(pool_prompt);
-    
+
     // Select random instruction
     const randomIndex = Math.floor(Math.random() * instructions.length);
     const selectedInstruction = instructions[randomIndex];
@@ -252,7 +262,7 @@ RULES:
             // }
           ]
         }
-      ],
+      ]
       // max_tokens: 500
     });
 
@@ -265,19 +275,21 @@ RULES:
     throw new Error('No valid JSON found in response');
   } catch (error) {
     if ((error as Error).message.includes('Invalid MIME type')) {
-      console.log('Error generating quest: Invalid MIME type. Likely tried to send an empty frame.');
+      console.log(
+        'Error generating quest: Invalid MIME type. Likely tried to send an empty frame.'
+      );
     } else {
       console.error('Error generating quest:', error);
     }
 
     return {
       task_id: randomBytes(16).toString('hex'),
-      title: "Generic Desktop Task",
-      original_instruction: "Generate fallback task",
-      concrete_scenario: "Complete a basic computer operation",
-      objective: "Perform a simple task using available applications",
+      title: 'Generic Desktop Task',
+      original_instruction: 'Generate fallback task',
+      concrete_scenario: 'Complete a basic computer operation',
+      objective: 'Perform a simple task using available applications',
       relevant_applications: [],
-      subgoals: ["Open an application", "Complete basic operation"]
+      subgoals: ['Open an application', 'Complete basic operation']
     };
   }
 }
@@ -304,12 +316,12 @@ router.post('/quest', async (req: Request, res: Response) => {
         created_at: new Date(),
         updated_at: new Date()
       });
-      
+
       if (!newSession) {
         res.status(500).json({ error: 'Failed to create session' });
         return;
       }
-      
+
       session = newSession;
     }
 
@@ -330,18 +342,22 @@ router.post('/quest', async (req: Request, res: Response) => {
       { session: sessionId, type: 'quest' },
       {},
       { sort: { timestamp: -1 } }
-    );
+    ).lean();
 
     // Get hint history
     const hintEvents = await TrainingEvent.find(
       { session: sessionId, type: 'hint' },
       { message: 1 },
       { sort: { timestamp: -1 }, limit: 3 }
-    );
+    ).lean();
     const hintHistory = hintEvents.map((e) => e.message);
 
-
-    const questData = await generateQuest(screenshot, installed_applications || '', prompt, sessionId);
+    const questData = await generateQuest(
+      screenshot,
+      installed_applications || '',
+      prompt,
+      sessionId
+    );
 
     res.json(questData);
   } catch (error) {
@@ -385,10 +401,13 @@ Example: [true, false, true] means subgoals 1 and 3 are completed, but 2 is not.
 
 Base your analysis on visual evidence from the screenshots showing completed actions.`
             },
-            ...recentScreenshots.map(screenshot => ({
-              type: 'image_url',
-              image_url: { url: (screenshot as string) }
-            } as ChatCompletionContentPartImage))
+            ...recentScreenshots.map(
+              (screenshot) =>
+                ({
+                  type: 'image_url',
+                  image_url: { url: screenshot as string }
+                } as ChatCompletionContentPartImage)
+            )
           ]
         }
       ]
@@ -408,7 +427,7 @@ Base your analysis on visual evidence from the screenshots showing completed act
     }
 
     const completed_subgoals = JSON.parse(jsonMatch[0]);
-    
+
     // Count completed objectives
     const completed_objectives = completed_subgoals.filter((complete: boolean) => complete).length;
 
@@ -416,7 +435,6 @@ Base your analysis on visual evidence from the screenshots showing completed act
       completed_subgoals,
       completed_objectives
     });
-
   } catch (error) {
     console.error('Error checking progress:', error);
     res.status(500).json({ error: 'Failed to check progress' });

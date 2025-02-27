@@ -128,7 +128,7 @@ async function generateHint(
       },
       {},
       { sort: { timestamp: -1 } }
-    );
+    ).lean();
 
     if (recentHint) {
       return {
@@ -147,7 +147,7 @@ async function generateHint(
       },
       {},
       { sort: { timestamp: -1 } }
-    );
+    ).lean();
 
     // Must have a quest to generate hints
     if (!latestQuestEvent) {
@@ -592,7 +592,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
       session: id,
       type: 'reward',
       'metadata.rewardValue': { $exists: true }
-    });
+    }).lean();
 
     // Kill active connections and remove permissions if session has credentials
     if (session.vm_credentials?.guacToken && session.vm_credentials?.guacConnectionId) {
@@ -627,7 +627,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
         // save recording to s3 if we have a video path
         const sessionEvents = await TrainingEvent.find({
           session: id
-        }).sort({ timestamp: 1 }); // Sort by timestamp ascending
+        }).sort({ timestamp: 1 }).lean(); // Sort by timestamp ascending
 
         if (sessionEvents.length > 0) {
           const recordingId = sessionEvents[0].metadata?.recording_id;
@@ -900,7 +900,7 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
         { session: id, type: 'quest' },
         {},
         { sort: { timestamp: -1 } }
-      );
+      ).lean();
 
       if (!latestQuestEvent) {
         res.status(202).json({
@@ -925,14 +925,14 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
       { session: id, type: 'quest' },
       {},
       { sort: { timestamp: -1 } }
-    );
+    ).lean();
 
     // Get hint history
     const hintEvents = await TrainingEvent.find(
       { session: id, type: 'hint' },
       { message: 1 },
       { sort: { timestamp: -1 }, limit: 3 }
-    );
+    ).lean();
     const hintHistory = hintEvents.map((e) => e.message);
 
     // Get current max reward from latest quest event
@@ -1018,7 +1018,7 @@ router.get('/export', async (req: Request, res: Response) => {
     // Get all events for this session
     const sessionEvents = await TrainingEvent.find({
       session: session._id
-    }).sort({ timestamp: 1 }); // Sort by timestamp ascending
+    }).sort({ timestamp: 1 }).lean(); // Sort by timestamp ascending
 
     // Transform events into a more readable format
     const events = sessionEvents.map((event) => ({
@@ -1075,7 +1075,7 @@ router.post('/export', async (req: Request, res: Response) => {
       sessions.map(async (session) => {
         const sessionEvents = await TrainingEvent.find({
           session: session._id
-        }).sort({ timestamp: 1 }); // Sort by timestamp ascending
+        }).sort({ timestamp: 1 }).lean(); // Sort by timestamp ascending
 
         // Transform events into a more readable format
         const events = sessionEvents.map((event) => ({
