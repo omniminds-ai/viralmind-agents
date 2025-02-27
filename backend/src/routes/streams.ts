@@ -127,7 +127,6 @@ const processAndCleanup = async (sid: string) => {
     clearTimeout(connection.timeoutId);
 
     try {
-      console.log(`Processing ${connection.data.length} data points for session ${sid}`);
       const processedResults = connection.data.map((data) => {
         return {
           timestamp: Date.now(),
@@ -200,7 +199,6 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
 
     clearTimeout(connection.timeoutId);
     connection.timeoutId = setTimeout(() => {
-      console.log(`Connection ${sid} timed out`);
       processAndCleanup(sid);
     }, 20000);
 
