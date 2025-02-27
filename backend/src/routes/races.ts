@@ -42,7 +42,7 @@ async function generateQuest(imageUrl: string, prompt: string, session: RaceSess
           content: [
             {
               type: 'text',
-              text: `You are an AI assistant that needs to propose a new Ubuntu OS with XFCE4 desktop quest based on the theme: "${prompt}". 
+              text: `You are an AI assistant that needs to propose a desktop quest on Ubuntu Linux with Gnome Desktop based on the theme: "${prompt}". 
               
 First, analyze the current screen state to understand what task the user has already completed. Then, propose a DIFFERENT task that fits the same theme but isn't repetitive.
 
@@ -82,8 +82,8 @@ Return as JSON with these keys:
 
     return {
       reasoning: 'Failed to analyze screen, providing a generic task within theme',
-      quest: 'Open the XFCE Activities overview and launch a relevant application',
-      hint: 'Click the Applications Menu in the top-left corner of the XFCE panel',
+      quest: 'Open the Gnome Activities overview and launch a relevant application',
+      hint: 'Click the dots in the top-left corner of the screen, or press WIN/CMD.',
       maxReward: 0
     };
   }
@@ -178,8 +178,8 @@ First, analyze if the core task has been completed. Focus only on the main objec
 
 Then provide a single actionable hint (if needed) that includes one of these patterns if applicable:
 - Type 'x[TAB]' to autocomplete
-- Navigate the XFCE menu to find [target]
-- Click the [specific XFCE element]
+- Navigate the Gnome menu to find [target]
+- Click the [specific Gnome element]
 - Move cursor to [exact location]
 
 Output as JSON with three fields:
@@ -312,7 +312,7 @@ Output as JSON with three fields:
     };
   } catch (error) {
     console.error('Error generating hint:', error);
-    const fallbackHint = 'Navigate the XFCE Applications Menu to explore available tasks';
+    const fallbackHint = 'Navigate the Gnome Applications Menu to explore available tasks';
 
     if (!session._id) {
       throw new Error('Session ID is missing');
