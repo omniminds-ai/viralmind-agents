@@ -63,7 +63,7 @@ class DataBaseService extends EventEmitter {
             expiry: 1,
             developer_fee: 1
           }
-        ).lean()) || false
+        )) || false
       );
     } catch (error) {
       console.error('Database Service Error:', error);
@@ -73,7 +73,7 @@ class DataBaseService extends EventEmitter {
 
   async getChallengeById(id: string, projection = {}): Promise<ChallengeDocument | null> {
     try {
-      return await Challenge.findOne({ _id: id }, projection).lean();
+      return await Challenge.findOne({ _id: id }, projection);
     } catch (error) {
       console.error('Database Service Error:', error);
       return null;
@@ -83,7 +83,7 @@ class DataBaseService extends EventEmitter {
   async getChallengeByName(name: string, projection = {}): Promise<ChallengeDocument | false> {
     const nameReg = { $regex: name, $options: 'i' };
     try {
-      return (await Challenge.findOne({ name: nameReg }, projection).lean()) || false;
+      return (await Challenge.findOne({ name: nameReg }, projection)) || false;
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -119,8 +119,7 @@ class DataBaseService extends EventEmitter {
       return await Chat.find(query)
         .sort(sort)
         .limit(limit)
-        .select('role content screenshot date address -_id')
-        .lean();
+        .select('role content screenshot date address -_id');
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -134,7 +133,7 @@ class DataBaseService extends EventEmitter {
     limit = 0
   ): Promise<InferSchemaType<typeof chatSchema>[] | false> {
     try {
-      return await Chat.find(query, projection).sort(sort).limit(limit).lean();
+      return await Chat.find(query, projection).sort(sort).limit(limit);
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -152,7 +151,7 @@ class DataBaseService extends EventEmitter {
 
   async findOneChat(query: QueryOptions): Promise<ChatDocument | false> {
     try {
-      return (await Chat.findOne(query).lean()) || false;
+      return (await Chat.findOne(query)) || false;
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -160,7 +159,7 @@ class DataBaseService extends EventEmitter {
   }
   async getPages(query: QueryOptions): Promise<PageDocument[] | undefined> {
     try {
-      return await Pages.find(query).lean();
+      return await Pages.find(query);
     } catch (error) {
       console.error('Database Service Error:', error);
     }
@@ -188,7 +187,7 @@ class DataBaseService extends EventEmitter {
           winning_address: 1,
           winning_txn: 1
         }
-      ).lean();
+      );
 
       return challenge;
     } catch (error) {
@@ -216,8 +215,7 @@ class DataBaseService extends EventEmitter {
         }
       )
         .skip(skip)
-        .limit(limit)
-        .lean();
+        .limit(limit);
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -244,8 +242,7 @@ class DataBaseService extends EventEmitter {
         }
       )
         .skip(skip)
-        .limit(limit)
-        .lean();
+        .limit(limit);
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -275,7 +272,7 @@ class DataBaseService extends EventEmitter {
           // tools: 0,
           idl: 1
         }
-      ).lean();
+      );
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -294,7 +291,7 @@ class DataBaseService extends EventEmitter {
 
   async getRaceSession(id: string): Promise<RaceSessionDocument | null> {
     try {
-      return await RaceSession.findById(id).lean();
+      return await RaceSession.findById(id);
     } catch (error) {
       console.error('Database Service Error:', error);
       return null;
@@ -315,7 +312,7 @@ class DataBaseService extends EventEmitter {
 
   async getRaceById(id: string, projection = {}): Promise<RaceDocument | null> {
     try {
-      return await Race.findOne({ id: id }, projection).lean();
+      return await Race.findOne({ id: id }, projection);
     } catch (error) {
       console.error('Database Service Error:', error);
       return null;
@@ -338,7 +335,7 @@ class DataBaseService extends EventEmitter {
           buttonText: 1,
           stakeRequired: 1
         }
-      ).lean();
+      );
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -357,7 +354,7 @@ class DataBaseService extends EventEmitter {
         created_at: 1,
         transaction_signature: 1,
         preview: 1
-      }).sort({ created_at: -1 }).lean(); // Sort by newest first
+      }).sort({ created_at: -1 });
     } catch (error) {
       console.error('Database Service Error:', error);
       return false;
@@ -382,7 +379,7 @@ class DataBaseService extends EventEmitter {
           transaction_signature: 1,
           preview: 1
         }
-      ).sort({ created_at: -1 }).lean();
+      ).sort({ created_at: -1 });
 
       // console.log('Getting race sessions for IDs:', ids);
       // const allSessions = await this.getRaceSessions();
@@ -404,7 +401,7 @@ class DataBaseService extends EventEmitter {
 
   async getRaceSessionByStream(streamId: string): Promise<RaceSessionDocument | null> {
     try {
-      return await RaceSession.findOne({ stream_id: streamId }).lean();
+      return await RaceSession.findOne({ stream_id: streamId });
     } catch (error) {
       console.error('Database Service Error:', error);
       return null;
@@ -425,7 +422,7 @@ class DataBaseService extends EventEmitter {
     try {
       return await TrainingEvent.find({ session: sessionId }).sort({
         timestamp: 1
-      }).lean();
+      });
     } catch (error) {
       console.error('Database Service Error:', error);
       return [];
@@ -456,7 +453,7 @@ class DataBaseService extends EventEmitter {
             // tools: 0,
             idl: 1
           }
-        ).lean()) || false
+        )) || false
       );
     } catch (error) {
       console.error('Database Service Error:', error);
@@ -481,7 +478,7 @@ class DataBaseService extends EventEmitter {
     try {
       const challenge = await Challenge.findOne({
         name: { $regex: challengeName, $options: 'i' }
-      }).lean();
+      });
 
       if (!challenge || !challenge.scores || challenge.scores.length === 0) {
         return null;
@@ -534,7 +531,7 @@ class DataBaseService extends EventEmitter {
   // Gym session methods
   async getGymSession(address: string): Promise<GymSessionDocument | null> {
     try {
-      return await GymSession.findOne({ address, status: 'active' }).lean();
+      return await GymSession.findOne({ address, status: 'active' });
     } catch (error) {
       console.error('Database Service Error:', error);
       return null;
