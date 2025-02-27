@@ -627,7 +627,9 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
         // save recording to s3 if we have a video path
         const sessionEvents = await TrainingEvent.find({
           session: id
-        }).sort({ timestamp: 1 }).lean(); // Sort by timestamp ascending
+        })
+          .sort({ timestamp: 1 })
+          .lean(); // Sort by timestamp ascending
 
         if (sessionEvents.length > 0) {
           const recordingId = sessionEvents[0].metadata?.recording_id;
@@ -845,7 +847,7 @@ router.get('/history', async (req: Request, res: Response) => {
         const earnings = rewardEvents.reduce((sum, event) => sum + event.metadata.rewardValue, 0);
 
         return {
-          ...(race as any).toObject(),
+          race,
           actionTokens,
           earnings,
           title,
@@ -1018,7 +1020,9 @@ router.get('/export', async (req: Request, res: Response) => {
     // Get all events for this session
     const sessionEvents = await TrainingEvent.find({
       session: session._id
-    }).sort({ timestamp: 1 }).lean(); // Sort by timestamp ascending
+    })
+      .sort({ timestamp: 1 })
+      .lean(); // Sort by timestamp ascending
 
     // Transform events into a more readable format
     const events = sessionEvents.map((event) => ({
@@ -1075,7 +1079,9 @@ router.post('/export', async (req: Request, res: Response) => {
       sessions.map(async (session) => {
         const sessionEvents = await TrainingEvent.find({
           session: session._id
-        }).sort({ timestamp: 1 }).lean(); // Sort by timestamp ascending
+        })
+          .sort({ timestamp: 1 })
+          .lean(); // Sort by timestamp ascending
 
         // Transform events into a more readable format
         const events = sessionEvents.map((event) => ({
