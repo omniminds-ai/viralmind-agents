@@ -450,6 +450,7 @@ router.post('/:id/start', async (req: Request, res: Response) => {
     if (region?.includes('us-east')) regionEnum = VPSRegion.us_east;
     if (region?.includes('us-west')) regionEnum = VPSRegion.us_west;
     if (region?.includes('eu-central')) regionEnum = VPSRegion.eu_central;
+    if (region?.includes('ap-southeast')) regionEnum = VPSRegion.ap_southeast;
     const instance = await DatabaseService.getGymVPS(regionEnum);
     const vpsService = new GymVPSService({
       ip: instance.ip,

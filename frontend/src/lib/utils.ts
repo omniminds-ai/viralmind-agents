@@ -9,7 +9,8 @@ export async function findFastestRegion(): Promise<string> {
   const endpoints = [
     'https://ws-broker-service.us-west-2.amazonaws.com/ping',
     'https://ws-broker-service.us-east-1.amazonaws.com/ping',
-    'https://ws-broker-service.eu-central-1.amazonaws.com/ping'
+    'https://ws-broker-service.eu-central-1.amazonaws.com/ping',
+    'https://ws-broker-service.ap-southeast-1.amazonaws.com/ping'
   ];
 
   const getRegionFromUrl = (url: string): string => {
@@ -69,3 +70,4 @@ export async function findFastestRegion(): Promise<string> {
     throw new Error('Failed to determine fastest region: ' + (error as Error).message);
   }
 }
+
