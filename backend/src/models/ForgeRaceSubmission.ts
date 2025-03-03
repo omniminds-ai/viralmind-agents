@@ -1,11 +1,11 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 import { Keypair } from '@solana/web3.js';
 import { spawn } from 'child_process';
 import { createHash } from 'crypto';
-import { TrainingPoolModel } from "./TrainingPool.ts";
+import { TrainingPoolModel } from './TrainingPool.ts';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 
@@ -48,20 +48,30 @@ async function notifyForgeWebhook(
   }
 ) {
   if (!FORGE_WEBHOOK) return;
-  
+
   try {
     const payload: WebhookPayload = {
-      embeds: [{
-        title: type === 'processing' ? '🎯 Processing New Submission' :
-               type === 'success' ? '✨ Submission Graded Successfully' :
-               type === 'transfer-error' ? '⚠️ Treasury Transfer Failed' :
-               '❌ Submission Processing Failed',
-        fields: [],
-        color: type === 'processing' ? 3447003 :  // Blue
-                type === 'success' ? 5793266 :     // Green
-                type === 'transfer-error' ? 16098851 : // Yellow
-                15158332                              // Red
-      }]
+      embeds: [
+        {
+          title:
+            type === 'processing'
+              ? '🎯 Processing New Submission'
+              : type === 'success'
+                ? '✨ Submission Graded Successfully'
+                : type === 'transfer-error'
+                  ? '⚠️ Treasury Transfer Failed'
+                  : '❌ Submission Processing Failed',
+          fields: [],
+          color:
+            type === 'processing'
+              ? 3447003 // Blue
+              : type === 'success'
+                ? 5793266 // Green
+                : type === 'transfer-error'
+                  ? 16098851 // Yellow
+                  : 15158332 // Red
+        }
+      ]
     };
 
     // Add fields based on type and available data
@@ -168,10 +178,10 @@ async function notifyForgeWebhook(
 }
 
 export enum ProcessingStatus {
-  PENDING = "pending",
-  PROCESSING = "processing",
-  COMPLETED = "completed",
-  FAILED = "failed"
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed'
 }
 
 export interface MetaData {
@@ -219,15 +229,17 @@ export const forgeRaceSubmissionSchema = new mongoose.Schema(
     _id: { type: String },
     address: { type: String, required: true },
     meta: { type: mongoose.Schema.Types.Mixed, required: true },
-    status: { 
-      type: String, 
+    status: {
+      type: String,
       enum: Object.values(ProcessingStatus),
-      default: ProcessingStatus.PENDING 
+      default: ProcessingStatus.PENDING
     },
-    files: [{
-      file: String,
-      s3Key: String
-    }],
+    files: [
+      {
+        file: String,
+        s3Key: String
+      }
+    ],
     grade_result: {
       type: {
         summary: String,
@@ -251,16 +263,16 @@ export const forgeRaceSubmissionSchema = new mongoose.Schema(
       required: false
     }
   },
-  { 
-    collection: "forge_race_submissions",
-    timestamps: true 
+  {
+    collection: 'forge_race_submissions',
+    timestamps: true
   }
 );
 
 // Index to help with querying pending submissions
 forgeRaceSubmissionSchema.index({ status: 1, createdAt: 1 });
 
-export const ForgeRaceSubmission = mongoose.model("ForgeRaceSubmission", forgeRaceSubmissionSchema);
+export const ForgeRaceSubmission = mongoose.model('ForgeRaceSubmission', forgeRaceSubmissionSchema);
 
 // Global processing queue
 let isProcessing = false;
@@ -308,7 +320,13 @@ export async function processNextInQueue() {
       console.log('Directory contents:', files);
 
       await new Promise<void>((resolve, reject) => {
-        const process = spawn('/usr/src/app/backend/pipeline-linux-x64', ['-f', 'desktop', '-i', extractDir, '--grade']);
+        const process = spawn('/usr/src/app/backend/pipeline', [
+          '-f',
+          'desktop',
+          '-i',
+          extractDir,
+          '--grade'
+        ]);
 
         let stdout = '';
         let stderr = '';
@@ -355,7 +373,7 @@ export async function processNextInQueue() {
       console.log('scores.json content:', scoresContent);
       const gradeResult: GradeResult = JSON.parse(scoresContent);
       console.log('Parsed grade result:', gradeResult);
-      
+
       // Get pool details and calculate reward
       let reward = undefined;
       let maxReward = undefined;
@@ -389,15 +407,17 @@ export async function processNextInQueue() {
 
             // Recalculate reward
             const hash = createHash('sha256')
-              .update(`${submission.meta.quest.pool_id}${submission.address}${generatedTime}${process.env.IPC_SECRET}`)
+              .update(
+                `${submission.meta.quest.pool_id}${submission.address}${generatedTime}${process.env.IPC_SECRET}`
+              )
               .digest('hex');
-            
+
             const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
             maxReward = Math.min(128, Math.ceil(1 / rng));
-            
+
             // Calculate final reward based on grade_result score (clamped 0-100)
             clampedScore = Math.max(0, Math.min(100, gradeResult.score));
-            reward = Math.ceil(maxReward * clampedScore / 100);
+            reward = Math.ceil((maxReward * clampedScore) / 100);
 
             // Create treasury transfer record if reward exists
             if (reward && reward > 0) {
@@ -418,9 +438,11 @@ export async function processNextInQueue() {
                 );
 
                 // Get initial treasury balance
-                const blockchainService = new (await import('../services/blockchain/index.js')).default(
+                const blockchainService = new (
+                  await import('../services/blockchain/index.js')
+                ).default(
                   process.env.RPC_URL || '',
-                  ''  // Program ID not needed for token transfers
+                  '' // Program ID not needed for token transfers
                 );
 
                 const treasuryBalance = await blockchainService.getTokenBalance(
@@ -492,7 +514,7 @@ export async function processNextInQueue() {
               console.error('Failed to calculate reward:', error);
             } else {
               // Wait 1 second before retrying
-              await new Promise(resolve => setTimeout(resolve, 1000));
+              await new Promise((resolve) => setTimeout(resolve, 1000));
             }
           }
         }
@@ -505,11 +527,9 @@ export async function processNextInQueue() {
       submission.treasuryTransfer = treasuryTransfer;
       submission.status = ProcessingStatus.COMPLETED;
       await submission.save();
-
     } catch (error) {
       throw new Error(`Failed to process submission: ${(error as Error).message}`);
     }
-
   } catch (error) {
     const errorMessage = (error as Error).message;
     // Update submission with error

@@ -29,7 +29,12 @@ const openai = new OpenAI({
 });
 
 // Configure multer for handling file uploads
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({
+  dest: 'uploads/',
+  limits: {
+    fileSize: 5 * 1024 * 1024 * 1024 // 5GB limit for /upload-race endpoint
+  }
+});
 
 // Track active generation promises
 const activeGenerations = new Map<string, Promise<void>>();
@@ -342,6 +347,18 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
         return { file, s3Key };
       })
     );
+
+    // Clean up all local files after successful S3 upload
+    await unlink(req.file.path).catch(err => console.error('Error deleting original upload:', err));
+    
+    // Delete all extracted files
+    for (const file of requiredFiles) {
+      const filePath = path.join(extractDir, file);
+      await unlink(filePath).catch(err => console.error(`Error deleting extracted file ${file}:`, err));
+    }
+    
+    // Remove the extract directory
+    await unlink(extractDir).catch(err => console.error('Error removing extract directory:', err));
 
 
     // Verify time if poolId and generatedTime provided

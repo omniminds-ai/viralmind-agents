@@ -7,19 +7,22 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
-  ComputeBudgetProgram,
-} from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, createTransferInstruction, getAssociatedTokenAddressSync, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
-import { createHash } from "crypto";
-import { readFileSync } from "fs";
-import { token } from "@coral-xyz/anchor/dist/cjs/utils/index.js";
+  ComputeBudgetProgram
+} from '@solana/web3.js';
+import {
+  createTransferInstruction,
+  getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount
+} from '@solana/spl-token';
+import { createHash } from 'crypto';
+import { readFileSync } from 'fs';
 import axios from 'axios';
 
 class BlockchainService {
   connection: Connection;
   programId: string;
   constructor(solanaRpc: string, programId: string) {
-    this.connection = new Connection(solanaRpc, "confirmed");
+    this.connection = new Connection(solanaRpc, 'confirmed');
     this.programId = programId;
   }
 
@@ -28,13 +31,10 @@ class BlockchainService {
       // Convert string addresses to PublicKeys
       const mintPubkey = new PublicKey(tokenMint);
       const walletPubkey = new PublicKey(walletAddress);
-  
+
       // Get the associated token account address
-      const tokenAccountAddress = getAssociatedTokenAddressSync(
-        mintPubkey,
-        walletPubkey
-      );
-  
+      const tokenAccountAddress = getAssociatedTokenAddressSync(mintPubkey, walletPubkey);
+
       try {
         // Get the token account info
         const tokenAccountInfo = await this.connection.getTokenAccountBalance(tokenAccountAddress);
@@ -47,7 +47,7 @@ class BlockchainService {
         throw error; // Re-throw other errors
       }
     } catch (error) {
-      console.error("Error getting token balance:", error);
+      console.error('Error getting token balance:', error);
       return 0;
     }
   }
@@ -56,25 +56,21 @@ class BlockchainService {
     try {
       const config = {
         headers: {
-          "Content-Type": "application/json",
-        },
+          'Content-Type': 'application/json'
+        }
       };
-      
+
       const data = {
-        jsonrpc: "2.0",
+        jsonrpc: '2.0',
         id: 1,
-        method: "qn_estimatePriorityFees",
-        params: { "last_n_blocks": 100, "api_version": 2 },
+        method: 'qn_estimatePriorityFees',
+        params: { last_n_blocks: 100, api_version: 2 }
       };
-  
-      const response = await axios.post(
-        process.env.RPC_URL!,
-        data,
-        config
-      );
-  
+
+      const response = await axios.post(process.env.RPC_URL!, data, config);
+
       console.log('QuickNode priority fees response:', response.data);
-      
+
       // Use QuickNode's recommended fee or fallback to medium priority
       const result = response.data.result;
       // If recommended fee is available, use it, otherwise use medium priority
@@ -85,10 +81,9 @@ class BlockchainService {
       return 1_000_000;
     }
   }
-  
-  
+
   async transferToken(
-    tokenMint: string, 
+    tokenMint: string,
     amount: number,
     fromWallet: Keypair,
     toAddress: string,
@@ -97,9 +92,11 @@ class BlockchainService {
     try {
       const feePercentages = [0.01, 0.1, 0.5, 1.0];
       const currentFeePercentage = feePercentages[retryCount] || 1.0;
-      
-      console.log(`Attempt ${retryCount + 1} with ${currentFeePercentage * 100}% of base priority fee`);
-      
+
+      console.log(
+        `Attempt ${retryCount + 1} with ${currentFeePercentage * 100}% of base priority fee`
+      );
+
       const sourceAccount = await getOrCreateAssociatedTokenAccount(
         this.connection,
         fromWallet,
@@ -119,12 +116,12 @@ class BlockchainService {
 
       const basePriorityFee = await this.getQuickNodePriorityFees();
       const adjustedPriorityFee = Math.floor(basePriorityFee * currentFeePercentage);
-      
+
       console.log(`Base priority fee: ${basePriorityFee}, Using: ${adjustedPriorityFee}`);
 
       const transaction = new Transaction();
       const transferAmount = amount * Math.pow(10, decimals);
-      
+
       transaction.add(
         createTransferInstruction(
           sourceAccount.address,
@@ -134,9 +131,7 @@ class BlockchainService {
         )
       );
 
-      transaction.add(
-        ComputeBudgetProgram.setComputeUnitLimit({ units: 300000 })
-      );
+      transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300000 }));
       transaction.add(
         ComputeBudgetProgram.setComputeUnitPrice({ microLamports: adjustedPriorityFee })
       );
@@ -161,11 +156,10 @@ class BlockchainService {
         `\n    https://explorer.solana.com/tx/${signature}?cluster=mainnet`
       );
 
-      return { 
-        signature, 
-        usedFeePercentage: currentFeePercentage * 100 
+      return {
+        signature,
+        usedFeePercentage: currentFeePercentage * 100
       };
-
     } catch (error: any) {
       console.error('\x1b[31m', 'Transfer failed:', {
         message: error.message,
@@ -181,12 +175,10 @@ class BlockchainService {
       return false;
     }
   }
-  
+
   // Utility to calculate the discriminator
   calculateDiscriminator(instructionName: string) {
-    const hash = createHash("sha256")
-      .update(`global:${instructionName}`, "utf-8")
-      .digest();
+    const hash = createHash('sha256').update(`global:${instructionName}`, 'utf-8').digest();
     return hash.slice(0, 8);
   }
 
@@ -201,12 +193,9 @@ class BlockchainService {
     try {
       let verified = false;
       // Fetch transaction details
-      const transactionDetails = await this.connection.getParsedTransaction(
-        signature,
-        {
-          commitment: "confirmed",
-        }
-      );
+      const transactionDetails = await this.connection.getParsedTransaction(signature, {
+        commitment: 'confirmed'
+      });
 
       // Check if transaction exists
       if (!transactionDetails) {
@@ -218,11 +207,7 @@ class BlockchainService {
 
       // Ensure the transaction was successful
       if (meta?.err) {
-        console.log(
-          `Transaction ${signature} failed with error: ${JSON.stringify(
-            meta.err
-          )}`
-        );
+        console.log(`Transaction ${signature} failed with error: ${JSON.stringify(meta.err)}`);
         return verified;
       }
 
@@ -239,11 +224,11 @@ class BlockchainService {
           // Todo: figure out what is up with these things... are the instructiosn typed incorrectly
           if (
             //@ts-ignore
-            instruction.program === "system" &&
+            instruction.program === 'system' &&
             //@ts-ignore
             instruction.parsed &&
             //@ts-ignore
-            instruction.parsed.type === "transfer"
+            instruction.parsed.type === 'transfer'
           ) {
             //@ts-ignore
             const info = instruction.parsed.info;
@@ -261,9 +246,7 @@ class BlockchainService {
 
       // After processing all inner instructions, check if any matching transfer was found
       if (totalLamportsSent === 0) {
-        console.log(
-          `No matching transfers found from sender to recipient. ${signature}`
-        );
+        console.log(`No matching transfers found from sender to recipient. ${signature}`);
         return false;
       }
 
@@ -272,8 +255,7 @@ class BlockchainService {
 
       // Calculate tolerance
       const tolerance = expectedAmount * 0.03;
-      const isWithinTolerance =
-        Math.abs(amountReceivedSOL - expectedAmount) <= tolerance;
+      const isWithinTolerance = Math.abs(amountReceivedSOL - expectedAmount) <= tolerance;
 
       // Verify amount with tolerance
       if (!isWithinTolerance) {
@@ -284,15 +266,13 @@ class BlockchainService {
       }
 
       // If all verifications pass
-      console.log("Transaction verified successfully.");
+      console.log('Transaction verified successfully.');
       console.log(`Sender: ${senderWalletAddress}`);
       console.log(`Recipient: ${tournamentPDA}`);
       console.log(`Total Amount Received: ${amountReceivedSOL} SOL`);
       return verified;
     } catch (error) {
-      console.error(
-        `Verification failed: ${(error as Error).message} ${signature}`
-      );
+      console.error(`Verification failed: ${(error as Error).message} ${signature}`);
       return false;
     }
   }
@@ -301,9 +281,7 @@ class BlockchainService {
   async getTournamentData(tournamentPDA: string) {
     try {
       // Fetch the account info
-      const accountInfo = await this.connection.getAccountInfo(
-        new PublicKey(tournamentPDA)
-      );
+      const accountInfo = await this.connection.getAccountInfo(new PublicKey(tournamentPDA));
       if (!accountInfo) {
         return false;
       }
@@ -321,10 +299,10 @@ class BlockchainService {
       return {
         authority: authority.toString(),
         state,
-        entryFee: Number(entryFee) / LAMPORTS_PER_SOL, // Convert BigInt to number if needed
+        entryFee: Number(entryFee) / LAMPORTS_PER_SOL // Convert BigInt to number if needed
       };
     } catch (error) {
-      console.error("Error fetching tournament data:", error);
+      console.error('Error fetching tournament data:', error);
       return false;
     }
   }
@@ -333,10 +311,8 @@ class BlockchainService {
   async concludeTournament(tournamentPDA: string, winnerAccount: string) {
     try {
       // Load wallet keypair (payer/authority)
-      const keypairFile = readFileSync("./secrets/solana-keypair.json");
-      const wallet = Keypair.fromSecretKey(
-        Uint8Array.from(JSON.parse(keypairFile.toString()))
-      );
+      const keypairFile = readFileSync('./secrets/solana-keypair.json');
+      const wallet = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(keypairFile.toString())));
       // Fetch tournament account
       const tournamentAccountInfo = await this.connection.getAccountInfo(
         new PublicKey(tournamentPDA)
@@ -346,7 +322,7 @@ class BlockchainService {
       }
 
       // Define the instruction data for ConcludeTournament
-      const discriminator = this.calculateDiscriminator("conclude_tournament");
+      const discriminator = this.calculateDiscriminator('conclude_tournament');
 
       // Instruction data is just the discriminator
       const data = Buffer.from(discriminator);
@@ -356,46 +332,39 @@ class BlockchainService {
         {
           pubkey: new PublicKey(tournamentPDA),
           isSigner: false,
-          isWritable: true,
+          isWritable: true
         }, // Tournament PDA
         { pubkey: wallet.publicKey, isSigner: true, isWritable: true }, // Payer/Authority
         {
           pubkey: new PublicKey(winnerAccount),
           isSigner: false,
-          isWritable: true,
+          isWritable: true
         }, // Winner account
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false } // System program
       ];
 
       // Create the instruction
       const instruction = new TransactionInstruction({
         keys,
         programId: new PublicKey(this.programId),
-        data,
+        data
       });
 
       // Create the transaction and add the instruction
       const transaction = new Transaction().add(instruction);
 
       // Send the transaction
-      const signature = await this.connection.sendTransaction(
-        transaction,
-        [wallet],
-        {
-          preflightCommitment: "confirmed",
-        }
-      );
+      const signature = await this.connection.sendTransaction(transaction, [wallet], {
+        preflightCommitment: 'confirmed'
+      });
 
       // Confirm the transaction
-      const confirmation = await this.connection.confirmTransaction(
-        signature,
-        "confirmed"
-      );
+      const confirmation = await this.connection.confirmTransaction(signature, 'confirmed');
 
-      console.log("ConcludeTournament transaction signature:", signature);
+      console.log('ConcludeTournament transaction signature:', signature);
       return signature;
     } catch (error) {
-      console.error("Error concluding tournament:", error);
+      console.error('Error concluding tournament:', error);
       return false;
     }
   }

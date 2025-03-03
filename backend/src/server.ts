@@ -1,7 +1,7 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express from 'express';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import mongoose, { ConnectOptions, mongo } from 'mongoose';
+import mongoose, { ConnectOptions } from 'mongoose';
 import { catchErrors } from './hooks/errors.ts';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,7 +11,6 @@ import fs from 'fs';
 dotenv.config();
 
 const app = express();
-const dev = app.get('env') !== 'production';
 const port = 8001;
 
 // Create HTTP server
@@ -22,7 +21,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(bodyParser.json({ limit: '5mb' }));
-
 app.use(express.json({ limit: '5mb' }));
 // Add headers
 app.use(function (req, res, next) {
