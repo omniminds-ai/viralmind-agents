@@ -53,4 +53,5 @@ next-env.d.ts
 trees/
 
 pipeline-linux-x64
+pipeline
 uploads
