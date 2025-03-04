@@ -3,7 +3,8 @@ import { Schema, model } from 'mongoose';
 export enum TrainingPoolStatus {
   live = 'live',
   paused = 'paused',
-  noFunds = 'no-funds'
+  noFunds = 'no-funds',
+  noGas = 'no-gas'
 }
 
 export interface TrainingPool {

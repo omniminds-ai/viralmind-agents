@@ -792,17 +792,25 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
       return;
     }
 
-    // Get current balance from blockchain
+    // Get current token balance from blockchain
     const balance = await blockchainService.getTokenBalance(
       pool.token.address,
       pool.depositAddress
     );
 
+    // Get SOL balance to check for gas
+    const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+    const noGas = solBalance === 0;
+
     // Update pool funds and status
     pool.funds = balance;
-    if (balance === 0) {
+    
+    // Update status based on token and SOL balances
+    if (noGas) {
+      pool.status = TrainingPoolStatus.noGas;
+    } else if (balance === 0) {
       pool.status = TrainingPoolStatus.noFunds;
-    } else if (pool.status === TrainingPoolStatus.noFunds) {
+    } else if (pool.status === TrainingPoolStatus.noFunds || pool.status === TrainingPoolStatus.noGas) {
       pool.status = TrainingPoolStatus.paused;
     }
 
@@ -813,11 +821,12 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
       'meta.quest.pool_id': pool._id.toString()
     });
 
-    // Return pool without private key but with demo count
+    // Return pool without private key but with demo count and noGas flag
     const { depositPrivateKey: _, ...poolObj } = pool.toObject();
     res.json({
       ...poolObj,
-      demonstrations: demoCount
+      demonstrations: demoCount,
+      solBalance
     });
   } catch (error) {
     console.error('Error refreshing pool balance:', error);

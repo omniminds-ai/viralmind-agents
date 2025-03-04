@@ -26,6 +26,17 @@ class BlockchainService {
     this.programId = programId;
   }
 
+  async getSolBalance(walletAddress: string): Promise<number> {
+    try {
+      const walletPubkey = new PublicKey(walletAddress);
+      const balance = await this.connection.getBalance(walletPubkey);
+      return balance / LAMPORTS_PER_SOL;
+    } catch (error) {
+      console.error("Error getting SOL balance:", error);
+      return 0;
+    }
+  }
+
   async getTokenBalance(tokenMint: string, walletAddress: string): Promise<number> {
     try {
       // Convert string addresses to PublicKeys
@@ -41,7 +52,10 @@ class BlockchainService {
         return tokenAccountInfo.value.uiAmount || 0;
       } catch (error) {
         // If the token account doesn't exist, return 0
-        if ((error as any).message?.includes('could not find token account')) {
+        // The error message can vary, but it's usually about not finding the account
+        if ((error as any).message?.includes('could not find') || 
+            (error as any).message?.includes('Invalid param') ||
+            (error as any).code === -32602) {
           return 0;
         }
         throw error; // Re-throw other errors
