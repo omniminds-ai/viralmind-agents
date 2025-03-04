@@ -1030,17 +1030,15 @@ router.get('/reward', async (req: Request, res: Response) => {
 
   // Round time down to last minute
   const currentTime = Math.floor(Date.now() / 60000) * 60000;
-
   // Create hash using poolId + address + time + secret
-  const hash = createHash('sha256')
-    .update(`${poolId}${address}${currentTime}${process.env.IPC_SECRET}`)
-    .digest('hex');
-
-  // Convert first 8 chars of hash to number between 0-1
-  const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
-
+  // const hash = createHash('sha256')
+  //   .update(`${poolId}${address}${currentTime}${process.env.IPC_SECRET}`)
+  //   .digest('hex');
+  // // Convert first 8 chars of hash to number between 0-1
+  // const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
+  
   // Use pricePerDemo as the base reward value
-  const reward = Math.min(128, Math.ceil(pool.pricePerDemo / rng));
+  const reward = pool.pricePerDemo;
 
   res.json({
     time: currentTime,
