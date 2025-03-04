@@ -226,8 +226,6 @@ Output as JSON with three fields:
 
     // If quest is completed and no pending transaction, process reward
     if (parsedResponse.isCompleted && !pendingTransactions.has(session._id.toString())) {
-      console.log('Completed task hint response:', parsedResponse);
-      console.log(imageUrl);
       try {
         // Mark this session as having a pending transaction
         if (!session._id) {
