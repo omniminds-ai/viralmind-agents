@@ -13,6 +13,7 @@ export interface TrainingPool {
   status: TrainingPoolStatus;
   demonstrations: number;
   funds: number;
+  pricePerDemo: number;
   token: {
     type: 'SOL' | 'VIRAL' | 'CUSTOM';
     symbol: string;
@@ -35,6 +36,7 @@ const trainingPoolSchema = new Schema<TrainingPool>(
     },
     demonstrations: { type: Number, default: 0 },
     funds: { type: Number, default: 0 },
+    pricePerDemo: { type: Number, default: 10, min: 1 },
     token: {
       type: {
         type: String,
