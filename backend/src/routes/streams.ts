@@ -143,7 +143,6 @@ const processAndCleanup = async (sid: string) => {
       // handle low data culling
       if (connection.data.length > 1) {
         const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
-        console.log('Uploading ax tree to s3...');
         // wrap this function so the user doesn't have to wait for this
         (async () => {
           await s3Service.saveItem({
@@ -151,8 +150,6 @@ const processAndCleanup = async (sid: string) => {
             file: compressedResults,
             name: `tree-${sid}.json.zst`
           });
-
-          console.log('done.');
         })();
       }
     } catch (error) {

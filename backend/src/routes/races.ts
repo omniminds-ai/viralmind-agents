@@ -175,13 +175,27 @@ async function generateHint(
               text: `Current quest: ${currentQuest}
 Previous hints: ${hintHistory.slice(-3).join(', ')}
 
+Before providing any analysis, first verify if the image contains actual content:
+- If the image is entirely or predominantly black/blank with no visible elements, immediately set "isCompleted" to false
+- If you cannot clearly see any content in the image, set "isCompleted" to false
+
+Validation checklist:
+1. Can you clearly identify at least one interactive element in the screenshot?
+2. Are there visible GUI components that indicate the user is in the correct application/screen?
+3. Is there visible evidence of user interaction or progress toward the task?
+If you answer "no" to any of these questions, set "isCompleted" to false.
+
 First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
+
+Compare the screenshot against what you would expect to see for a completed task. List specific elements you would expect to see, and verify their presence.
 
 Then provide a single actionable hint (if needed) that includes one of these patterns if applicable:
 - Type 'x[TAB]' to autocomplete
 - Navigate the Gnome menu to find [target]
 - Click the [specific Gnome element]
 - Move cursor to [exact location]
+
+If the image appears to be a black screen, include this specific hint: "I cannot see any content in your screenshot. Please ensure your screen is on and you've captured the correct window. Try pressing Alt+PrintScreen to capture only the active window."
 
 Output as JSON with three fields:
 1. "reasoning": Your analysis of what's been accomplished vs core requirements (ignore artistic details)
@@ -212,6 +226,8 @@ Output as JSON with three fields:
 
     // If quest is completed and no pending transaction, process reward
     if (parsedResponse.isCompleted && !pendingTransactions.has(session._id.toString())) {
+      console.log('Completed task hint response:', parsedResponse);
+      console.log(imageUrl);
       try {
         // Mark this session as having a pending transaction
         if (!session._id) {
