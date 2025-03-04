@@ -258,12 +258,14 @@ interface CreatePoolBody {
     address: string;
   };
   ownerAddress: string;
+  pricePerDemo?: number;
 }
 
 interface UpdatePoolBody {
   id: string;
   status?: TrainingPoolStatus.live | TrainingPoolStatus.paused;
   skills?: string;
+  pricePerDemo?: number;
 }
 
 interface ListPoolsBody {
@@ -816,6 +818,8 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
       pool.status = TrainingPoolStatus.noGas;
     } else if (balance === 0) {
       pool.status = TrainingPoolStatus.noFunds;
+    } else if (balance < pool.pricePerDemo) {
+      pool.status = TrainingPoolStatus.noFunds;
     } else if (
       pool.status === TrainingPoolStatus.noFunds ||
       pool.status === TrainingPoolStatus.noGas
@@ -865,8 +869,11 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
           'meta.quest.pool_id': pool._id.toString()
         });
 
-        // Update status to 'no-funds' if balance is 0
-        if (pool.funds === 0 && pool.status !== TrainingPoolStatus.noFunds) {
+        // Update status to 'no-funds' if balance is 0 or less than pricePerDemo
+        if (
+          (pool.funds === 0 || pool.funds < pool.pricePerDemo) &&
+          pool.status !== TrainingPoolStatus.noFunds
+        ) {
           pool.status = TrainingPoolStatus.noFunds;
           await pool.save(); // Save the updated status
         }
@@ -889,7 +896,7 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
 // Create training pool
 router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
   try {
-    const { name, skills, token, ownerAddress } = req.body;
+    const { name, skills, token, ownerAddress, pricePerDemo } = req.body;
 
     if (!name || !skills || !token || !ownerAddress) {
       res.status(400).json({ error: 'Missing required fields' });
@@ -909,6 +916,7 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
       status: TrainingPoolStatus.noFunds,
       demonstrations: 0,
       funds: 0,
+      pricePerDemo: pricePerDemo ? Math.max(1, pricePerDemo) : 10, // Default to 10 if not provided, minimum of 1
       depositAddress,
       depositPrivateKey
     });
@@ -933,7 +941,7 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
 // Update training pool
 router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
   try {
-    const { id, status, skills } = req.body;
+    const { id, status, skills, pricePerDemo } = req.body;
 
     if (!id) {
       res.status(400).json({ error: 'Pool ID is required' });
@@ -951,15 +959,16 @@ router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Respons
       return;
     }
 
-    // Only allow status update if funds > 0
-    if (status && pool.funds === 0) {
-      res.status(400).json({ error: 'Cannot update status: pool has no funds' });
+    // Only allow status update if funds > 0 and funds >= pricePerDemo
+    if (status && (pool.funds === 0 || pool.funds < pool.pricePerDemo)) {
+      res.status(400).json({ error: 'Cannot update status: pool has insufficient funds' });
       return;
     }
 
     const updates: Partial<TrainingPool> = {};
     if (status) updates.status = status;
     if (skills) updates.skills = skills;
+    if (pricePerDemo !== undefined) updates.pricePerDemo = Math.max(1, pricePerDemo);
 
     const updatedPool = await TrainingPoolModel.findByIdAndUpdate(
       id,
@@ -1006,6 +1015,19 @@ router.get('/reward', async (req: Request, res: Response) => {
     return;
   }
 
+  // Get the pool to check pricePerDemo
+  const pool = await TrainingPoolModel.findById(poolId);
+  if (!pool) {
+    res.status(404).json({ error: 'Pool not found' });
+    return;
+  }
+
+  // Check if pool has enough funds for at least one demo
+  if (pool.funds < pool.pricePerDemo) {
+    res.status(400).json({ error: 'Pool has insufficient funds' });
+    return;
+  }
+
   // Round time down to last minute
   const currentTime = Math.floor(Date.now() / 60000) * 60000;
 
@@ -1016,11 +1038,14 @@ router.get('/reward', async (req: Request, res: Response) => {
 
   // Convert first 8 chars of hash to number between 0-1
   const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
-  const reward = Math.min(128, Math.ceil(1 / rng));
+
+  // Use pricePerDemo as the base reward value
+  const reward = Math.min(128, Math.ceil(pool.pricePerDemo / rng));
 
   res.json({
     time: currentTime,
-    maxReward: reward
+    maxReward: reward,
+    pricePerDemo: pool.pricePerDemo
   });
 });
 
@@ -1058,7 +1083,7 @@ router.get('/apps', async (req: Request, res: Response) => {
     } else {
       // If no pool_id, only return apps from live pools
       apps = await ForgeApp.find()
-        .populate('pool_id', 'name status')
+        .populate('pool_id', 'name status pricePerDemo')
         .then((apps) =>
           apps.filter((app) => {
             const pool = app.pool_id as unknown as TrainingPool;

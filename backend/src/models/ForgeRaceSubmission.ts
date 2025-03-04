@@ -404,16 +404,7 @@ export async function processNextInQueue() {
             // if (now - generatedTime > 5 * 60 * 1000) {
             //   throw new Error("Generated time expired");
             // }
-
-            // Recalculate reward
-            const hash = createHash('sha256')
-              .update(
-                `${submission.meta.quest.pool_id}${submission.address}${generatedTime}${process.env.IPC_SECRET}`
-              )
-              .digest('hex');
-
-            const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
-            maxReward = Math.min(128, Math.ceil(1 / rng));
+            maxReward = pool.pricePerDemo;
 
             // Calculate final reward based on grade_result score (clamped 0-100)
             clampedScore = Math.max(0, Math.min(100, gradeResult.score));
