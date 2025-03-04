@@ -6,15 +6,16 @@ import { TrainingPoolModel, TrainingPool, TrainingPoolStatus } from '../models/T
 import { WalletConnectionModel } from '../models/WalletConnection.js';
 import { ForgeApp } from '../models/ForgeApp.js';
 import { ForgeRace } from '../models/ForgeRace.js';
-import { ForgeRaceSubmission, ProcessingStatus, addToProcessingQueue } from '../models/ForgeRaceSubmission.js';
+import {
+  ForgeRaceSubmission,
+  ProcessingStatus,
+  addToProcessingQueue
+} from '../models/ForgeRaceSubmission.js';
 import DatabaseService from '../services/db/index.js';
 import { AWSS3Service } from '../services/aws/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 
-const blockchainService = new BlockchainService(
-  process.env.RPC_URL || '',
-  ''
-);
+const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
 import multer from 'multer';
 import { createReadStream } from 'fs';
 import { mkdir, unlink, copyFile } from 'fs/promises';
@@ -42,7 +43,7 @@ const activeGenerations = new Map<string, Promise<void>>();
 // Send webhook notification
 async function notifyForgeWebhook(message: string) {
   if (!FORGE_WEBHOOK) return;
-  
+
   try {
     await axios.post(FORGE_WEBHOOK, {
       content: message
@@ -71,7 +72,9 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
       throw new Error(`Pool ${poolId} not found`);
     }
 
-    await notifyForgeWebhook(`🎬 Starting app generation for pool "${pool.name}" (${poolId})\nSkills: ${skills}`);
+    await notifyForgeWebhook(
+      `🎬 Starting app generation for pool "${pool.name}" (${poolId})\nSkills: ${skills}`
+    );
     try {
       // Delete existing apps for this pool
       await ForgeApp.deleteMany({ pool_id: poolId });
@@ -97,26 +100,30 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
       // Only proceed if this is still the active generation
       // @ts-ignore
       if (activeGenerations.get(poolId) === generationPromise) {
-          // Parse apps from response
-          const apps = JSON.parse(content);
-          
-          // Store new apps
-          for (const app of apps) {
-            await ForgeApp.create({
-              ...app,
-              pool_id: poolId
-            });
-          }
-          console.log(`Successfully generated apps for pool ${poolId}`);
-          await notifyForgeWebhook(`✅ Generated ${apps.length} apps for pool "${pool.name}" (${poolId})\n${apps.map((a: {name: string}) => `- ${a.name}`).join('\n')}`);
+        // Parse apps from response
+        const apps = JSON.parse(content);
+
+        // Store new apps
+        for (const app of apps) {
+          await ForgeApp.create({
+            ...app,
+            pool_id: poolId
+          });
+        }
+        console.log(`Successfully generated apps for pool ${poolId}`);
+        await notifyForgeWebhook(
+          `✅ Generated ${apps.length} apps for pool "${pool.name}" (${poolId})\n${apps
+            .map((a: { name: string }) => `- ${a.name}`)
+            .join('\n')}`
+        );
       } else {
         console.log(`App generation was superseded for pool ${poolId}`);
       }
     } catch (error) {
-        const err = error as Error;
-        console.error('Error generating apps:', err);
-        await notifyForgeWebhook(`❌ Error generating apps for pool ${poolId}: ${err.message}`);
-        throw err;
+      const err = error as Error;
+      console.error('Error generating apps:', err);
+      await notifyForgeWebhook(`❌ Error generating apps for pool ${poolId}: ${err.message}`);
+      throw err;
     } finally {
       // Clean up if this is still the active generation
       // @ts-ignore
@@ -277,15 +284,12 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
   }
 
   try {
-    const s3Service = new AWSS3Service(
-      process.env.AWS_ACCESS_KEY,
-      process.env.AWS_SECRET_KEY
-    );
+    const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
 
     // Create temporary directory for initial extraction
     const tempDir = path.join('uploads', `temp_${Date.now()}`);
     await mkdir(tempDir, { recursive: true });
-    
+
     // Extract meta.json first to get ID
     await new Promise((resolve, reject) => {
       createReadStream(req.file!.path)
@@ -298,16 +302,14 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
     const metaJson = await new Promise<string>((resolve, reject) => {
       let data = '';
       createReadStream(path.join(tempDir, 'meta.json'))
-        .on('data', chunk => data += chunk)
+        .on('data', (chunk) => (data += chunk))
         .on('end', () => resolve(data))
         .on('error', reject);
     });
     const meta = JSON.parse(metaJson);
 
     // Create UUID from meta.id + address
-    const uuid = createHash('sha256')
-      .update(`${meta.id}${address}`)
-      .digest('hex');
+    const uuid = createHash('sha256').update(`${meta.id}${address}`).digest('hex');
 
     // Create final directory with UUID
     const extractDir = path.join('uploads', `extract_${uuid}`);
@@ -337,7 +339,7 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
       requiredFiles.map(async (file) => {
         const filePath = path.join(extractDir, file);
         const s3Key = `forge-races/${Date.now()}-${file}`;
-        
+
         await s3Service.saveItem({
           bucket: 'training-gym',
           file: filePath,
@@ -348,24 +350,11 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
       })
     );
 
-    // Clean up all local files after successful S3 upload
-    await unlink(req.file.path).catch(err => console.error('Error deleting original upload:', err));
-    
-    // Delete all extracted files
-    for (const file of requiredFiles) {
-      const filePath = path.join(extractDir, file);
-      await unlink(filePath).catch(err => console.error(`Error deleting extracted file ${file}:`, err));
-    }
-    
-    // Remove the extract directory
-    await unlink(extractDir).catch(err => console.error('Error removing extract directory:', err));
-
-
     // Verify time if poolId and generatedTime provided
     if (meta.poolId && meta.generatedTime) {
       const now = Date.now();
       if (now - meta.generatedTime > 5 * 60 * 1000) {
-        res.status(400).json({ error: "Generated time expired" });
+        res.status(400).json({ error: 'Generated time expired' });
         return;
       }
     }
@@ -402,7 +391,7 @@ router.get('/submission/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const submission = await ForgeRaceSubmission.findById(id);
-    
+
     if (!submission) {
       res.status(404).json({ error: 'Submission not found' });
       return;
@@ -467,7 +456,8 @@ router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response)
 });
 
 // Check connection status
-router.get('/check-connection',
+router.get(
+  '/check-connection',
   async (req: Request<{}, {}, {}, { token?: string }>, res: Response) => {
     try {
       const token = req.query.token;
@@ -531,140 +521,152 @@ interface ChatBody {
 // Sample few-shot conversation history
 const FEW_SHOT_EXAMPLES = [
   {
-    task_prompt: "Find a hotel in Paris",
+    task_prompt: 'Find a hotel in Paris',
     app: {
-      type: "website",
-      name: "Booking.com",
-      url: "booking.com"
+      type: 'website',
+      name: 'Booking.com',
+      url: 'booking.com'
     },
     conversation: [
       {
-        role: "user",
-        content: "Task: Find a hotel in Paris\nApp: Booking.com (website, URL: booking.com)"
+        role: 'user',
+        content: 'Task: Find a hotel in Paris\nApp: Booking.com (website, URL: booking.com)'
       },
       {
-        role: "assistant",
+        role: 'assistant',
         content: null,
-        tool_calls: [{
-          id: "call_123",
-          type: "function",
-          function: {
-            name: "validate_task_request",
-            arguments: JSON.stringify({
-              title: "Find Paris hotel",
-              app: "Booking.com",
-              icon_url: "https://s2.googleusercontent.com/s2/favicons?domain=booking.com&sz=64",
-              objectives: [
-                "Open <app>Booking.com</app> website in your browser",
-                "Search for Paris hotels",
-                "Apply filters for dates and preferences",
-                "View hotel details and reviews"
-              ],
-              content: "Hi! I need to find a hotel in Paris for my upcoming trip. Can you help me search on Booking.com?"
-            })
+        tool_calls: [
+          {
+            id: 'call_123',
+            type: 'function',
+            function: {
+              name: 'validate_task_request',
+              arguments: JSON.stringify({
+                title: 'Find Paris hotel',
+                app: 'Booking.com',
+                icon_url: 'https://s2.googleusercontent.com/s2/favicons?domain=booking.com&sz=64',
+                objectives: [
+                  'Open <app>Booking.com</app> website in your browser',
+                  'Search for Paris hotels',
+                  'Apply filters for dates and preferences',
+                  'View hotel details and reviews'
+                ],
+                content:
+                  'Hi! I need to find a hotel in Paris for my upcoming trip. Can you help me search on Booking.com?'
+              })
+            }
           }
-        }]
+        ]
       },
       {
-        role: "tool",
-        tool_call_id: "call_123",
-        content: "accepted"
+        role: 'tool',
+        tool_call_id: 'call_123',
+        content: 'accepted'
       },
       {
-        role: "user",
-        content: "Sure! I'll help you find a hotel in Paris. Let's start by going to booking.com and entering your travel dates. When are you planning to visit?"
+        role: 'user',
+        content:
+          "Sure! I'll help you find a hotel in Paris. Let's start by going to booking.com and entering your travel dates. When are you planning to visit?"
       }
     ]
   },
   {
-    task_prompt: "Order sushi delivery",
+    task_prompt: 'Order sushi delivery',
     app: {
-      type: "website", 
-      name: "Uber Eats",
-      url: "ubereats.com"
+      type: 'website',
+      name: 'Uber Eats',
+      url: 'ubereats.com'
     },
     conversation: [
       {
-        role: "user",
-        content: "Task: Order sushi delivery\nApp: Uber Eats (website, URL: ubereats.com)"
+        role: 'user',
+        content: 'Task: Order sushi delivery\nApp: Uber Eats (website, URL: ubereats.com)'
       },
       {
-        role: "assistant",
+        role: 'assistant',
         content: null,
-        tool_calls: [{
-          id: "call_456",
-          type: "function",
-          function: {
-            name: "validate_task_request",
-            arguments: JSON.stringify({
-              title: "Order sushi delivery",
-              app: "Uber Eats",
-              icon_url: "https://s2.googleusercontent.com/s2/favicons?domain=ubereats.com&sz=64",
-              objectives: [
-                "Open <app>Uber Eats</app> website in your browser",
-                "Find nearby sushi restaurants",
-                "Select items and customize order", 
-                "Review cart before checkout"
-              ],
-              content: "Hi! I'm hungry and want to order some sushi from Uber Eats. Can you show me how?"
-            })
+        tool_calls: [
+          {
+            id: 'call_456',
+            type: 'function',
+            function: {
+              name: 'validate_task_request',
+              arguments: JSON.stringify({
+                title: 'Order sushi delivery',
+                app: 'Uber Eats',
+                icon_url: 'https://s2.googleusercontent.com/s2/favicons?domain=ubereats.com&sz=64',
+                objectives: [
+                  'Open <app>Uber Eats</app> website in your browser',
+                  'Find nearby sushi restaurants',
+                  'Select items and customize order',
+                  'Review cart before checkout'
+                ],
+                content:
+                  "Hi! I'm hungry and want to order some sushi from Uber Eats. Can you show me how?"
+              })
+            }
           }
-        }]
+        ]
       },
       {
-        role: "tool",
-        tool_call_id: "call_456",
-        content: "accepted"
+        role: 'tool',
+        tool_call_id: 'call_456',
+        content: 'accepted'
       },
       {
-        role: "user",
-        content: "I'll help you order sushi through Uber Eats! First, let's check which sushi restaurants deliver to your location. Could you open ubereats.com and enter your delivery address?"
+        role: 'user',
+        content:
+          "I'll help you order sushi through Uber Eats! First, let's check which sushi restaurants deliver to your location. Could you open ubereats.com and enter your delivery address?"
       }
     ]
   },
   {
-    task_prompt: "Find tennis shoes on sale",
+    task_prompt: 'Find tennis shoes on sale',
     app: {
-      type: "website",
-      name: "eBay",
-      url: "ebay.com"  
+      type: 'website',
+      name: 'eBay',
+      url: 'ebay.com'
     },
     conversation: [
       {
-        role: "user",
-        content: "Task: Find tennis shoes on sale\nApp: eBay (website, URL: ebay.com)"
+        role: 'user',
+        content: 'Task: Find tennis shoes on sale\nApp: eBay (website, URL: ebay.com)'
       },
       {
-        role: "assistant",
+        role: 'assistant',
         content: null,
-        tool_calls: [{
-          id: "call_789",
-          type: "function",
-          function: {
-            name: "validate_task_request",
-            arguments: JSON.stringify({
-              title: "Find tennis shoes",
-              app: "eBay",
-              icon_url: "https://s2.googleusercontent.com/s2/favicons?domain=ebay.com&sz=64",
-              objectives: [
-                "Open <app>eBay</app> website in your browser",
-                "Search for tennis shoes",
-                "Apply filters for size and price",
-                "Sort and compare listings"
-              ],
-              content: "Hi! I want to buy some tennis shoes on eBay. I've never used the site before - can you help me find a good deal?"
-            })
+        tool_calls: [
+          {
+            id: 'call_789',
+            type: 'function',
+            function: {
+              name: 'validate_task_request',
+              arguments: JSON.stringify({
+                title: 'Find tennis shoes',
+                app: 'eBay',
+                icon_url: 'https://s2.googleusercontent.com/s2/favicons?domain=ebay.com&sz=64',
+                objectives: [
+                  'Open <app>eBay</app> website in your browser',
+                  'Search for tennis shoes',
+                  'Apply filters for size and price',
+                  'Sort and compare listings'
+                ],
+                content:
+                  "Hi! I want to buy some tennis shoes on eBay. I've never used the site before - can you help me find a good deal?"
+              })
+            }
           }
-        }]
+        ]
       },
       {
-        role: "tool",
-        tool_call_id: "call_789",
-        content: "accepted"
+        role: 'tool',
+        tool_call_id: 'call_789',
+        content: 'accepted'
       },
       {
-        role: "user",
-        content: "I'll help you find tennis shoes on eBay! Let's start by going to ebay.com. Do you have a specific brand or size in mind?"
+        role: 'user',
+        content:
+          "I'll help you find tennis shoes on eBay! Let's start by going to ebay.com. Do you have a specific brand or size in mind?"
       }
     ]
   }
@@ -686,15 +688,13 @@ router.post('/chat', async (req: Request<{}, {}, ChatBody>, res: Response) => {
     })`;
 
     // Randomly select 3 few-shot examples
-    const randomExamples = [...FEW_SHOT_EXAMPLES]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+    const randomExamples = [...FEW_SHOT_EXAMPLES].sort(() => Math.random() - 0.5).slice(0, 3);
 
     // Prepare messages for OpenAI API
     const apiMessages = [
       { role: 'system', content: SYSTEM_PROMPT },
       // Include all three random examples
-      ...randomExamples.flatMap(example => example.conversation),
+      ...randomExamples.flatMap((example) => example.conversation),
       { role: 'user', content: contextMessage },
       ...messages
     ];
@@ -703,42 +703,46 @@ router.post('/chat', async (req: Request<{}, {}, ChatBody>, res: Response) => {
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: apiMessages,
-      tools: [{
-        type: "function",
-        function: {
-          name: "validate_task_request",
-          description: "Validate if the user's task request is appropriate and can be assisted with",
-          parameters: {
-            type: "object",
-            required: ["title", "app", "objectives", "content"],
-            properties: {
-              title: {
-                type: "string",
-                description: "Brief title for the task"
-              },
-              app: {
-                type: "string",
-                description: "Name of the app being used"
-              },
-              icon_url: {
-                type: "string",
-                description: "URL for the app's favicon"
-              },
-              objectives: {
-                type: "array",
-                description: "List of 4 objectives to complete the task (first objective must be opening/navigating to the app with the app name wrapped in <app> tags, stop at checkout for purchases)",
-                items: {
-                  type: "string"
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'validate_task_request',
+            description:
+              "Validate if the user's task request is appropriate and can be assisted with",
+            parameters: {
+              type: 'object',
+              required: ['title', 'app', 'objectives', 'content'],
+              properties: {
+                title: {
+                  type: 'string',
+                  description: 'Brief title for the task'
+                },
+                app: {
+                  type: 'string',
+                  description: 'Name of the app being used'
+                },
+                icon_url: {
+                  type: 'string',
+                  description: "URL for the app's favicon"
+                },
+                objectives: {
+                  type: 'array',
+                  description:
+                    'List of 4 objectives to complete the task (first objective must be opening/navigating to the app with the app name wrapped in <app> tags, stop at checkout for purchases)',
+                  items: {
+                    type: 'string'
+                  }
+                },
+                content: {
+                  type: 'string',
+                  description: "The assistant's message to the user"
                 }
-              },
-              content: {
-                type: "string",
-                description: "The assistant's message to the user"
               }
             }
           }
         }
-      }]
+      ]
     } as any);
 
     const assistantMessage = response.choices[0].message;
@@ -750,14 +754,16 @@ router.post('/chat', async (req: Request<{}, {}, ChatBody>, res: Response) => {
       res.json({
         role: 'assistant',
         content: assistantMessage.content,
-        tool_calls: [{
-          id: toolCall.id,
-          type: "function",
-          function: {
-            name: toolCall.function.name,
-            arguments: toolCall.function.arguments
+        tool_calls: [
+          {
+            id: toolCall.id,
+            type: 'function',
+            function: {
+              name: toolCall.function.name,
+              arguments: toolCall.function.arguments
+            }
           }
-        }]
+        ]
       });
     } else {
       // Return regular message
@@ -780,12 +786,12 @@ interface RefreshPoolBody {
 router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
   try {
     const { id } = req.body;
-    
+
     if (!id) {
       res.status(400).json({ error: 'Pool ID is required' });
       return;
     }
-    
+
     const pool = await TrainingPoolModel.findById(id);
     if (!pool) {
       res.status(404).json({ error: 'Training pool not found' });
@@ -804,13 +810,16 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
 
     // Update pool funds and status
     pool.funds = balance;
-    
+
     // Update status based on token and SOL balances
     if (noGas) {
       pool.status = TrainingPoolStatus.noGas;
     } else if (balance === 0) {
       pool.status = TrainingPoolStatus.noFunds;
-    } else if (pool.status === TrainingPoolStatus.noFunds || pool.status === TrainingPoolStatus.noGas) {
+    } else if (
+      pool.status === TrainingPoolStatus.noFunds ||
+      pool.status === TrainingPoolStatus.noGas
+    ) {
       pool.status = TrainingPoolStatus.paused;
     }
 
@@ -839,7 +848,7 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
   try {
     const { address } = req.body;
 
-    console.log(address)
+    console.log(address);
     if (!address) {
       res.status(400).json({ error: 'Wallet address is required' });
       return;
@@ -850,23 +859,25 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
     ); // Exclude private key from response
 
     // Get demonstration counts for each pool
-    const poolsWithDemos = await Promise.all(pools.map(async (pool) => {
-      const demoCount = await ForgeRaceSubmission.countDocuments({
-        'meta.quest.pool_id': pool._id.toString()
-      });
+    const poolsWithDemos = await Promise.all(
+      pools.map(async (pool) => {
+        const demoCount = await ForgeRaceSubmission.countDocuments({
+          'meta.quest.pool_id': pool._id.toString()
+        });
 
-      // Update status to 'no-funds' if balance is 0
-      if (pool.funds === 0 && pool.status !== TrainingPoolStatus.noFunds) {
-        pool.status = TrainingPoolStatus.noFunds;
-        await pool.save(); // Save the updated status
-      }
+        // Update status to 'no-funds' if balance is 0
+        if (pool.funds === 0 && pool.status !== TrainingPoolStatus.noFunds) {
+          pool.status = TrainingPoolStatus.noFunds;
+          await pool.save(); // Save the updated status
+        }
 
-      const poolObj = pool.toObject();
-      return {
-        ...poolObj,
-        demonstrations: demoCount
-      };
-    }));
+        const poolObj = pool.toObject();
+        return {
+          ...poolObj,
+          demonstrations: demoCount
+        };
+      })
+    );
 
     res.json(poolsWithDemos);
   } catch (error) {
@@ -905,7 +916,7 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
     await pool.save();
 
     // Start initial app generation (non-blocking)
-    generateAppsForPool(pool._id.toString(), skills).catch(error => {
+    generateAppsForPool(pool._id.toString(), skills).catch((error) => {
       console.error('Error generating initial apps:', error);
     });
 
@@ -958,7 +969,7 @@ router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Respons
 
     // If skills were updated, start app regeneration (non-blocking)
     if (skills) {
-      generateAppsForPool(id, skills).catch(error => {
+      generateAppsForPool(id, skills).catch((error) => {
         console.error('Error regenerating apps:', error);
       });
     }
@@ -974,8 +985,8 @@ router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Respons
 router.get('/gym', async (_req: Request, res: Response) => {
   try {
     const races = await ForgeRace.find({
-      status: "active",
-      type: "gym"
+      status: 'active',
+      type: 'gym'
     }).sort({
       createdAt: -1
     });
@@ -989,25 +1000,25 @@ router.get('/gym', async (_req: Request, res: Response) => {
 // Get reward calculation
 router.get('/reward', async (req: Request, res: Response) => {
   const { poolId, address } = req.query;
-  
+
   if (!poolId || !address || typeof poolId !== 'string' || typeof address !== 'string') {
-    res.status(400).json({ error: "Missing or invalid poolId/address" });
+    res.status(400).json({ error: 'Missing or invalid poolId/address' });
     return;
   }
 
   // Round time down to last minute
   const currentTime = Math.floor(Date.now() / 60000) * 60000;
-  
+
   // Create hash using poolId + address + time + secret
   const hash = createHash('sha256')
     .update(`${poolId}${address}${currentTime}${process.env.IPC_SECRET}`)
     .digest('hex');
-  
+
   // Convert first 8 chars of hash to number between 0-1
   const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
   const reward = Math.min(128, Math.ceil(1 / rng));
 
-  res.json({ 
+  res.json({
     time: currentTime,
     maxReward: reward
   });
@@ -1017,16 +1028,13 @@ router.get('/reward', async (req: Request, res: Response) => {
 router.get('/balance/:address', async (req: Request, res: Response) => {
   try {
     const { address } = req.params;
-    
+
     if (!address) {
       res.status(400).json({ error: 'Address is required' });
       return;
     }
 
-    const balance = await blockchainService.getTokenBalance(
-      process.env.VIRAL_TOKEN || '',
-      address
-    );
+    const balance = await blockchainService.getTokenBalance(process.env.VIRAL_TOKEN || '', address);
 
     res.json({ balance });
   } catch (error) {
@@ -1039,19 +1047,24 @@ router.get('/balance/:address', async (req: Request, res: Response) => {
 router.get('/apps', async (req: Request, res: Response) => {
   try {
     const { pool_id } = req.query;
-    
+
     let apps;
     if (pool_id) {
       // If pool_id specified, return all apps for that pool regardless of status
-      apps = await ForgeApp.find({ pool_id: pool_id.toString() }).populate('pool_id', 'name status');
+      apps = await ForgeApp.find({ pool_id: pool_id.toString() }).populate(
+        'pool_id',
+        'name status'
+      );
     } else {
       // If no pool_id, only return apps from live pools
       apps = await ForgeApp.find()
         .populate('pool_id', 'name status')
-        .then(apps => apps.filter(app => {
-          const pool = app.pool_id as unknown as TrainingPool;
-          return pool && pool.status === TrainingPoolStatus.live;
-        }));
+        .then((apps) =>
+          apps.filter((app) => {
+            const pool = app.pool_id as unknown as TrainingPool;
+            return pool && pool.status === TrainingPoolStatus.live;
+          })
+        );
     }
     res.json(apps);
   } catch (error) {
