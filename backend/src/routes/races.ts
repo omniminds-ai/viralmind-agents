@@ -638,7 +638,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
               process.env.AWS_ACCESS_KEY,
               process.env.AWS_SECRET_KEY
             );
-            console.log('Uploading recording to s3...');
+            console.log(`Uploading recording for session ${recordingId} to s3...`);
             // wrap this function so the user doesn't have to wait for this
             (async () => {
               await s3Service.saveItem({
