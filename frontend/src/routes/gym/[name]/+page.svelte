@@ -91,7 +91,7 @@ onMount(() => {
             <h3 class="text-xl font-semibold">Free Races</h3>
         </div>
         <p class="text-gray-400 mb-4">Join races by simply holding $VIRAL. No staking required, pure reward potential.</p>
-        <a href="https://viralmind.gitbook.io/viralmind.ai/training-gym/free-races">
+        <a href="https://docs.viralmind.ai/viralmind.ai/training-gym/free-races">
             <div class="flex items-center text-purple-400 group cursor-pointer">
                 <span class="mr-2">Learn more</span>
                 <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -108,7 +108,7 @@ onMount(() => {
             <h3 class="text-xl font-semibold">Staked Races</h3>
         </div>
         <p class="text-gray-400 mb-4">Stake $VIRAL to join high-reward races. Win big from redistributed stakes.</p>
-        <a href="https://viralmind.gitbook.io/viralmind.ai/training-gym/staked-races">
+        <a href="https://docs.viralmind.ai/viralmind.ai/training-gym/staked-races">
         <div class="flex items-center text-purple-400 group cursor-pointer">
             <span class="mr-2">Learn more</span>
             <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />

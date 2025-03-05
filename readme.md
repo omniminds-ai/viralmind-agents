@@ -5,7 +5,7 @@
 ## 🔗 Useful Links
 
 - **Community**: [https://t.me/viralmind](https://t.me/viralmind)
-- **Documentation**: [https://viralmind.gitbook.io/viralmind.ai](https://viralmind.gitbook.io/viralmind.ai)
+- **Documentation**: [https://docs.viralmind.ai/](https://docs.viralmind.ai/)
 - **Smart Contract**: HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump
 
 ## 🎯 Our Vision

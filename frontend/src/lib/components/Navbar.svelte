@@ -78,7 +78,7 @@
             $VIRAL
           </a>
           <a
-            href="https://github.com/viralmind-ai/viralmind-agents"
+            href="https://docs.viralmind.ai/"
             target="_blank"
             class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
@@ -86,7 +86,7 @@
             GitHub
           </a>
           <a
-            href="https://viralmind.gitbook.io/viralmind.ai"
+            href="https://docs.viralmind.ai/"
             target="_blank"
             class="group flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
@@ -197,7 +197,7 @@
             GitHub
           </a>
           <a
-            href="https://viralmind.gitbook.io/viralmind.ai"
+            href="https://docs.viralmind.ai/"
             target="_blank"
             class="flex items-center gap-3 py-2 text-gray-300 transition-colors hover:text-white"
           >

@@ -412,7 +412,7 @@
             </li>
           </ol>
           <div class="flex justify-center pt-8">
-            <ButtonCTA href="https://viralmind.gitbook.io/viralmind.ai/train-your-own-agentic-lams">
+            <ButtonCTA href="https://docs.viralmind.ai/viralmind.ai/train-your-own-agentic-lams">
               View the Docs
               <ArrowRight class="h-5 w-5" />
             </ButtonCTA>
