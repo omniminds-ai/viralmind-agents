@@ -15,16 +15,16 @@
 </script>
 
 <div class="flex flex-col gap-4">
-  <div class="bg-primary-400 flex items-center justify-center gap-2 rounded-lg py-4">
-    <code class="text-secondary-100 truncate font-mono">{TOKEN_DATA.contractAddress}</code>
+  <div class="flex items-center justify-center gap-2 rounded-lg bg-gray-50 py-4">
+    <code class="font-mono text-gray-900 truncate">{TOKEN_DATA.contractAddress}</code>
     <button
-      class="rounded-lg p-2 transition-colors hover:bg-purple-500/40 hover:text-purple-200"
+      class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
       on:click={copyAddress}
     >
       {#if copied}
-        <Check class="text-secondary-200 h-4 w-4" />
+        <Check class="h-4 w-4 text-green-500" />
       {:else}
-        <Copy class="text-secondary-200 h-4 w-4" />
+        <Copy class="h-4 w-4" />
       {/if}
     </button>
   </div>
@@ -32,7 +32,7 @@
     <a
       href={`https://solscan.io/token/${TOKEN_DATA.contractAddress}`}
       target="_blank"
-      class="inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+      class="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-900"
     >
       View on Solscan
       <ExternalLink class="h-4 w-4" />
@@ -40,7 +40,7 @@
     <a
       href={TOKEN_DATA.dexscreenerUrl}
       target="_blank"
-      class="inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+      class="inline-flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-900"
     >
       Price & Trading
       <ExternalLink class="h-4 w-4" />
