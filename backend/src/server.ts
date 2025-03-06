@@ -26,6 +26,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use(function (req, res, next) {
   // Origin to allow
   const allowedOrigins = [
+    'tauri://localhost',
     'http://localhost:1420',
     'http://localhost:3000',
     'http://localhost:8001',
