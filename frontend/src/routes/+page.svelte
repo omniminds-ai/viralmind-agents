@@ -9,6 +9,18 @@
   import type { SettingsRes } from '$lib/types';
   import VideoPopup from '$lib/components/VideoPopup.svelte';
   
+  // Dataset sample type definition
+  type DatasetSample = {
+    input: {
+      screenshot: string;
+      instruction: string;
+    };
+    action: string;
+  };
+  
+  // Dataset samples
+  let datasetSamples: DatasetSample[] = [];
+  
   let dreamAgentInput = '';
   let placeholderIndex = 0;
   let estimatedAmount = 75000; // Default value
@@ -36,6 +48,50 @@
       estimatedAmount = Math.floor(Math.random() * (100000 - 50000) + 50000);
       pricePerDemo = Math.floor(Math.random() * (6 - 5) * 10 + 50) / 10;
     }, 5000);
+
+    // Fetch dataset samples
+    fetch('/dataset_preview.json')
+      .then(async (res) => {
+        if (!res.ok) throw Error(res.status + ': ' + res.statusText);
+        const data = await res.json();
+        // Add data URI prefix to base64 encoded screenshots
+        datasetSamples = data.map((sample: any) => ({
+          ...sample,
+          input: {
+            ...sample.input,
+            screenshot: sample.input.screenshot.startsWith('data:') 
+              ? sample.input.screenshot 
+              : `data:image/jpeg;base64,${sample.input.screenshot}`
+          }
+        }));
+      })
+      .catch((error) => {
+        console.error('Failed to fetch dataset samples:', error);
+        // Fallback data in case the fetch fails
+        datasetSamples = [
+          {
+            input: {
+              screenshot: "data:image/png;base64,iVBOR...",
+              instruction: "Create a spreadsheet with monthly budget data"
+            },
+            action: "click(156, 234)"
+          },
+          {
+            input: {
+              screenshot: "data:image/png;base64,iVBOR...",
+              instruction: "Find and open the settings menu in Photoshop"
+            },
+            action: "type('Budget 2025')"
+          },
+          {
+            input: {
+              screenshot: "data:image/png;base64,iVBOR...",
+              instruction: "Search for flights from New York to London"
+            },
+            action: "doubleClick(450, 120)"
+          }
+        ];
+      });
 
     // Fetch settings
     fetch('/api/settings')
@@ -77,7 +133,8 @@
             We believe we can create a revolution.
           </h2>
           <p class="mb-6 text-xl text-gray-600">
-            Join us in pioneering the future of AI through crowdsourced computer-use demonstrations. We're accelerating frontier AI with open-source datasets and tools, making powerful computer-use agents accessible to everyone.
+            <!-- Join us in pioneering the future of AI through crowdsourced computer-use demonstrations. We're accelerating frontier AI with open-source datasets and tools, making powerful computer-use agents accessible to everyone. -->
+            Building the foundation for powerful computer-use agents through community-driven computer-use datasets, open-source tools, and frontier research. We want to improve the world by providing amazing computer-use agents.
           </p>
           <div class="flex items-center gap-4">
             <a 
@@ -259,8 +316,147 @@
         </div>
       </div>
 
+      <!-- The Data -->
+      <div class="mb-20 grid items-center gap-12 lg:grid-cols-2">
+        <div class="order-1 lg:order-2 text-center lg:text-left">
+          <div class="flex flex-wrap gap-2 mb-3">
+            <div class="inline-block rounded-full bg-green-100 px-4 py-1 text-sm font-medium text-green-800">
+              Open Data
+            </div>
+            <div class="inline-block rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-800">
+              Early Access
+            </div>
+          </div>
+          <div class="mb-4 flex items-center gap-3">
+            <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
+              <Book class="h-6 w-6 text-purple-500" />
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900">Multimodal Action Dataset</h2>
+          </div>
+          <p class="mb-6 text-lg text-gray-600">
+            The first multimodal desktop interaction dataset for the community. Powering the next generation of computer-use AI agents with high-quality demonstrations.
+          </p>
+          <a 
+            href="/datasets"
+            class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow hover:bg-gray-50 transition-colors"
+          >
+            <Book class="h-5 w-5" />
+            Request Early Access
+          </a>
+        </div>
+        <div class="order-2 lg:order-1 relative rounded-xl bg-white p-4 shadow-2xl border border-gray-100 h-[400px] overflow-hidden">
+          <div class="text-sm font-medium text-gray-700 mb-3 flex justify-between items-center">
+            <span>Dataset Preview</span>
+            <span class="text-xs text-gray-500">5M+ samples</span>
+          </div>
+          <div class="h-[350px] overflow-hidden relative">
+            <!-- White overlay for scroll area -->
+            <div class="absolute inset-0 pointer-events-none z-10 bg-gradient-to-b from-white via-transparent to-white opacity-75"></div>
+            <div class="grid grid-cols-2 gap-2 h-full">
+              <!-- Left Column - Scrolling Down -->
+              <div class="overflow-y-hidden pr-1 relative">
+                <div class="animate-scroll-down">
+                  {#each datasetSamples as sample, i}
+                    {#if i % 2 === 0}
+                      <div class="mb-2 rounded-lg bg-gray-50 border border-gray-200 overflow-hidden p-3 text-gray-800 shadow-sm">
+                        <!-- Image at 50% size -->
+                        <div class="mx-auto aspect-video border shadow shadow-sm bg-gray-10 rounded mb-3 overflow-hidden">
+                          <img 
+                            src={sample.input.screenshot} 
+                            alt="Screenshot" 
+                            class="w-full h-full object-cover"
+                          />
+                        </div>
+                        
+                        <!-- Task section -->
+                        <div class="mb-3">
+                          <div class="text-xs font-mono font-bold text-gray-400">
+                            task
+                          </div>
+                          <div class="text-xs font-mono">
+                            <code class="text-black">{sample.input.instruction}</code>
+                          </div>
+                        </div>
+                        
+                        <!-- Action section -->
+                        <div>
+                          <div class="text-xs font-mono font-bold text-gray-400">
+                            action
+                          </div>
+                          <div class="text-xs font-mono">
+                            <code class="text-black">{sample.action}</code>
+                          </div>
+                        </div>
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              </div>
+              
+              <!-- Right Column - Scrolling Up -->
+              <div class="overflow-y-hidden pl-1 relative">
+                <div class="animate-scroll-up">
+                  {#each datasetSamples as sample, i}
+                    {#if i % 2 === 1}
+                      <div class="mb-2 rounded-lg bg-gray-50 border border-gray-200 overflow-hidden p-3 text-gray-800 shadow-sm">
+                        <div class="mx-auto aspect-video border shadow shadow-sm bg-gray-100 rounded mb-3 overflow-hidden">
+                          <img 
+                            src={sample.input.screenshot} 
+                            alt="Screenshot" 
+                            class="w-full h-full object-cover"
+                          />
+                        </div>
+                        
+                        <!-- Task section -->
+                        <div class="mb-3">
+                          <div class="text-xs font-mono font-bold text-gray-400">
+                            task
+                          </div>
+                          <div class="text-xs font-mono">
+                            <code class="text-black">{sample.input.instruction}</code>
+                          </div>
+                        </div>
+                        
+                        <!-- Action section -->
+                        <div>
+                          <div class="text-xs font-mono font-bold text-gray-400">
+                            action
+                          </div>
+                          <div class="text-xs font-mono">
+                            <code class="text-black">{sample.action}</code>
+                          </div>
+                        </div>
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Agent Chat -->
       <div class="grid items-center gap-12 lg:grid-cols-2 opacity-50">
+        <div class="text-center lg:text-left">
+          <div class="flex flex-wrap gap-2 mb-3">
+            <div class="inline-block rounded-full bg-green-100 px-4 py-1 text-sm font-medium text-green-800">
+              Open Weights
+            </div>
+            <div class="inline-block rounded-full bg-purple-100 px-4 py-1 text-sm font-medium text-purple-800">
+              Coming Soon
+            </div>
+          </div>
+          <div class="mb-4 flex items-center gap-3">
+            <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
+              <Bot class="h-6 w-6 text-purple-500" />
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900">Computer-Use Agent</h2>
+          </div>
+          <p class="mb-6 text-lg text-gray-600">
+            Chat with VM-1, a state-of-the-art computer-use agent trained with the data generated by the community.
+          </p>
+        </div>
         <div class="relative aspect-video rounded-xl border shadow-2xl overflow-hidden">
           <div class="absolute inset-0 bg-gray-50 backdrop-blur-sm"></div>
           <div class="absolute inset-0 flex items-center justify-center">
@@ -302,20 +498,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="text-center lg:text-left">
-          <div class="mb-3 inline-block rounded-full bg-purple-100 px-4 py-1 text-sm font-medium text-purple-800">
-            Coming Soon
-          </div>
-          <div class="mb-4 flex items-center gap-3">
-            <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
-              <Bot class="h-6 w-6 text-purple-500" />
-            </div>
-            <h2 class="text-3xl font-bold text-gray-900">Computer-Use Agent</h2>
-          </div>
-          <p class="mb-6 text-lg text-gray-600">
-            Chat with VM-1, a state-of-the-art computer-use agent trained with the data generated by the community.
-          </p>
         </div>
       </div>
 
