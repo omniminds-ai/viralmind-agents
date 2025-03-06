@@ -211,7 +211,7 @@
 
   <!-- Features Section -->
   <section class="bg-gray-50 py-20">
-    <div class="mx-auto max-w-6xl px-4 flex flex-col gap-12 py-12">
+    <div class="mx-auto max-w-6xl px-4 flex flex-col gap-24 py-12">
       <!-- Training Gym -->
       <div class="mb-20 grid items-center gap-12 lg:grid-cols-2">
         <div class="relative rounded bg-gray-100 overflow-hidden shadow-2xl">
@@ -232,7 +232,7 @@
             <h2 class="text-3xl font-bold text-gray-900">Training Gym</h2>
           </div>
           <p class="mb-6 text-lg text-gray-600">
-            Show AI how to use apps, earn rewards. Get instant $VIRAL payments for quality demonstrations.
+            Show AI how to use apps, earn rewards. Get instant $VIRAL payments when you upload demonstrations.
           </p>
           <button 
             on:click={() => showTrainingVideo = true}
@@ -258,7 +258,7 @@
             <h2 class="text-3xl font-bold text-gray-900">The Forge</h2>
           </div>
           <p class="mb-6 text-lg text-gray-600">
-            Specify your AI needs, we'll handle the rest. Quality-driven community demonstrations power your specialized agent.          </p>
+            Specify your AI needs, we'll handle the rest. Quality demonstrations at scale train your specialized agent.          </p>
           <button 
             on:click={() => showForgeVideo = true}
             class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow hover:bg-gray-50 transition-colors"
@@ -334,7 +334,7 @@
             <h2 class="text-3xl font-bold text-gray-900">Video-Language-Action Dataset</h2>
           </div>
           <p class="mb-6 text-lg text-gray-600">
-            The first open desktop dataset of its kind, designed for frontier action models.
+            The first open dataset of its kind, designed for frontier action models that live on the desktop.
           </p>
           <a 
             href="/datasets"
@@ -348,6 +348,44 @@
           <div class="text-sm font-medium text-gray-700 mb-3 flex justify-between items-center">
             <span>Dataset Preview</span>
             <span class="text-xs text-gray-500">5M+ samples</span>
+          </div>
+          <!-- Filters row -->
+          <div class="mb-3 flex items-center gap-2 text-xs text-gray-600 opacity-50">
+            <span class="mr-1">Filters:</span>
+            <div class="flex items-center gap-1">
+              <div class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-purple-100">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3 text-purple-600">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <span>video</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <div class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-purple-100">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3 text-purple-600">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <span>task</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <div class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-purple-100">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-3 w-3 text-purple-600">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <span>action</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <div class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300">
+              </div>
+              <span>uitree</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <div class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300">
+              </div>
+              <span>reward</span>
+            </div>
           </div>
           <div class="h-[350px] overflow-hidden relative">
             <!-- White overlay for scroll area -->
@@ -534,5 +572,4 @@
       {/if}
     </div>
   </section>
-
 </div>
