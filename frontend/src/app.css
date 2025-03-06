@@ -30,3 +30,47 @@ body {
 .animated-underline:hover::after {
   width: 100%;
 }
+
+@keyframes scroll-down {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes scroll-up {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-scroll-down {
+  animation: scroll-down 600s linear infinite;
+  /* Double the content to create seamless loop */
+  padding-bottom: 100%;
+  position: relative;
+}
+
+.animate-scroll-up {
+  animation: scroll-up 600s linear infinite;
+  /* Double the content to create seamless loop */
+  padding-bottom: 100%;
+  position: relative;
+}
+
+.animate-scroll-down::after,
+.animate-scroll-up::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 60px;
+  width: 100%;
+  background: linear-gradient(to top, white, transparent);
+  pointer-events: none;
+}

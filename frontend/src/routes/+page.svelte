@@ -134,7 +134,7 @@
           </h2>
           <p class="mb-6 text-xl text-gray-600">
             <!-- Join us in pioneering the future of AI through crowdsourced computer-use demonstrations. We're accelerating frontier AI with open-source datasets and tools, making powerful computer-use agents accessible to everyone. -->
-            Building the foundation for powerful computer-use agents through community-driven computer-use datasets, open-source tools, and frontier research. We want to improve the world by providing amazing computer-use agents.
+            Building the foundation for powerful computer-use agents through crowdsourced action datasets, open-source tools, and frontier research. We want to improve the world by providing amazing computer-use agents.
           </p>
           <div class="flex items-center gap-4">
             <a 
@@ -334,14 +334,14 @@
             <h2 class="text-3xl font-bold text-gray-900">Multimodal Action Dataset</h2>
           </div>
           <p class="mb-6 text-lg text-gray-600">
-            The first multimodal desktop interaction dataset for the community. Powering the next generation of computer-use AI agents with high-quality demonstrations.
+            The first multimodal desktop interaction dataset for the community. Designed for frontier action models.
           </p>
           <a 
             href="/datasets"
             class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow hover:bg-gray-50 transition-colors"
           >
             <Book class="h-5 w-5" />
-            Request Early Access
+            Learn More
           </a>
         </div>
         <div class="order-2 lg:order-1 relative rounded-xl bg-white p-4 shadow-2xl border border-gray-100 h-[400px] overflow-hidden">
