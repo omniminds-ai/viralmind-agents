@@ -134,7 +134,7 @@
           </h2>
           <p class="mb-6 text-xl text-gray-600">
             <!-- Join us in pioneering the future of AI through crowdsourced computer-use demonstrations. We're accelerating frontier AI with open-source datasets and tools, making powerful computer-use agents accessible to everyone. -->
-            Building the foundation for powerful computer-use agents through crowdsourced action datasets, open-source tools, and frontier research. We want to improve the world by providing amazing computer-use agents.
+            Building the foundation for powerful computer-use agents through crowdsourced action datasets, open-source tools, and frontier agent models. We want to improve the world by providing amazing computer-use agents.
           </p>
           <div class="flex items-center gap-4">
             <a 
