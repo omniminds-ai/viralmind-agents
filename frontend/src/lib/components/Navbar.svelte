@@ -2,7 +2,7 @@
 <script lang="ts">
   import logo from '$lib/assets/logo.png';
   import logoTitle from '$lib/assets/logo_title.png';
-import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, ChevronDown, Users, Hammer, Dumbbell, Earth } from 'lucide-svelte';
+  import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, ChevronDown, Users, Hammer, Dumbbell, Earth, Monitor } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
   import { slide } from 'svelte/transition';
@@ -73,7 +73,7 @@ import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, C
             
             {#if isDropdownOpen === 'ecosystem'}
               <div
-                class="absolute left-0 mt-2 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
+                class="absolute left-0 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
                 transition:slide
               >
                 <a
@@ -89,8 +89,20 @@ import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, C
                   </div>
                 </a>
                 <a
-                  href="/gym"
+                  href="/desktop"
                   class="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                >
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
+                    <Monitor class="h-4 w-4 min-w-4 text-purple-500" />
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-900">Viralmind Desktop</div>
+                    <div class="text-xs text-gray-500">All-in-one AI application</div>
+                  </div>
+                </a>
+                <a
+                  href="/desktop#gym"
+                  class="flex items-center gap-3 rounded-lg p-3 ml-4 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
                 >
                   <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
                     <Dumbbell class="h-4 w-4 text-purple-500" />
@@ -101,8 +113,8 @@ import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, C
                   </div>
                 </a>
                 <a
-                  href="/forge"
-                  class="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                  href="/desktop#forge"
+                  class="flex items-center gap-3 rounded-lg p-3 ml-4 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
                 >
                   <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
                     <Hammer class="h-4 w-4 text-purple-500" />
@@ -224,8 +236,7 @@ import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, C
               <Download class="h-4 w-4 transition-transform group-hover:scale-110" />
             </div>
             <div class="flex items-center gap-2">
-              <span>Download App</span>
-              <span class="font-medium opacity-80">→</span>
+              <span>Download for Desktop</span>
             </div>
         </a>
 
@@ -261,15 +272,22 @@ import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, C
               Viral Token
             </a>
             <a
-              href="/gym"
+              href="/desktop"
               class="flex items-center gap-3 py-2 px-2 text-gray-600 transition-colors hover:text-gray-900"
+            >
+              <Monitor class="h-5 w-5 min-w-5" />
+              Viralmind Desktop
+            </a>
+            <a
+              href="/desktop#gym"
+              class="flex items-center gap-3 py-2 px-2 ml-5 text-gray-600 transition-colors hover:text-gray-900"
             >
               <Dumbbell class="h-5 w-5" />
               Training Gym
             </a>
             <a
-              href="/forge"
-              class="flex items-center gap-3 py-2 px-2 text-gray-600 transition-colors hover:text-gray-900"
+              href="/desktop#forge"
+              class="flex items-center gap-3 py-2 px-2 ml-5 text-gray-600 transition-colors hover:text-gray-900"
             >
               <Hammer class="h-5 w-5" />
               The Forge
@@ -328,7 +346,7 @@ import { Download, Trophy, HelpCircle, Book, Coins, Menu, X, Github, Database, C
           <div class="border-t border-gray-200 mt-2 pt-4">
             <a href="/download" class="flex items-center gap-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-2.5 text-white transition-all hover:from-purple-500 hover:to-blue-400">
               <Download class="h-5 w-5 text-white/90" />
-              <span class="font-medium">Download App</span>
+              <span class="font-medium">Download for Desktop</span>
             </a>
           </div>
 
