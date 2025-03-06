@@ -124,6 +124,18 @@
                     <div class="text-xs text-gray-500">Build custom agents</div>
                   </div>
                 </a>
+                <a
+                  href="/gym"
+                  class="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                >
+                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
+                    <Earth class="h-4 w-4 text-purple-500" />
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-900">Training Gym Classic</div>
+                    <div class="text-xs text-gray-500">Browser-based version</div>
+                  </div>
+                </a>
               </div>
             {/if}
           </div>
@@ -291,6 +303,13 @@
             >
               <Hammer class="h-5 w-5" />
               The Forge
+            </a>
+            <a
+              href="/gym"
+              class="flex items-center gap-3 py-2 px-2 text-gray-600 transition-colors hover:text-gray-900"
+            >
+              <Earth class="h-5 w-5" />
+              Training Gym Classic
             </a>
           </div>
 

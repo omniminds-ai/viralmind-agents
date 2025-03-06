@@ -187,7 +187,7 @@
         <div class="flex justify-center gap-4">
           <ButtonCTA href="/download" class="inline-flex items-center gap-2">
             <Download class="h-5 w-5" />
-            Download for Windows
+            Download for Desktop
           </ButtonCTA>
           <a 
             href="https://github.com/viralmind-ai/desktop" 

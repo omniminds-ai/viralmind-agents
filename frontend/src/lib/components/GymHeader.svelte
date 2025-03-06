@@ -60,18 +60,11 @@
       <!-- Center navigation -->
       <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center space-x-8 lg:flex">
         <a
-          href="/gym/free-races"
+          href="/gym"
           class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
         >
           <Trophy class="h-4 w-4" />
-          Free Races
-        </a>
-        <a
-          href="/gym/staked-races"
-          class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
-        >
-          <Dumbbell class="h-4 w-4" />
-          Staked Races
+          Tasks
         </a>
         <a
           href="/gym/history"
@@ -107,20 +100,12 @@
       >
         <nav class="space-y-4 px-6 py-4">
           <a
-            href="/gym/free-races"
+            href="/gym"
             onclick={() => (isMobileMenuOpen = false)}
             class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
           >
             <Trophy class="h-4 w-4" />
-            Free Races
-          </a>
-          <a
-            href="/gym/staked-races"
-            onclick={() => (isMobileMenuOpen = false)}
-            class="flex items-center gap-2 text-sm text-gray-300 transition-colors hover:text-white"
-          >
-            <Dumbbell class="h-4 w-4" />
-            Staked Races
+            Tasks
           </a>
           <a
             href="/gym/history"
