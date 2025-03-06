@@ -331,10 +331,10 @@
             <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
               <Book class="h-6 w-6 text-purple-500" />
             </div>
-            <h2 class="text-3xl font-bold text-gray-900">Multimodal Action Dataset</h2>
+            <h2 class="text-3xl font-bold text-gray-900">Video-Language-Action Dataset</h2>
           </div>
           <p class="mb-6 text-lg text-gray-600">
-            The first multimodal desktop interaction dataset for the community. Designed for frontier action models.
+            The first open desktop dataset of its kind, designed for frontier action models.
           </p>
           <a 
             href="/datasets"
