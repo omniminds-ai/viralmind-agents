@@ -119,7 +119,7 @@
       bgGradient: 'from-emerald-900/50 via-emerald-800/40 to-stone-900/50',
       hoverGradient: '',
       buttonText: 'Read Guide',
-      href: 'https://viralmind.gitbook.io/viralmind.ai/train-your-own-agentic-lams'
+      href: 'https://docs.viralmind.ai/viralmind.ai/train-your-own-agentic-lams'
     },
     {
       id: 'vm1',
@@ -132,7 +132,7 @@
       bgGradient: 'from-purple-900/50 via-purple-800/40 to-stone-900/50',
       hoverGradient: '',
       buttonText: 'Read the Docs',
-      href: 'https://viralmind.gitbook.io/viralmind.ai/vm-1-the-future-of-large-action-models'
+      href: 'https://docs.viralmind.ai/viralmind.ai/vm-1-the-future-of-large-action-models'
     }
   ];
 
