@@ -1076,7 +1076,7 @@ router.get('/apps', async (req: Request, res: Response) => {
       // If pool_id specified, return all apps for that pool regardless of status
       apps = await ForgeApp.find({ pool_id: pool_id.toString() }).populate(
         'pool_id',
-        'name status'
+        'name status pricePerDemo'
       );
     } else {
       // If no pool_id, only return apps from live pools
