@@ -78,7 +78,7 @@
           <!-- How to Trade -->
           <div>
             <h3 class="mb-6 text-xl font-bold text-gray-900">Where do I trade $VIRAL?</h3>
-            <p class="mb-2 text-gray-600">Buy or sell $VIRAL through secure exchanges:</p>
+            <p class="mb-2 text-gray-600">Buy or sell $VIRAL with $USDC or $SOL through secure exchanges:</p>
             <a
               href={TOKEN_DATA.dexscreenerUrl}
               target="_blank"
