@@ -198,13 +198,6 @@
             <span class="animated-underline">View Source</span>
           </a>
         </div>
-        <a 
-          href="https://viralmind.ai/gym/"
-          target="_blank" 
-          class="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          or use the legacy web version →
-        </a>
       </div>
     </div>
   </section>
@@ -223,7 +216,7 @@
         </div>
         <div class="text-center lg:text-left">
           <div class="mb-3 inline-block rounded-full bg-purple-100 px-4 py-1 text-sm font-medium text-purple-800">
-            Earn $VIRAL by contributing
+            Earn $VIRAL by sharing data
           </div>
           <div class="mb-4 flex items-center gap-3">
             <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
