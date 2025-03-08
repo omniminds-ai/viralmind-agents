@@ -100,8 +100,12 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
       // Only proceed if this is still the active generation
       // @ts-ignore
       if (activeGenerations.get(poolId) === generationPromise) {
-        // Parse apps from response
-        const apps = JSON.parse(content);
+        // Parse content from response
+        const generatedContent = JSON.parse(content);
+        
+        // Extract apps from the new format (object with name and apps array)
+        const collectionName = generatedContent.name || "Generated Gym";
+        const apps = generatedContent.apps || [];
 
         // Store new apps
         for (const app of apps) {
@@ -112,7 +116,7 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
         }
         console.log(`Successfully generated apps for pool ${poolId}`);
         await notifyForgeWebhook(
-          `✅ Generated ${apps.length} apps for pool "${pool.name}" (${poolId})\n${apps
+          `✅ Generated ${apps.length} apps for gym "${collectionName}" in pool "${pool.name}" (${poolId})\n${apps
             .map((a: { name: string }) => `- ${a.name}`)
             .join('\n')}`
         );
@@ -147,7 +151,8 @@ You are designing natural task examples for various websites and apps to train A
 - Given a list of computer skills, generate **apps and their associated tasks** that naturally incorporate those skills.  
 - Use **common digital services** unless a specific app/website is provided.  
 - Each app should have at least **5 tasks** representing **real-world user interactions**.  
-- Ensure **tasks align with the provided skills** rather than being random generic actions.  
+- Ensure **tasks align with the provided skills** rather than being random generic actions.
+- IMPORTANT: Avoid using personal pronouns like "my" or "your" in task descriptions. Use neutral, general language.
 - Be as exhaustive as possible, enumerating every relevant app and task given the input skill list.
 
 ### **Guidelines for Mapping Skills to Apps:**  
@@ -155,67 +160,72 @@ You are designing natural task examples for various websites and apps to train A
 #### **1. Browser Management → Web Browsers (Chrome, Firefox, Edge, Safari, etc.)**
 ✅ **Examples:** Google Chrome, Mozilla Firefox, Microsoft Edge  
 ✅ **Tasks:**  
-- "Change my default search engine to DuckDuckGo in Chrome."  
-- "Restore all the tabs I accidentally closed in Firefox."  
-- "Clear my browsing history and cookies in Edge."  
-- "Save this webpage as a PDF in Safari."  
+- "Change the default search engine to DuckDuckGo in Chrome."  
+- "Restore recently closed tabs in Firefox."  
+- "Clear browsing history and cookies in Edge."  
+- "Save a webpage as a PDF in Safari."  
 - "Install an ad blocker extension in Chrome."  
 
 #### **2. Office Suite → Office Productivity Apps (Microsoft Office, Google Docs, LibreOffice, etc.)**
 ✅ **Examples:** Microsoft Word, Google Docs, LibreOffice Writer  
 ✅ **Tasks:**  
-- "Format my document with proper headings in Word."  
-- "Convert this DOCX file to PDF in Google Docs."  
+- "Format a document with proper headings in Word."  
+- "Convert a DOCX file to PDF in Google Docs."  
 - "Create a table with merged cells in LibreOffice Writer."  
 - "Set up automatic spell check in Word."  
-- "Insert a graph from an Excel sheet into my Google Docs file."  
+- "Insert a graph from an Excel sheet into a Google Docs file."  
 
 #### **3. Email Client → Email Services (Gmail, Outlook, Thunderbird, etc.)**
 ✅ **Examples:** Gmail, Microsoft Outlook, Mozilla Thunderbird  
 ✅ **Tasks:**  
 - "Set up an email signature in Outlook."  
-- "Create a filter to move all newsletters to a specific folder in Gmail."  
-- "Export my emails from Thunderbird to a backup file."  
+- "Create a filter to move newsletters to a specific folder in Gmail."  
+- "Export emails from Thunderbird to a backup file."  
 - "Redirect incoming emails to a different address in Outlook."  
-- "Organize my inbox by creating custom labels in Gmail."  
+- "Organize an inbox by creating custom labels in Gmail."  
 
 #### **4. Image Editing → Image Editors (Photoshop, GIMP, Canva, etc.)**
 ✅ **Examples:** Adobe Photoshop, GIMP, Canva  
 ✅ **Tasks:**  
-- "Batch resize all these images in Photoshop."  
+- "Batch resize multiple images in Photoshop."  
 - "Convert a PNG file to JPG in GIMP."  
-- "Apply a vintage filter to my photo in Canva."  
+- "Apply a vintage filter to a photo in Canva."  
 - "Enhance the resolution of a blurry image in Photoshop."  
-- "Remove the background from this image in GIMP."  
+- "Remove the background from an image in GIMP."  
 
 #### **5. File Operations → File Management Apps (File Explorer, etc.)**
 ✅ **Examples:** File Explorer, WinRAR  
 ✅ **Tasks:**  
-- "Compress these files into a ZIP folder using File Explorer."  
+- "Compress files into a ZIP folder using File Explorer."  
 - "Recover a deleted file from the Recycle Bin."  
-- "Extract this RAR archive using WinRAR."  
-- "Batch rename all these files in Windows Explorer."  
-- "Backup my documents to an external hard drive."  
+- "Extract a RAR archive using WinRAR."  
+- "Batch rename multiple files in Windows Explorer."  
+- "Backup documents to an external hard drive."  
 
 #### **6. Code Editor → Development Environments (VS Code, Sublime Text, JetBrains, etc.)**
 ✅ **Examples:** Visual Studio Code, Sublime Text, JetBrains IntelliJ IDEA  
 ✅ **Tasks:**  
 - "Install the Python extension in VS Code."  
 - "Set up a dark theme in Sublime Text."  
-- "Configure my workspace settings in JetBrains IntelliJ."  
+- "Configure workspace settings in JetBrains IntelliJ."  
 - "Enable line numbers in Visual Studio Code."  
 - "Use keyboard shortcuts to quickly navigate files in Sublime Text."  
 
-### **Output Format (JSON list):**  
-Output format should be a JSON list where each app follows this structure:
+### **Output Format (JSON object):**  
+Output format should be a JSON object with the following structure:
 {
-  "name": "App Name",
-  "domain": "example.com",
-  "description": "Brief service description",
-  "categories": ["Category1", "Category2"],
-  "tasks": [
+  "name": "Concise Agent Name", // e.g. "Email Manager Agent" instead of "Email Management Task Collection"
+  "apps": [
     {
-      "prompt": "Natural user request"
+      "name": "App Name",
+      "domain": "example.com",
+      "description": "Brief service description",
+      "categories": ["Category1", "Category2"],
+      "tasks": [
+        {
+          "prompt": "Natural user request"
+        }
+      ]
     }
   ]
 }
@@ -230,8 +240,8 @@ Example categories to consider:
 - Lifestyle
 - News & Media
 
-Focus on creating tasks that feel like genuine user requests, similar to:
-- "Order dinner for my family of 4"
+Focus on creating tasks that feel like genuine user requests, similar to (but avoid personal pronouns):
+- "Order dinner for a family of 4"
 - "Book a hotel in Paris for next weekend"
 - "Find running shoes under $100"
 - "Schedule a cleaning service for tomorrow"
@@ -240,7 +250,7 @@ Focus on creating tasks that feel like genuine user requests, similar to:
 {skill list}
 </SKILLS>
 
-Output only the JSON list with no additional text or explanation.`;
+Output only the JSON object with no additional text or explanation.`;
 
 const router: Router = express.Router();
 
@@ -259,6 +269,15 @@ interface CreatePoolBody {
   };
   ownerAddress: string;
   pricePerDemo?: number;
+  apps?: {
+    name: string;
+    domain: string;
+    description: string;
+    categories: string[];
+    tasks: {
+      prompt: string;
+    }[];
+  }[];
 }
 
 interface UpdatePoolBody {
@@ -434,6 +453,27 @@ router.get('/submissions', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error listing submissions:', error);
     res.status(500).json({ error: 'Failed to list submissions' });
+  }
+});
+
+// List submissions for a pool ID
+router.get('/pool-submissions/:poolId', async (req: Request, res: Response) => {
+  try {
+    const { poolId } = req.params;
+    
+    if (!poolId) {
+      res.status(400).json({ error: 'Pool ID is required' });
+      return;
+    }
+
+    const submissions = await ForgeRaceSubmission.find({ 'meta.quest.pool_id': poolId })
+      .sort({ createdAt: -1 })
+      .select('-__v');
+
+    res.json(submissions);
+  } catch (error) {
+    console.error('Error listing pool submissions:', error);
+    res.status(500).json({ error: 'Failed to list pool submissions' });
   }
 });
 
@@ -878,10 +918,21 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
           await pool.save(); // Save the updated status
         }
 
+        // Get token balance from blockchain
+        const tokenBalance = await blockchainService.getTokenBalance(
+          pool.token.address,
+          pool.depositAddress
+        );
+
+        // Get SOL balance for gas
+        const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+
         const poolObj = pool.toObject();
         return {
           ...poolObj,
-          demonstrations: demoCount
+          demonstrations: demoCount,
+          solBalance,
+          tokenBalance
         };
       })
     );
@@ -896,7 +947,7 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
 // Create training pool
 router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
   try {
-    const { name, skills, token, ownerAddress, pricePerDemo } = req.body;
+    const { name, skills, token, ownerAddress, pricePerDemo, apps } = req.body;
 
     if (!name || !skills || !token || !ownerAddress) {
       res.status(400).json({ error: 'Missing required fields' });
@@ -923,10 +974,40 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
 
     await pool.save();
 
-    // Start initial app generation (non-blocking)
-    generateAppsForPool(pool._id.toString(), skills).catch((error) => {
-      console.error('Error generating initial apps:', error);
-    });
+    const poolId = pool._id.toString();
+
+    // If predefined apps were provided, use those
+    if (apps && Array.isArray(apps) && apps.length > 0) {
+      console.log(`Using ${apps.length} predefined apps for pool ${poolId}`);
+      
+      try {
+        // Store the predefined apps
+        for (const app of apps) {
+          await ForgeApp.create({
+            ...app,
+            pool_id: poolId
+          });
+        }
+        
+        // Log success
+        console.log(`Successfully added ${apps.length} predefined apps for pool ${poolId}`);
+        await notifyForgeWebhook(
+          `✅ Added ${apps.length} predefined apps for pool "${pool.name}" (${poolId})\n${apps
+            .map((a) => `- ${a.name}`)
+            .join('\n')}`
+        );
+      } catch (error) {
+        const appError = error as Error;
+        console.error('Error adding predefined apps:', appError);
+        await notifyForgeWebhook(`❌ Error adding predefined apps for pool ${poolId}: ${appError.message}`);
+        // Continue with creating the pool, just log the error
+      }
+    } else {
+      // No predefined apps, generate them using OpenAI (non-blocking)
+      generateAppsForPool(poolId, skills).catch((error) => {
+        console.error('Error generating initial apps:', error);
+      });
+    }
 
     // Create response object without private key
     const { depositPrivateKey: _, ...response } = pool.toObject();
@@ -1046,6 +1127,107 @@ router.get('/reward', async (req: Request, res: Response) => {
     pricePerDemo: pool.pricePerDemo
   });
 });
+
+// Generate apps endpoint
+router.post('/generate', async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      res.status(400).json({ error: 'Prompt is required' });
+      return;
+    }
+
+    // Generate new apps using OpenAI
+    const formatted_prompt = APP_TASK_GENERATION_PROMPT.replace('{skill list}', prompt);
+    const response = await openai.chat.completions.create({
+      model: 'o3-mini',
+      reasoning_effort: 'medium',
+      messages: [
+        {
+          role: 'user',
+          content: formatted_prompt 
+        }
+      ]
+    } as any); // Type assertion to handle custom model params
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error('Empty response from OpenAI');
+    }
+
+    // Parse JSON content
+    try {
+      const parsedContent = JSON.parse(content);
+      res.json({
+        content: parsedContent
+      });
+    } catch (parseError) {
+      console.error('Error parsing JSON content:', parseError);
+      // Return unparsed content if JSON parsing fails
+      res.json({
+        content: content,
+        parsing_error: 'Failed to parse content as JSON'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating content:', error);
+    res.status(500).json({ error: 'Failed to generate content' });
+  }
+});
+
+/**
+ * ## API Documentation
+ * 
+ * ### POST /forge/generate
+ * 
+ * Generates content using OpenAI's API based on the provided prompt.
+ * 
+ * #### Request Body
+ * ```json
+ * {
+ *   "prompt": "string" // Required: The prompt to send to OpenAI
+ * }
+ * ```
+ * 
+ * #### Response
+ * ```json
+ * {
+ *   "content": {} // Parsed JSON content from OpenAI's response
+ * }
+ * ```
+ * 
+ * #### Error Response
+ * If JSON parsing fails:
+ * ```json
+ * {
+ *   "content": "string", // Unparsed content from OpenAI's response
+ *   "parsing_error": "Failed to parse content as JSON"
+ * }
+ * ```
+ * 
+ * If OpenAI request fails:
+ * ```json
+ * {
+ *   "error": "Failed to generate content"
+ * }
+ * ```
+ * 
+ * #### Example Usage
+ * ```javascript
+ * const response = await fetch('/api/forge/generate', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Content-Type': 'application/json'
+ *   },
+ *   body: JSON.stringify({
+ *     prompt: "Generate app tasks for the following skills: Browser Management, File Operations"
+ *   })
+ * });
+ * const data = await response.json();
+ * // data.content will contain the parsed JSON array of app tasks
+ * ```
+ */
 
 // Get $VIRAL balance for an address
 router.get('/balance/:address', async (req: Request, res: Response) => {
