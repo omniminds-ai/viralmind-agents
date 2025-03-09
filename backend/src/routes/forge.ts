@@ -18,7 +18,7 @@ import BlockchainService from '../services/blockchain/index.ts';
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
 import multer from 'multer';
 import { createReadStream } from 'fs';
-import { mkdir, unlink, copyFile } from 'fs/promises';
+import { mkdir, unlink, copyFile, stat } from 'fs/promises';
 import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
@@ -359,6 +359,7 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
     const uploads = await Promise.all(
       requiredFiles.map(async (file) => {
         const filePath = path.join(extractDir, file);
+        const fileStats = await stat(filePath);
         const s3Key = `forge-races/${Date.now()}-${file}`;
 
         await s3Service.saveItem({
@@ -367,7 +368,7 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
           name: s3Key
         });
 
-        return { file, s3Key };
+        return { file, s3Key, size: fileStats.size };
       })
     );
 

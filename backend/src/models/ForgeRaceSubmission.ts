@@ -237,7 +237,8 @@ export const forgeRaceSubmissionSchema = new mongoose.Schema(
     files: [
       {
         file: String,
-        s3Key: String
+        s3Key: String,
+        size: Number
       }
     ],
     grade_result: {
