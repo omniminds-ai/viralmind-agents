@@ -1,5 +1,5 @@
-import express, { Request, Response, Router } from 'express';
-import { Keypair } from '@solana/web3.js';
+import express, { Request, Response, Router, NextFunction } from 'express';
+import { Keypair, PublicKey } from '@solana/web3.js';
 import OpenAI from 'openai';
 import axios from 'axios';
 import { TrainingPoolModel, TrainingPool, TrainingPoolStatus } from '../models/TrainingPool.js';
@@ -22,6 +22,8 @@ import { mkdir, unlink, copyFile, stat } from 'fs/promises';
 import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
+import * as bs58 from 'bs58';
+import nacl from 'tweetnacl';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 
@@ -254,6 +256,33 @@ Output only the JSON object with no additional text or explanation.`;
 
 const router: Router = express.Router();
 
+// Middleware to resolve connect token to wallet address
+async function requireWalletAddress(req: Request, res: Response, next: NextFunction) {
+  const token = req.headers['x-connect-token'];
+  if (!token || typeof token !== 'string') {
+    res.status(401).json({ error: 'Connect token is required' });
+    return;
+  }
+
+  const connection = await WalletConnectionModel.findOne({ token });
+  if (!connection) {
+    res.status(401).json({ error: 'Invalid connect token' });
+    return;
+  }
+
+  // Add the wallet address to the request object
+  // @ts-ignore - Add walletAddress to the request object
+  req.walletAddress = connection.address;
+  next();
+}
+
+// Function to get address from connect token (for use in routes)
+async function getAddressFromToken(token: string): Promise<string | null> {
+  if (!token) return null;
+  const connection = await WalletConnectionModel.findOne({ token });
+  return connection?.address || null;
+}
+
 interface ConnectBody {
   token: string;
   address: string;
@@ -269,7 +298,7 @@ interface CreatePoolBody {
     symbol: string;
     address: string;
   };
-  ownerAddress: string;
+  ownerAddress?: string; // Now optional since we get it from the token
   pricePerDemo?: number;
   apps?: {
     name: string;
@@ -290,21 +319,18 @@ interface UpdatePoolBody {
 }
 
 interface ListPoolsBody {
-  address: string;
+  address?: string; // Now optional since we get it from the token
 }
 
 // Upload race data endpoint
-router.post('/upload-race', upload.single('file'), async (req: Request, res: Response) => {
+router.post('/upload-race', requireWalletAddress, upload.single('file'), async (req: Request, res: Response) => {
   if (!req.file) {
     res.status(400).json({ error: 'No file uploaded' });
     return;
   }
 
-  const address = req.headers['x-wallet-address'];
-  if (!address || typeof address !== 'string') {
-    res.status(400).json({ error: 'Wallet address is required' });
-    return;
-  }
+  // @ts-ignore - Get walletAddress from the request object
+  const address = req.walletAddress;
 
   try {
     const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
@@ -440,13 +466,10 @@ router.get('/submission/:id', async (req: Request, res: Response) => {
 });
 
 // List submissions for an address
-router.get('/submissions', async (req: Request, res: Response) => {
+router.get('/submissions', requireWalletAddress, async (req: Request, res: Response) => {
   try {
-    const address = req.headers['x-wallet-address'];
-    if (!address || typeof address !== 'string') {
-      res.status(400).json({ error: 'Wallet address is required' });
-      return;
-    }
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
 
     const submissions = await ForgeRaceSubmission.find({ address })
       .sort({ createdAt: -1 })
@@ -460,12 +483,27 @@ router.get('/submissions', async (req: Request, res: Response) => {
 });
 
 // List submissions for a pool ID
-router.get('/pool-submissions/:poolId', async (req: Request, res: Response) => {
+router.get('/pool-submissions/:poolId', requireWalletAddress, async (req: Request, res: Response) => {
   try {
     const { poolId } = req.params;
     
     if (!poolId) {
       res.status(400).json({ error: 'Pool ID is required' });
+      return;
+    }
+
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
+
+    // Verify that the pool belongs to the user
+    const pool = await TrainingPoolModel.findById(poolId);
+    if (!pool) {
+      res.status(404).json({ error: 'Pool not found' });
+      return;
+    }
+
+    if (pool.ownerAddress !== address) {
+      res.status(403).json({ error: 'Not authorized to view submissions for this pool' });
       return;
     }
 
@@ -479,10 +517,6 @@ router.get('/pool-submissions/:poolId', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to list pool submissions' });
   }
 });
-
-import { PublicKey } from '@solana/web3.js';
-import * as bs58 from 'bs58';
-import nacl from 'tweetnacl';
 
 // Store wallet address for token
 router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response) => {
@@ -874,7 +908,7 @@ interface RefreshPoolBody {
 }
 
 // Refresh pool balance
-router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
+router.post('/refresh', requireWalletAddress, async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
   try {
     const { id } = req.body;
 
@@ -886,6 +920,15 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
     const pool = await TrainingPoolModel.findById(id);
     if (!pool) {
       res.status(404).json({ error: 'Training pool not found' });
+      return;
+    }
+
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
+    
+    // Verify that the pool belongs to the user
+    if (pool.ownerAddress !== address) {
+      res.status(403).json({ error: 'Not authorized to refresh this pool' });
       return;
     }
 
@@ -937,15 +980,10 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
 });
 
 // List training pools
-router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) => {
+router.post('/list', requireWalletAddress, async (req: Request, res: Response) => {
   try {
-    const { address } = req.body;
-
-    console.log(address);
-    if (!address) {
-      res.status(400).json({ error: 'Wallet address is required' });
-      return;
-    }
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
 
     const pools = await TrainingPoolModel.find({ ownerAddress: address }).select(
       '-depositPrivateKey'
@@ -994,14 +1032,17 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
 });
 
 // Create training pool
-router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
+router.post('/create', requireWalletAddress, async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
   try {
-    const { name, skills, token, ownerAddress, pricePerDemo, apps } = req.body;
+    const { name, skills, token, pricePerDemo, apps } = req.body;
 
-    if (!name || !skills || !token || !ownerAddress) {
+    if (!name || !skills || !token) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
+
+    // @ts-ignore - Get walletAddress from the request object
+    const ownerAddress = req.walletAddress;
 
     // Generate Solana keypair for deposit address
     const keypair = Keypair.generate();
@@ -1069,7 +1110,7 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
 });
 
 // Update training pool
-router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
+router.post('/update', requireWalletAddress, async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
   try {
     const { id, status, skills, pricePerDemo } = req.body;
 
@@ -1086,6 +1127,12 @@ router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Respons
     const pool = await TrainingPoolModel.findById(id);
     if (!pool) {
       res.status(404).json({ error: 'Training pool not found' });
+      return;
+    }
+    
+    // @ts-ignore - Get walletAddress from the request object
+    if (pool.ownerAddress !== req.walletAddress) {
+      res.status(403).json({ error: 'Not authorized to update this pool' });
       return;
     }
 
@@ -1137,11 +1184,13 @@ router.get('/gym', async (_req: Request, res: Response) => {
 });
 
 // Get reward calculation
-router.get('/reward', async (req: Request, res: Response) => {
-  const { poolId, address } = req.query;
+router.get('/reward', requireWalletAddress, async (req: Request, res: Response) => {
+  const { poolId } = req.query;
+  // @ts-ignore - Get walletAddress from the request object
+  const address = req.walletAddress;
 
-  if (!poolId || !address || typeof poolId !== 'string' || typeof address !== 'string') {
-    res.status(400).json({ error: 'Missing or invalid poolId/address' });
+  if (!poolId || typeof poolId !== 'string') {
+    res.status(400).json({ error: 'Missing or invalid poolId' });
     return;
   }
 
