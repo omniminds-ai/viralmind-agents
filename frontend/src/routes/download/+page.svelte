@@ -40,12 +40,11 @@
   let detectedArch: 'x64' | 'arm' = 'x64';
 
   onMount(async () => {
-    // load download information from github
+    // load download information from our server endpoint
     try {
-      const res = await fetch(
-        'https://github.com/viralmind-ai/desktop/releases/latest/download/latest.json'
-      );
-      const release = (await res.json()) as {
+      // Use our server endpoint instead of direct GitHub fetch
+      const req = await fetch('/download');
+      const release = (await req.json()) as {
         version: string;
         notes: string;
         pub_date: Date;
