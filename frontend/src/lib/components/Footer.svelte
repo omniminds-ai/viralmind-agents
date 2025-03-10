@@ -43,16 +43,16 @@
         </a> -->
 
         <!-- Contract Address -->
-        <div class="flex items-center justify-center gap-2 rounded-full bg-gray-200/75 px-4 py-1 border border-2">
-          <span class="text-xs font-semibold uppercase">contract: </span><code
-            class="w-1/3 truncate font-mono text-sm md:w-full"
-            >HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump</code
-          >
+        <div
+          class="flex w-full items-center justify-center gap-2 rounded-full border-2 bg-gray-200/75 px-4 py-1 md:w-3/4 lg:w-1/2 xl:w-1/4">
+          <span class="text-xs font-semibold uppercase">contract:</span>
+          <code class="truncate font-mono text-sm md:w-full">
+            HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump
+          </code>
           <button
             class="text-xs hover:text-gray-900"
             onclick={() =>
-              navigator.clipboard.writeText('HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump')}
-          >
+              navigator.clipboard.writeText('HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump')}>
             Copy
           </button>
         </div>
