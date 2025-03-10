@@ -11,14 +11,13 @@ import {
   ProcessingStatus,
   addToProcessingQueue
 } from '../models/ForgeRaceSubmission.js';
-import DatabaseService from '../services/db/index.js';
 import { AWSS3Service } from '../services/aws/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
 import multer from 'multer';
 import { createReadStream } from 'fs';
-import { mkdir, unlink, copyFile } from 'fs/promises';
+import { mkdir, unlink, rm, copyFile } from 'fs/promises';
 import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
@@ -327,14 +326,16 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
         await copyFile(tempPath, finalPath);
       } catch (error) {
         await unlink(req.file.path);
-        await unlink(tempDir).catch(() => {});
+        await rm(tempDir, { recursive: true }).catch((e) => console.log('error rmdir on error', e));
         res.status(400).json({ error: `Missing required file: ${file}` });
         return;
       }
     }
 
     // Clean up temp directory
-    await unlink(tempDir).catch(() => {});
+    await rm(tempDir, { recursive: true }).catch((e) => console.log('Error rmdir', e));
+    // clean up multer artifacts
+    await unlink(req.file.path).catch((e) => console.log('error removing multr artifact\n', e));
 
     // Upload each file to S3
     const uploads = await Promise.all(
@@ -361,6 +362,11 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
       }
     }
 
+    // if (await ForgeRaceSubmission.findOne({_id: uuid})) {
+    //   //todo handle already uploaded submissions
+    //   return ;
+    // }
+
     // Create submission record
     const submission = await ForgeRaceSubmission.create({
       _id: uuid,
@@ -382,7 +388,9 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
     console.error('Error uploading race data:', error);
     // Clean up temporary file on error
     if (req.file) {
-      await unlink(req.file.path).catch(() => {});
+      await rm(req.file.path, { recursive: true }).catch((e) =>
+        console.log('Error cleaning up after upload error.', e)
+      );
     }
     res.status(500).json({ error: 'Failed to upload race data' });
   }
@@ -1036,7 +1044,7 @@ router.get('/reward', async (req: Request, res: Response) => {
   //   .digest('hex');
   // // Convert first 8 chars of hash to number between 0-1
   // const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
-  
+
   // Use pricePerDemo as the base reward value
   const reward = pool.pricePerDemo;
 
