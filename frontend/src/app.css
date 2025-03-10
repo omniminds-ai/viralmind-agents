@@ -9,7 +9,7 @@
 }
 
 body {
-  background-color: theme('colors.black');
+  background-color: theme('colors.white');
 }
 
 .animated-underline {

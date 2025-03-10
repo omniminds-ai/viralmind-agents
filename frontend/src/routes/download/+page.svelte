@@ -2,48 +2,34 @@
   import { Download, Lock, UserX, Dumbbell, Hammer } from 'lucide-svelte';
   import { onMount } from 'svelte';
 
+  let version = '0.0.1';
+
   // Define download URLs (placeholders for now)
   const downloads = {
     mac: {
       x64: {
-        url: '#',
-        version: '0.1.0',
-        size: '145 MB',
-        md5: 'e8d98c8eaf84d8e49644a4dae1a7a61e'
+        url: '#'
+        // size: '145 MB',
+        // md5: 'e8d98c8eaf84d8e49644a4dae1a7a61e'
       },
       arm: {
-        url: '#',
-        version: '0.1.0',
-        size: '142 MB',
-        md5: 'a37d72a3bae8ad37e4b37a9c67e39a3f'
+        url: '#'
+        // size: '142 MB',
+        // md5: 'a37d72a3bae8ad37e4b37a9c67e39a3f'
       }
     },
     windows: {
       x64: {
-        url: '#',
-        version: '1.0.0',
-        size: '150 MB',
-        md5: 'f8d93c8bd36e4d6847e8c5ef9a33e9d5'
-      },
-      arm: {
-        url: '#',
-        version: '1.0.0',
-        size: '148 MB',
-        md5: 'b25e6d781943a35cde57fab4b8a3d3ec'
+        url: '#'
+        // size: '150 MB',
+        // md5: 'f8d93c8bd36e4d6847e8c5ef9a33e9d5'
       }
     },
     linux: {
       x64: {
-        url: '#',
-        version: '1.0.0',
-        size: '140 MB',
-        md5: 'c7d92e3a8f4e5d9c861d1e3b8cb47a9a'
-      },
-      arm: {
-        url: '#',
-        version: '1.0.0',
-        size: '138 MB',
-        md5: 'd3a5ef2b97e3dfc38e8a4cf58d6ee659'
+        url: '#'
+        // size: '140 MB',
+        // md5: 'c7d92e3a8f4e5d9c861d1e3b8cb47a9a'
       }
     }
   };
@@ -53,7 +39,57 @@
   let selectedOs: 'mac' | 'windows' | 'linux' = 'mac';
   let detectedArch: 'x64' | 'arm' = 'x64';
 
-  onMount(() => {
+  onMount(async () => {
+    // load download information from github
+    try {
+      const res = await fetch(
+        'https://github.com/viralmind-ai/desktop/releases/latest/download/latest.json'
+      );
+      const release = (await res.json()) as {
+        version: string;
+        notes: string;
+        pub_date: Date;
+        platforms: {
+          'darwin-x86_64': {
+            signature: string;
+            url: string;
+          };
+          'linux-x86_64': {
+            signature: string;
+            url: string;
+          };
+          'windows-x86_64': {
+            signature: string;
+            url: string;
+          };
+          'darwin-aarch64': {
+            signature: string;
+            url: string;
+          };
+        };
+      };
+
+      version = release.version;
+      downloads.linux = {
+        x64: {
+          url: release.platforms['linux-x86_64'].url
+        }
+      };
+      downloads.mac = {
+        x64: {
+          url: release.platforms['darwin-x86_64'].url
+        },
+        arm: {
+          url: release.platforms['darwin-aarch64'].url
+        }
+      };
+      downloads.windows = {
+        x64: {
+          url: release.platforms['windows-x86_64'].url
+        }
+      };
+    } catch (e) {}
+
     // Simple OS detection
     const userAgent = navigator.userAgent.toLowerCase();
     if (userAgent.includes('mac')) {
@@ -82,13 +118,13 @@
   });
 </script>
 
-<div class="pt-8">
+<div class="pt-2 md:pt-8">
   <div class="mx-auto max-w-6xl px-10 md:px-5">
     <!-- Header -->
     <div class="my-16 text-center">
       <span
         class="mb-4 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
-        v{downloads.mac.x64.version}
+        v{version}
       </span>
       <h1 class="mb-4 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
         Download ViralMind Desktop
@@ -185,12 +221,12 @@
               <Download class="h-5 w-5" />
               <span>Download</span>
             </a>
-            <div class="mt-1 text-xs text-gray-500">
+            <!-- <div class="mt-1 text-xs text-gray-500">
               Size: {downloads.mac.x64.size}
             </div>
             <div class="text-xs text-gray-500">
               MD5: {downloads.mac.x64.md5}
-            </div>
+            </div> -->
           </div>
 
           <!-- macOS ARM -->
@@ -216,17 +252,17 @@
               <Download class="h-5 w-5" />
               <span>Download</span>
             </a>
-            <div class="mt-1 text-xs text-gray-500">
+            <!-- <div class="mt-1 text-xs text-gray-500">
               Size: {downloads.mac.arm.size}
             </div>
             <div class="text-xs text-gray-500">
               MD5: {downloads.mac.arm.md5}
-            </div>
+            </div> -->
           </div>
         </div>
       {:else if selectedOs === 'windows'}
         <h3 class="mb-6 text-center text-xl font-semibold text-gray-800">Download for Windows</h3>
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="grid grid-cols-1 gap-6">
           <!-- Windows x64 -->
           <div
             class="flex flex-col items-center rounded-xl border border-gray-100 bg-white p-6 shadow-sm {detectedArch ===
@@ -250,16 +286,16 @@
               <Download class="h-5 w-5" />
               <span>Download</span>
             </a>
-            <div class="mt-1 text-xs text-gray-500">
+            <!-- <div class="mt-1 text-xs text-gray-500">
               Size: {downloads.windows.x64.size}
             </div>
             <div class="text-xs text-gray-500">
               MD5: {downloads.windows.x64.md5}
-            </div>
+            </div> -->
           </div>
 
           <!-- Windows ARM -->
-          <div
+          <!-- <div
             class="flex flex-col items-center rounded-xl border border-gray-100 bg-white p-6 shadow-sm {detectedArch ===
             'arm'
               ? 'ring-2 ring-purple-500'
@@ -287,11 +323,11 @@
             <div class="text-xs text-gray-500">
               MD5: {downloads.windows.arm.md5}
             </div>
-          </div>
+          </div> -->
         </div>
       {:else if selectedOs === 'linux'}
         <h3 class="mb-6 text-center text-xl font-semibold text-gray-800">Download for Linux</h3>
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="grid grid-cols-1 gap-6">
           <!-- Linux x64 -->
           <div
             class="flex flex-col items-center rounded-xl border border-gray-100 bg-white p-6 shadow-sm {detectedArch ===
@@ -315,16 +351,16 @@
               <Download class="h-5 w-5" />
               <span>Download</span>
             </a>
-            <div class="mt-1 text-xs text-gray-500">
+            <!-- <div class="mt-1 text-xs text-gray-500">
               Size: {downloads.linux.x64.size}
             </div>
             <div class="text-xs text-gray-500">
               MD5: {downloads.linux.x64.md5}
-            </div>
+            </div> -->
           </div>
 
           <!-- Linux ARM -->
-          <div
+          <!-- <div
             class="flex flex-col items-center rounded-xl border border-gray-100 bg-white p-6 shadow-sm {detectedArch ===
             'arm'
               ? 'ring-2 ring-purple-500'
@@ -352,7 +388,7 @@
             <div class="text-xs text-gray-500">
               MD5: {downloads.linux.arm.md5}
             </div>
-          </div>
+          </div> -->
         </div>
       {/if}
     </div>
