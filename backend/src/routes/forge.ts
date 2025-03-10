@@ -335,7 +335,7 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
     // Clean up temp directory
     await rm(tempDir, { recursive: true }).catch((e) => console.log('Error rmdir', e));
     // clean up multer artifacts
-    await unlink(req.file.path);
+    await unlink(req.file.path).catch((e) => console.log('error removing multr artifact\n', e));
 
     // Upload each file to S3
     const uploads = await Promise.all(
