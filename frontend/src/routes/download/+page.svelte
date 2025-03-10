@@ -390,6 +390,18 @@
           </div> -->
         </div>
       {/if}
+      <div></div>
+    </div>
+    <div class="py-2">
+      <p class="text-center text-gray-600">
+        Don't see your platform? Check the latest <a
+          class="text-secondary-300 hover:underline"
+          target="_blank"
+          href="https://github.com/viralmind-ai/desktop/releases/latest/">
+          GitHub release
+        </a>
+        for more installers.
+      </p>
     </div>
   </div>
 
