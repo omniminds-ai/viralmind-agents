@@ -257,6 +257,8 @@ const router: Router = express.Router();
 interface ConnectBody {
   token: string;
   address: string;
+  signature?: string;
+  timestamp?: number;
 }
 
 interface CreatePoolBody {
@@ -478,14 +480,60 @@ router.get('/pool-submissions/:poolId', async (req: Request, res: Response) => {
   }
 });
 
+import { PublicKey } from '@solana/web3.js';
+import * as bs58 from 'bs58';
+import nacl from 'tweetnacl';
+
 // Store wallet address for token
 router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response) => {
   try {
-    const { token, address } = req.body;
+    const { token, address, signature, timestamp } = req.body;
 
     if (!token || !address) {
       res.status(400).json({ error: 'Token and address are required' });
       return;
+    }
+
+    // If signature and timestamp are provided, verify the signature
+    if (signature && timestamp) {
+      // Check if timestamp is within 5 minutes
+      const now = Date.now();
+      if (now - timestamp > 5 * 60 * 1000) {
+        res.status(400).json({ error: 'Timestamp expired' });
+        return;
+      }
+
+      try {
+        // Create the message that was signed
+        const message = `viralmind desktop\nnonce: ${timestamp}`;
+        const messageBytes = new TextEncoder().encode(message);
+        
+        // Convert base64 signature to Uint8Array
+        const signatureBytes = Buffer.from(signature, 'base64');
+        
+        // Convert address to PublicKey
+        const publicKey = new PublicKey(address);
+        
+        // Verify the signature
+        const verified = nacl.sign.detached.verify(
+          messageBytes,
+          signatureBytes,
+          publicKey.toBytes()
+        );
+        
+        if (!verified) {
+          res.status(400).json({ error: 'Invalid signature' });
+          return;
+        }
+      } catch (verifyError) {
+        console.error('Error verifying signature:', verifyError);
+        res.status(400).json({ error: 'Signature verification failed' });
+        return;
+      }
+    } else {
+      // For backward compatibility, allow connections without signature
+      // In production, you might want to require signatures
+      console.warn('Connection without signature from address:', address);
     }
 
     // Store connection token with address
