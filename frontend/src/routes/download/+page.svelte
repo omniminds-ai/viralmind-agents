@@ -103,7 +103,10 @@
     }
 
     // Simple architecture detection (not foolproof)
-    if (userAgent.includes('arm') || !navigator.userAgent.match(/OS X 10_([789]|1[01234])/)) {
+    if (
+      userAgent.includes('arm') ||
+      (!navigator.userAgent.match(/OS X 10_([789]|1[01234])/) && userAgent.includes('mac'))
+    ) {
       detectedArch = 'arm';
     }
 
