@@ -292,9 +292,29 @@ export async function processNextInQueue() {
   let submission = null;
 
   try {
-    submission = await ForgeRaceSubmission.findById(submissionId);
+    // Retry findById 3 times with 100ms delay between attempts
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        submission = await ForgeRaceSubmission.findById(submissionId);
+        if (submission) break;
+        retries--;
+        if (retries === 0) {
+          throw new Error(`Submission ${submissionId} not found`);
+        }
+        // Wait 100ms before retrying
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+        // Wait 100ms before retrying
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+    
+    // After retries, ensure submission is not null
     if (!submission) {
-      throw new Error(`Submission ${submissionId} not found`);
+      throw new Error(`Submission ${submissionId} not found after retries`);
     }
 
     // Update status to processing
