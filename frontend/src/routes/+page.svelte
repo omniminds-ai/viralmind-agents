@@ -130,9 +130,7 @@
   });
 
   function handleGenerateGym() {
-    if (dreamAgentInput) {
-      window.location.href = `/new-gym?skills=${encodeURIComponent(dreamAgentInput)}`;
-    }
+    window.location.href = `/download`;
   }
 </script>
 
@@ -357,7 +355,6 @@
               class="w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-blue-600">
               Generate Training Gym
             </button>
-            <p class="mt-1 text-center text-xs text-gray-500">1 SOL setup fee</p>
           </div>
         </div>
       </div>
