@@ -2,11 +2,11 @@
   import { onMount } from 'svelte';
   import { walletStore } from '$lib/walletStore';
   import { Coins } from 'lucide-svelte';
-  import { Buffer } from "buffer";
+  import { Buffer } from 'buffer';
 
   let token = '';
   let connecting = false;
-  
+
   onMount(() => {
     // Get token from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
@@ -24,7 +24,7 @@
       }
 
       // Select and connect to Phantom wallet
-      const phantomWallet = $walletStore.wallets.find(w => w.adapter.name === 'Phantom');
+      const phantomWallet = $walletStore.wallets.find((w) => w.adapter.name === 'Phantom');
       if (!phantomWallet) {
         alert('Phantom wallet not found. Please install Phantom wallet.');
         return;
@@ -50,7 +50,7 @@
       const messageBytes = new TextEncoder().encode(message);
       const signature = await $walletStore.signMessage(messageBytes);
       const signatureBase64 = Buffer.from(signature).toString('base64');
-      
+
       // Send address, signature and timestamp to backend
       await fetch('/api/forge/connect', {
         method: 'POST',
@@ -89,16 +89,17 @@
 
     {#if !token}
       <div class="text-red-600 text-center mb-4 p-4 rounded-lg bg-red-50">
+
         Error: No connection token provided
       </div>
     {:else}
       <button
         on:click={connectWallet}
         disabled={connecting}
-        class="w-full px-6 py-3 text-white font-medium bg-gradient-to-r from-purple-500 to-blue-500 rounded-full hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
+        class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-3 font-medium text-white transition-all duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
         {#if connecting}
-          <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white">
+          </div>
           Connecting...
         {:else}
           Connect Phantom Wallet
