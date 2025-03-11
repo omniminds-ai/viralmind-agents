@@ -26,8 +26,6 @@ app.use(express.json({ limit: '5mb' }));
 app.use(function (req, res, next) {
   // Origin to allow
   const allowedOrigins = [
-    'tauri://localhost',
-    'http://tauri.localhost',
     'http://localhost:1420',
     'http://localhost:3000',
     'http://localhost:8001',
@@ -46,7 +44,7 @@ app.use(function (req, res, next) {
   res.setHeader('Access-Control-Expose-Headers', 'auth-token, x-forwarded-for');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-Requested-With,content-type,auth-token,cancelToken,responsetype,x-forwarded-for,x-wallet-address,content-length,x-connect-token'
+    'X-Requested-With,content-type,auth-token,cancelToken,responsetype,x-forwarded-for,x-wallet-address,x-connect-token,content-length'
   );
   next();
 });

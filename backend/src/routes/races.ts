@@ -175,44 +175,31 @@ async function generateHint(
               text: `Current quest: ${currentQuest}
 Previous hints: ${hintHistory.slice(-3).join(', ')}
 
-CRITICAL VALIDATION RULES:
-1. Text editor screenshots (Notepad, TextEdit, etc.) claiming task completion are NEVER valid evidence
-2. Text-only messages like "Task successfully completed" are NOT sufficient evidence
-3. Screenshots must show the ACTUAL APPLICATION required for the task
-4. Any screenshot containing "Task successfully completed" text should be scrutinized carefully
-
-Before providing any analysis:
+Before providing any analysis, first verify if the image contains actual content:
 - If the image is entirely or predominantly black/blank with no visible elements, immediately set "isCompleted" to false
-- If the required application for completing the task is not visible, set "isCompleted" to false
-- If the screenshot only shows a text editor with text claiming completion, set "isCompleted" to false
+- If you cannot clearly see any content in the image, set "isCompleted" to false
 
-Application validation:
-1. Identify the specific application needed for "${currentQuest}" (e.g., jspaint, Excel, Minecraft)
-2. Verify this specific application is clearly visible in the screenshot
-3. For each quest type, verify appropriate application-specific elements:
-   - Drawing tasks: Must show the drawing application with relevant tools and canvas
-   - Spreadsheet tasks: Must show Excel/spreadsheet software with cells/formulas
-   - Gaming tasks: Must show the actual game environment with game-specific UI
-   - Writing tasks: Must show appropriate text editor WITH the required content visible
+Validation checklist:
+1. Can you clearly identify at least one interactive element in the screenshot?
+2. Are there visible GUI components that indicate the user is in the correct application/screen?
+3. Is there visible evidence of user interaction or progress toward the task?
+If you answer "no" to any of these questions, set "isCompleted" to false.
 
-Evidence validation:
-1. Can you identify application-specific interactive elements that match the required task?
-2. Is there visible evidence of actual progress (not just text claiming completion)?
-3. Are there signs of authentic user interaction with the required application?
+First, analyze if the core task has been completed. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details. For drawing tasks, consider them complete if the basic shape/object is recognizable.
 
-First, analyze if the core task has been completed in the CORRECT APPLICATION. Focus only on the main objectives - ignore artistic style, specific colors, or minor visual details.
+Compare the screenshot against what you would expect to see for a completed task. List specific elements you would expect to see, and verify their presence.
 
-Compare the screenshot against what you would expect to see for a completed task IN THE SPECIFIC REQUIRED APPLICATION. List specific application elements you would expect to see, and verify their presence.
+Then provide a single actionable hint (if needed) that includes one of these patterns if applicable:
+- Type 'x[TAB]' to autocomplete
+- Navigate the Gnome menu to find [target]
+- Click the [specific Gnome element]
+- Move cursor to [exact location]
 
-Then provide a single actionable hint (if needed) that includes specific application guidance:
-- For drawing tasks: Suggest specific tools in the drawing application
-- For spreadsheet tasks: Suggest Excel-specific functions or features
-- For gaming tasks: Suggest game-specific controls or mechanics
-- For text tasks: Suggest appropriate content formatting
+If the image appears to be a black screen, include this specific hint: "I cannot see any content in your screenshot. Please ensure your screen is on and you've captured the correct window. Try pressing Alt+PrintScreen to capture only the active window."
 
 Output as JSON with three fields:
-1. "reasoning": Your analysis of what's been accomplished vs core requirements (include verification of correct application)
-2. "isCompleted": Boolean based on basic task completion IN THE CORRECT APPLICATION
+1. "reasoning": Your analysis of what's been accomplished vs core requirements (ignore artistic details)
+2. "isCompleted": Boolean based on basic task completion
 3. "hint": A single sentence hint if not completed`
             },
             {

@@ -1,5 +1,5 @@
-import express, { Request, Response, Router } from 'express';
-import { Keypair } from '@solana/web3.js';
+import express, { Request, Response, Router, NextFunction } from 'express';
+import { Keypair, PublicKey } from '@solana/web3.js';
 import OpenAI from 'openai';
 import axios from 'axios';
 import { TrainingPoolModel, TrainingPool, TrainingPoolStatus } from '../models/TrainingPool.js';
@@ -11,16 +11,19 @@ import {
   ProcessingStatus,
   addToProcessingQueue
 } from '../models/ForgeRaceSubmission.js';
+import DatabaseService from '../services/db/index.js';
 import { AWSS3Service } from '../services/aws/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
 import multer from 'multer';
 import { createReadStream } from 'fs';
-import { mkdir, unlink, rm, copyFile } from 'fs/promises';
+import { mkdir, unlink, copyFile, stat } from 'fs/promises';
 import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
+import * as bs58 from 'bs58';
+import nacl from 'tweetnacl';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 
@@ -99,8 +102,12 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
       // Only proceed if this is still the active generation
       // @ts-ignore
       if (activeGenerations.get(poolId) === generationPromise) {
-        // Parse apps from response
-        const apps = JSON.parse(content);
+        // Parse content from response
+        const generatedContent = JSON.parse(content);
+        
+        // Extract apps from the new format (object with name and apps array)
+        const collectionName = generatedContent.name || "Generated Gym";
+        const apps = generatedContent.apps || [];
 
         // Store new apps
         for (const app of apps) {
@@ -111,7 +118,7 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
         }
         console.log(`Successfully generated apps for pool ${poolId}`);
         await notifyForgeWebhook(
-          `✅ Generated ${apps.length} apps for pool "${pool.name}" (${poolId})\n${apps
+          `✅ Generated ${apps.length} apps for gym "${collectionName}" in pool "${pool.name}" (${poolId})\n${apps
             .map((a: { name: string }) => `- ${a.name}`)
             .join('\n')}`
         );
@@ -146,7 +153,8 @@ You are designing natural task examples for various websites and apps to train A
 - Given a list of computer skills, generate **apps and their associated tasks** that naturally incorporate those skills.  
 - Use **common digital services** unless a specific app/website is provided.  
 - Each app should have at least **5 tasks** representing **real-world user interactions**.  
-- Ensure **tasks align with the provided skills** rather than being random generic actions.  
+- Ensure **tasks align with the provided skills** rather than being random generic actions.
+- IMPORTANT: Avoid using personal pronouns like "my" or "your" in task descriptions. Use neutral, general language.
 - Be as exhaustive as possible, enumerating every relevant app and task given the input skill list.
 
 ### **Guidelines for Mapping Skills to Apps:**  
@@ -154,67 +162,72 @@ You are designing natural task examples for various websites and apps to train A
 #### **1. Browser Management → Web Browsers (Chrome, Firefox, Edge, Safari, etc.)**
 ✅ **Examples:** Google Chrome, Mozilla Firefox, Microsoft Edge  
 ✅ **Tasks:**  
-- "Change my default search engine to DuckDuckGo in Chrome."  
-- "Restore all the tabs I accidentally closed in Firefox."  
-- "Clear my browsing history and cookies in Edge."  
-- "Save this webpage as a PDF in Safari."  
+- "Change the default search engine to DuckDuckGo in Chrome."  
+- "Restore recently closed tabs in Firefox."  
+- "Clear browsing history and cookies in Edge."  
+- "Save a webpage as a PDF in Safari."  
 - "Install an ad blocker extension in Chrome."  
 
 #### **2. Office Suite → Office Productivity Apps (Microsoft Office, Google Docs, LibreOffice, etc.)**
 ✅ **Examples:** Microsoft Word, Google Docs, LibreOffice Writer  
 ✅ **Tasks:**  
-- "Format my document with proper headings in Word."  
-- "Convert this DOCX file to PDF in Google Docs."  
+- "Format a document with proper headings in Word."  
+- "Convert a DOCX file to PDF in Google Docs."  
 - "Create a table with merged cells in LibreOffice Writer."  
 - "Set up automatic spell check in Word."  
-- "Insert a graph from an Excel sheet into my Google Docs file."  
+- "Insert a graph from an Excel sheet into a Google Docs file."  
 
 #### **3. Email Client → Email Services (Gmail, Outlook, Thunderbird, etc.)**
 ✅ **Examples:** Gmail, Microsoft Outlook, Mozilla Thunderbird  
 ✅ **Tasks:**  
 - "Set up an email signature in Outlook."  
-- "Create a filter to move all newsletters to a specific folder in Gmail."  
-- "Export my emails from Thunderbird to a backup file."  
+- "Create a filter to move newsletters to a specific folder in Gmail."  
+- "Export emails from Thunderbird to a backup file."  
 - "Redirect incoming emails to a different address in Outlook."  
-- "Organize my inbox by creating custom labels in Gmail."  
+- "Organize an inbox by creating custom labels in Gmail."  
 
 #### **4. Image Editing → Image Editors (Photoshop, GIMP, Canva, etc.)**
 ✅ **Examples:** Adobe Photoshop, GIMP, Canva  
 ✅ **Tasks:**  
-- "Batch resize all these images in Photoshop."  
+- "Batch resize multiple images in Photoshop."  
 - "Convert a PNG file to JPG in GIMP."  
-- "Apply a vintage filter to my photo in Canva."  
+- "Apply a vintage filter to a photo in Canva."  
 - "Enhance the resolution of a blurry image in Photoshop."  
-- "Remove the background from this image in GIMP."  
+- "Remove the background from an image in GIMP."  
 
 #### **5. File Operations → File Management Apps (File Explorer, etc.)**
 ✅ **Examples:** File Explorer, WinRAR  
 ✅ **Tasks:**  
-- "Compress these files into a ZIP folder using File Explorer."  
+- "Compress files into a ZIP folder using File Explorer."  
 - "Recover a deleted file from the Recycle Bin."  
-- "Extract this RAR archive using WinRAR."  
-- "Batch rename all these files in Windows Explorer."  
-- "Backup my documents to an external hard drive."  
+- "Extract a RAR archive using WinRAR."  
+- "Batch rename multiple files in Windows Explorer."  
+- "Backup documents to an external hard drive."  
 
 #### **6. Code Editor → Development Environments (VS Code, Sublime Text, JetBrains, etc.)**
 ✅ **Examples:** Visual Studio Code, Sublime Text, JetBrains IntelliJ IDEA  
 ✅ **Tasks:**  
 - "Install the Python extension in VS Code."  
 - "Set up a dark theme in Sublime Text."  
-- "Configure my workspace settings in JetBrains IntelliJ."  
+- "Configure workspace settings in JetBrains IntelliJ."  
 - "Enable line numbers in Visual Studio Code."  
 - "Use keyboard shortcuts to quickly navigate files in Sublime Text."  
 
-### **Output Format (JSON list):**  
-Output format should be a JSON list where each app follows this structure:
+### **Output Format (JSON object):**  
+Output format should be a JSON object with the following structure:
 {
-  "name": "App Name",
-  "domain": "example.com",
-  "description": "Brief service description",
-  "categories": ["Category1", "Category2"],
-  "tasks": [
+  "name": "Concise Agent Name", // e.g. "Email Manager Agent" instead of "Email Management Task Collection"
+  "apps": [
     {
-      "prompt": "Natural user request"
+      "name": "App Name",
+      "domain": "example.com",
+      "description": "Brief service description",
+      "categories": ["Category1", "Category2"],
+      "tasks": [
+        {
+          "prompt": "Natural user request"
+        }
+      ]
     }
   ]
 }
@@ -229,8 +242,8 @@ Example categories to consider:
 - Lifestyle
 - News & Media
 
-Focus on creating tasks that feel like genuine user requests, similar to:
-- "Order dinner for my family of 4"
+Focus on creating tasks that feel like genuine user requests, similar to (but avoid personal pronouns):
+- "Order dinner for a family of 4"
 - "Book a hotel in Paris for next weekend"
 - "Find running shoes under $100"
 - "Schedule a cleaning service for tomorrow"
@@ -239,13 +252,42 @@ Focus on creating tasks that feel like genuine user requests, similar to:
 {skill list}
 </SKILLS>
 
-Output only the JSON list with no additional text or explanation.`;
+Output only the JSON object with no additional text or explanation.`;
 
 const router: Router = express.Router();
+
+// Middleware to resolve connect token to wallet address
+async function requireWalletAddress(req: Request, res: Response, next: NextFunction) {
+  const token = req.headers['x-connect-token'];
+  if (!token || typeof token !== 'string') {
+    res.status(401).json({ error: 'Connect token is required' });
+    return;
+  }
+
+  const connection = await WalletConnectionModel.findOne({ token });
+  if (!connection) {
+    res.status(401).json({ error: 'Invalid connect token' });
+    return;
+  }
+
+  // Add the wallet address to the request object
+  // @ts-ignore - Add walletAddress to the request object
+  req.walletAddress = connection.address;
+  next();
+}
+
+// Function to get address from connect token (for use in routes)
+async function getAddressFromToken(token: string): Promise<string | null> {
+  if (!token) return null;
+  const connection = await WalletConnectionModel.findOne({ token });
+  return connection?.address || null;
+}
 
 interface ConnectBody {
   token: string;
   address: string;
+  signature?: string;
+  timestamp?: number;
 }
 
 interface CreatePoolBody {
@@ -256,8 +298,17 @@ interface CreatePoolBody {
     symbol: string;
     address: string;
   };
-  ownerAddress: string;
+  ownerAddress?: string; // Now optional since we get it from the token
   pricePerDemo?: number;
+  apps?: {
+    name: string;
+    domain: string;
+    description: string;
+    categories: string[];
+    tasks: {
+      prompt: string;
+    }[];
+  }[];
 }
 
 interface UpdatePoolBody {
@@ -268,21 +319,18 @@ interface UpdatePoolBody {
 }
 
 interface ListPoolsBody {
-  address: string;
+  address?: string; // Now optional since we get it from the token
 }
 
 // Upload race data endpoint
-router.post('/upload-race', upload.single('file'), async (req: Request, res: Response) => {
+router.post('/upload-race', requireWalletAddress, upload.single('file'), async (req: Request, res: Response) => {
   if (!req.file) {
     res.status(400).json({ error: 'No file uploaded' });
     return;
   }
 
-  const address = req.headers['x-wallet-address'];
-  if (!address || typeof address !== 'string') {
-    res.status(400).json({ error: 'Wallet address is required' });
-    return;
-  }
+  // @ts-ignore - Get walletAddress from the request object
+  const address = req.walletAddress;
 
   try {
     const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
@@ -326,21 +374,20 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
         await copyFile(tempPath, finalPath);
       } catch (error) {
         await unlink(req.file.path);
-        await rm(tempDir, { recursive: true }).catch((e) => console.log('error rmdir on error', e));
+        await unlink(tempDir).catch(() => {});
         res.status(400).json({ error: `Missing required file: ${file}` });
         return;
       }
     }
 
     // Clean up temp directory
-    await rm(tempDir, { recursive: true }).catch((e) => console.log('Error rmdir', e));
-    // clean up multer artifacts
-    await unlink(req.file.path).catch((e) => console.log('error removing multr artifact\n', e));
+    await unlink(tempDir).catch(() => {});
 
     // Upload each file to S3
     const uploads = await Promise.all(
       requiredFiles.map(async (file) => {
         const filePath = path.join(extractDir, file);
+        const fileStats = await stat(filePath);
         const s3Key = `forge-races/${Date.now()}-${file}`;
 
         await s3Service.saveItem({
@@ -349,7 +396,7 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
           name: s3Key
         });
 
-        return { file, s3Key };
+        return { file, s3Key, size: fileStats.size };
       })
     );
 
@@ -361,11 +408,6 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
         return;
       }
     }
-
-    // if (await ForgeRaceSubmission.findOne({_id: uuid})) {
-    //   //todo handle already uploaded submissions
-    //   return ;
-    // }
 
     // Create submission record
     const submission = await ForgeRaceSubmission.create({
@@ -388,9 +430,7 @@ router.post('/upload-race', upload.single('file'), async (req: Request, res: Res
     console.error('Error uploading race data:', error);
     // Clean up temporary file on error
     if (req.file) {
-      await rm(req.file.path, { recursive: true }).catch((e) =>
-        console.log('Error cleaning up after upload error.', e)
-      );
+      await unlink(req.file.path).catch(() => {});
     }
     res.status(500).json({ error: 'Failed to upload race data' });
   }
@@ -426,13 +466,10 @@ router.get('/submission/:id', async (req: Request, res: Response) => {
 });
 
 // List submissions for an address
-router.get('/submissions', async (req: Request, res: Response) => {
+router.get('/submissions', requireWalletAddress, async (req: Request, res: Response) => {
   try {
-    const address = req.headers['x-wallet-address'];
-    if (!address || typeof address !== 'string') {
-      res.status(400).json({ error: 'Wallet address is required' });
-      return;
-    }
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
 
     const submissions = await ForgeRaceSubmission.find({ address })
       .sort({ createdAt: -1 })
@@ -445,14 +482,92 @@ router.get('/submissions', async (req: Request, res: Response) => {
   }
 });
 
+// List submissions for a pool ID
+router.get('/pool-submissions/:poolId', requireWalletAddress, async (req: Request, res: Response) => {
+  try {
+    const { poolId } = req.params;
+    
+    if (!poolId) {
+      res.status(400).json({ error: 'Pool ID is required' });
+      return;
+    }
+
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
+
+    // Verify that the pool belongs to the user
+    const pool = await TrainingPoolModel.findById(poolId);
+    if (!pool) {
+      res.status(404).json({ error: 'Pool not found' });
+      return;
+    }
+
+    if (pool.ownerAddress !== address) {
+      res.status(403).json({ error: 'Not authorized to view submissions for this pool' });
+      return;
+    }
+
+    const submissions = await ForgeRaceSubmission.find({ 'meta.quest.pool_id': poolId })
+      .sort({ createdAt: -1 })
+      .select('-__v');
+
+    res.json(submissions);
+  } catch (error) {
+    console.error('Error listing pool submissions:', error);
+    res.status(500).json({ error: 'Failed to list pool submissions' });
+  }
+});
+
 // Store wallet address for token
 router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response) => {
   try {
-    const { token, address } = req.body;
+    const { token, address, signature, timestamp } = req.body;
 
     if (!token || !address) {
       res.status(400).json({ error: 'Token and address are required' });
       return;
+    }
+
+    // If signature and timestamp are provided, verify the signature
+    if (signature && timestamp) {
+      // Check if timestamp is within 5 minutes
+      const now = Date.now();
+      if (now - timestamp > 5 * 60 * 1000) {
+        res.status(400).json({ error: 'Timestamp expired' });
+        return;
+      }
+
+      try {
+        // Create the message that was signed
+        const message = `viralmind desktop\nnonce: ${timestamp}`;
+        const messageBytes = new TextEncoder().encode(message);
+        
+        // Convert base64 signature to Uint8Array
+        const signatureBytes = Buffer.from(signature, 'base64');
+        
+        // Convert address to PublicKey
+        const publicKey = new PublicKey(address);
+        
+        // Verify the signature
+        const verified = nacl.sign.detached.verify(
+          messageBytes,
+          signatureBytes,
+          publicKey.toBytes()
+        );
+        
+        if (!verified) {
+          res.status(400).json({ error: 'Invalid signature' });
+          return;
+        }
+      } catch (verifyError) {
+        console.error('Error verifying signature:', verifyError);
+        res.status(400).json({ error: 'Signature verification failed' });
+        return;
+      }
+    } else {
+      // For backward compatibility, allow connections without signature
+      // In production, you might want to require signatures
+      console.warn('Connection without signature from address:', address);
     }
 
     // Store connection token with address
@@ -793,7 +908,7 @@ interface RefreshPoolBody {
 }
 
 // Refresh pool balance
-router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
+router.post('/refresh', requireWalletAddress, async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
   try {
     const { id } = req.body;
 
@@ -805,6 +920,15 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
     const pool = await TrainingPoolModel.findById(id);
     if (!pool) {
       res.status(404).json({ error: 'Training pool not found' });
+      return;
+    }
+
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
+    
+    // Verify that the pool belongs to the user
+    if (pool.ownerAddress !== address) {
+      res.status(403).json({ error: 'Not authorized to refresh this pool' });
       return;
     }
 
@@ -856,15 +980,10 @@ router.post('/refresh', async (req: Request<{}, {}, RefreshPoolBody>, res: Respo
 });
 
 // List training pools
-router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) => {
+router.post('/list', requireWalletAddress, async (req: Request, res: Response) => {
   try {
-    const { address } = req.body;
-
-    console.log(address);
-    if (!address) {
-      res.status(400).json({ error: 'Wallet address is required' });
-      return;
-    }
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
 
     const pools = await TrainingPoolModel.find({ ownerAddress: address }).select(
       '-depositPrivateKey'
@@ -886,10 +1005,21 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
           await pool.save(); // Save the updated status
         }
 
+        // Get token balance from blockchain
+        const tokenBalance = await blockchainService.getTokenBalance(
+          pool.token.address,
+          pool.depositAddress
+        );
+
+        // Get SOL balance for gas
+        const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+
         const poolObj = pool.toObject();
         return {
           ...poolObj,
-          demonstrations: demoCount
+          demonstrations: demoCount,
+          solBalance,
+          tokenBalance
         };
       })
     );
@@ -902,14 +1032,17 @@ router.post('/list', async (req: Request<{}, {}, ListPoolsBody>, res: Response) 
 });
 
 // Create training pool
-router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
+router.post('/create', requireWalletAddress, async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
   try {
-    const { name, skills, token, ownerAddress, pricePerDemo } = req.body;
+    const { name, skills, token, pricePerDemo, apps } = req.body;
 
-    if (!name || !skills || !token || !ownerAddress) {
+    if (!name || !skills || !token) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
+
+    // @ts-ignore - Get walletAddress from the request object
+    const ownerAddress = req.walletAddress;
 
     // Generate Solana keypair for deposit address
     const keypair = Keypair.generate();
@@ -931,10 +1064,40 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
 
     await pool.save();
 
-    // Start initial app generation (non-blocking)
-    generateAppsForPool(pool._id.toString(), skills).catch((error) => {
-      console.error('Error generating initial apps:', error);
-    });
+    const poolId = pool._id.toString();
+
+    // If predefined apps were provided, use those
+    if (apps && Array.isArray(apps) && apps.length > 0) {
+      console.log(`Using ${apps.length} predefined apps for pool ${poolId}`);
+      
+      try {
+        // Store the predefined apps
+        for (const app of apps) {
+          await ForgeApp.create({
+            ...app,
+            pool_id: poolId
+          });
+        }
+        
+        // Log success
+        console.log(`Successfully added ${apps.length} predefined apps for pool ${poolId}`);
+        await notifyForgeWebhook(
+          `✅ Added ${apps.length} predefined apps for pool "${pool.name}" (${poolId})\n${apps
+            .map((a) => `- ${a.name}`)
+            .join('\n')}`
+        );
+      } catch (error) {
+        const appError = error as Error;
+        console.error('Error adding predefined apps:', appError);
+        await notifyForgeWebhook(`❌ Error adding predefined apps for pool ${poolId}: ${appError.message}`);
+        // Continue with creating the pool, just log the error
+      }
+    } else {
+      // No predefined apps, generate them using OpenAI (non-blocking)
+      generateAppsForPool(poolId, skills).catch((error) => {
+        console.error('Error generating initial apps:', error);
+      });
+    }
 
     // Create response object without private key
     const { depositPrivateKey: _, ...response } = pool.toObject();
@@ -947,7 +1110,7 @@ router.post('/create', async (req: Request<{}, {}, CreatePoolBody>, res: Respons
 });
 
 // Update training pool
-router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
+router.post('/update', requireWalletAddress, async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
   try {
     const { id, status, skills, pricePerDemo } = req.body;
 
@@ -964,6 +1127,12 @@ router.post('/update', async (req: Request<{}, {}, UpdatePoolBody>, res: Respons
     const pool = await TrainingPoolModel.findById(id);
     if (!pool) {
       res.status(404).json({ error: 'Training pool not found' });
+      return;
+    }
+    
+    // @ts-ignore - Get walletAddress from the request object
+    if (pool.ownerAddress !== req.walletAddress) {
+      res.status(403).json({ error: 'Not authorized to update this pool' });
       return;
     }
 
@@ -1015,11 +1184,13 @@ router.get('/gym', async (_req: Request, res: Response) => {
 });
 
 // Get reward calculation
-router.get('/reward', async (req: Request, res: Response) => {
-  const { poolId, address } = req.query;
+router.get('/reward', requireWalletAddress, async (req: Request, res: Response) => {
+  const { poolId } = req.query;
+  // @ts-ignore - Get walletAddress from the request object
+  const address = req.walletAddress;
 
-  if (!poolId || !address || typeof poolId !== 'string' || typeof address !== 'string') {
-    res.status(400).json({ error: 'Missing or invalid poolId/address' });
+  if (!poolId || typeof poolId !== 'string') {
+    res.status(400).json({ error: 'Missing or invalid poolId' });
     return;
   }
 
@@ -1044,7 +1215,7 @@ router.get('/reward', async (req: Request, res: Response) => {
   //   .digest('hex');
   // // Convert first 8 chars of hash to number between 0-1
   // const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
-
+  
   // Use pricePerDemo as the base reward value
   const reward = pool.pricePerDemo;
 
@@ -1054,6 +1225,107 @@ router.get('/reward', async (req: Request, res: Response) => {
     pricePerDemo: pool.pricePerDemo
   });
 });
+
+// Generate apps endpoint
+router.post('/generate', async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      res.status(400).json({ error: 'Prompt is required' });
+      return;
+    }
+
+    // Generate new apps using OpenAI
+    const formatted_prompt = APP_TASK_GENERATION_PROMPT.replace('{skill list}', prompt);
+    const response = await openai.chat.completions.create({
+      model: 'o3-mini',
+      reasoning_effort: 'medium',
+      messages: [
+        {
+          role: 'user',
+          content: formatted_prompt 
+        }
+      ]
+    } as any); // Type assertion to handle custom model params
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error('Empty response from OpenAI');
+    }
+
+    // Parse JSON content
+    try {
+      const parsedContent = JSON.parse(content);
+      res.json({
+        content: parsedContent
+      });
+    } catch (parseError) {
+      console.error('Error parsing JSON content:', parseError);
+      // Return unparsed content if JSON parsing fails
+      res.json({
+        content: content,
+        parsing_error: 'Failed to parse content as JSON'
+      });
+    }
+  } catch (error) {
+    console.error('Error generating content:', error);
+    res.status(500).json({ error: 'Failed to generate content' });
+  }
+});
+
+/**
+ * ## API Documentation
+ * 
+ * ### POST /forge/generate
+ * 
+ * Generates content using OpenAI's API based on the provided prompt.
+ * 
+ * #### Request Body
+ * ```json
+ * {
+ *   "prompt": "string" // Required: The prompt to send to OpenAI
+ * }
+ * ```
+ * 
+ * #### Response
+ * ```json
+ * {
+ *   "content": {} // Parsed JSON content from OpenAI's response
+ * }
+ * ```
+ * 
+ * #### Error Response
+ * If JSON parsing fails:
+ * ```json
+ * {
+ *   "content": "string", // Unparsed content from OpenAI's response
+ *   "parsing_error": "Failed to parse content as JSON"
+ * }
+ * ```
+ * 
+ * If OpenAI request fails:
+ * ```json
+ * {
+ *   "error": "Failed to generate content"
+ * }
+ * ```
+ * 
+ * #### Example Usage
+ * ```javascript
+ * const response = await fetch('/api/forge/generate', {
+ *   method: 'POST',
+ *   headers: {
+ *     'Content-Type': 'application/json'
+ *   },
+ *   body: JSON.stringify({
+ *     prompt: "Generate app tasks for the following skills: Browser Management, File Operations"
+ *   })
+ * });
+ * const data = await response.json();
+ * // data.content will contain the parsed JSON array of app tasks
+ * ```
+ */
 
 // Get $VIRAL balance for an address
 router.get('/balance/:address', async (req: Request, res: Response) => {
@@ -1084,7 +1356,7 @@ router.get('/apps', async (req: Request, res: Response) => {
       // If pool_id specified, return all apps for that pool regardless of status
       apps = await ForgeApp.find({ pool_id: pool_id.toString() }).populate(
         'pool_id',
-        'name status'
+        'name status pricePerDemo'
       );
     } else {
       // If no pool_id, only return apps from live pools
