@@ -104,9 +104,9 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
       if (activeGenerations.get(poolId) === generationPromise) {
         // Parse content from response
         const generatedContent = JSON.parse(content);
-        
+
         // Extract apps from the new format (object with name and apps array)
-        const collectionName = generatedContent.name || "Generated Gym";
+        const collectionName = generatedContent.name || 'Generated Gym';
         const apps = generatedContent.apps || [];
 
         // Store new apps
@@ -118,9 +118,9 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
         }
         console.log(`Successfully generated apps for pool ${poolId}`);
         await notifyForgeWebhook(
-          `✅ Generated ${apps.length} apps for gym "${collectionName}" in pool "${pool.name}" (${poolId})\n${apps
-            .map((a: { name: string }) => `- ${a.name}`)
-            .join('\n')}`
+          `✅ Generated ${apps.length} apps for gym "${collectionName}" in pool "${
+            pool.name
+          }" (${poolId})\n${apps.map((a: { name: string }) => `- ${a.name}`).join('\n')}`
         );
       } else {
         console.log(`App generation was superseded for pool ${poolId}`);
@@ -323,118 +323,134 @@ interface ListPoolsBody {
 }
 
 // Upload race data endpoint
-router.post('/upload-race', requireWalletAddress, upload.single('file'), async (req: Request, res: Response) => {
-  if (!req.file) {
-    res.status(400).json({ error: 'No file uploaded' });
-    return;
-  }
+router.post(
+  '/upload-race',
+  requireWalletAddress,
+  upload.single('file'),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
 
-  // @ts-ignore - Get walletAddress from the request object
-  const address = req.walletAddress;
+    // @ts-ignore - Get walletAddress from the request object
+    const address = req.walletAddress;
 
-  try {
-    const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
+    try {
+      const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
 
-    // Create temporary directory for initial extraction
-    const tempDir = path.join('uploads', `temp_${Date.now()}`);
-    await mkdir(tempDir, { recursive: true });
+      // Create temporary directory for initial extraction
+      const tempDir = path.join('uploads', `temp_${Date.now()}`);
+      await mkdir(tempDir, { recursive: true });
 
-    // Extract meta.json first to get ID
-    await new Promise((resolve, reject) => {
-      createReadStream(req.file!.path)
-        .pipe(Extract({ path: tempDir }))
-        .on('close', resolve)
-        .on('error', reject);
-    });
+      // Extract meta.json first to get ID
+      await new Promise((resolve, reject) => {
+        createReadStream(req.file!.path)
+          .pipe(Extract({ path: tempDir }))
+          .on('close', resolve)
+          .on('error', reject);
+      });
 
-    // Read and parse meta.json
-    const metaJson = await new Promise<string>((resolve, reject) => {
-      let data = '';
-      createReadStream(path.join(tempDir, 'meta.json'))
-        .on('data', (chunk) => (data += chunk))
-        .on('end', () => resolve(data))
-        .on('error', reject);
-    });
-    const meta = JSON.parse(metaJson);
+      // Read and parse meta.json
+      const metaJson = await new Promise<string>((resolve, reject) => {
+        let data = '';
+        createReadStream(path.join(tempDir, 'meta.json'))
+          .on('data', (chunk) => (data += chunk))
+          .on('end', () => resolve(data))
+          .on('error', reject);
+      });
+      const meta = JSON.parse(metaJson);
 
-    // Create UUID from meta.id + address
-    const uuid = createHash('sha256').update(`${meta.id}${address}`).digest('hex');
+      // Create UUID from meta.id + address
+      const uuid = createHash('sha256').update(`${meta.id}${address}`).digest('hex');
 
-    // Create final directory with UUID
-    const extractDir = path.join('uploads', `extract_${uuid}`);
-    await mkdir(extractDir, { recursive: true });
+      // Create final directory with UUID
+      const extractDir = path.join('uploads', `extract_${uuid}`);
+      await mkdir(extractDir, { recursive: true });
 
-    // Move files from temp to final directory
-    const requiredFiles = ['input_log.jsonl', 'meta.json', 'recording.mp4'];
-    for (const file of requiredFiles) {
-      const tempPath = path.join(tempDir, file);
-      const finalPath = path.join(extractDir, file);
-      try {
-        // Use fs.copyFile instead of pipe
-        await copyFile(tempPath, finalPath);
-      } catch (error) {
-        await unlink(req.file.path);
-        await unlink(tempDir).catch(() => {});
-        res.status(400).json({ error: `Missing required file: ${file}` });
-        return;
+      // Move files from temp to final directory
+      const requiredFiles = ['input_log.jsonl', 'meta.json', 'recording.mp4'];
+      for (const file of requiredFiles) {
+        const tempPath = path.join(tempDir, file);
+        const finalPath = path.join(extractDir, file);
+        try {
+          // Use fs.copyFile instead of pipe
+          await copyFile(tempPath, finalPath);
+        } catch (error) {
+          await unlink(req.file.path);
+          await unlink(tempDir).catch(() => {});
+          res.status(400).json({ error: `Missing required file: ${file}` });
+          return;
+        }
       }
-    }
 
-    // Clean up temp directory
-    await unlink(tempDir).catch(() => {});
+      // Clean up temp directory
+      await unlink(tempDir).catch(() => {});
 
-    // Upload each file to S3
-    const uploads = await Promise.all(
-      requiredFiles.map(async (file) => {
-        const filePath = path.join(extractDir, file);
-        const fileStats = await stat(filePath);
-        const s3Key = `forge-races/${Date.now()}-${file}`;
+      // Upload each file to S3
+      const uploads = await Promise.all(
+        requiredFiles.map(async (file) => {
+          const filePath = path.join(extractDir, file);
+          const fileStats = await stat(filePath);
+          const s3Key = `forge-races/${Date.now()}-${file}`;
 
-        await s3Service.saveItem({
-          bucket: 'training-gym',
-          file: filePath,
-          name: s3Key
-        });
+          await s3Service.saveItem({
+            bucket: 'training-gym',
+            file: filePath,
+            name: s3Key
+          });
 
-        return { file, s3Key, size: fileStats.size };
-      })
-    );
+          return { file, s3Key, size: fileStats.size };
+        })
+      );
 
-    // Verify time if poolId and generatedTime provided
-    if (meta.poolId && meta.generatedTime) {
-      const now = Date.now();
-      if (now - meta.generatedTime > 5 * 60 * 1000) {
-        res.status(400).json({ error: 'Generated time expired' });
-        return;
+      // Verify time if poolId and generatedTime provided
+      if (meta.poolId && meta.generatedTime) {
+        const now = Date.now();
+        if (now - meta.generatedTime > 5 * 60 * 1000) {
+          res.status(400).json({ error: 'Generated time expired' });
+          return;
+        }
       }
+
+      // check for existing submission
+      const tempSub = await ForgeRaceSubmission.findById(uuid);
+      if (tempSub) {
+        res
+          .json({
+            message: 'Submission data already uploaded.',
+            submissionId: uuid
+          })
+          .status(400);
+      }
+
+      // Create submission record
+      const submission = await ForgeRaceSubmission.create({
+        _id: uuid,
+        address,
+        meta,
+        status: ProcessingStatus.PENDING,
+        files: uploads
+      });
+
+      // Add to processing queue
+      addToProcessingQueue(uuid);
+
+      res.json({
+        message: 'Race data uploaded successfully',
+        submissionId: submission._id,
+        files: uploads
+      });
+    } catch (error) {
+      console.error('Error uploading race data:', error);
+      // Clean up temporary file on error
+      if (req.file) {
+        await unlink(req.file.path).catch(() => {});
+      }
+      res.status(500).json({ error: 'Failed to upload race data' });
     }
-
-    // Create submission record
-    const submission = await ForgeRaceSubmission.create({
-      _id: uuid,
-      address,
-      meta,
-      status: ProcessingStatus.PENDING,
-      files: uploads
-    });
-
-    // Add to processing queue
-    addToProcessingQueue(uuid);
-
-    res.json({
-      message: 'Race data uploaded successfully',
-      submissionId: submission._id,
-      files: uploads
-    });
-  } catch (error) {
-    console.error('Error uploading race data:', error);
-    // Clean up temporary file on error
-    if (req.file) {
-      await unlink(req.file.path).catch(() => {});
-    }
-    res.status(500).json({ error: 'Failed to upload race data' });
   }
-});
+);
 
 // Get submission status
 router.get('/submission/:id', async (req: Request, res: Response) => {
@@ -483,40 +499,44 @@ router.get('/submissions', requireWalletAddress, async (req: Request, res: Respo
 });
 
 // List submissions for a pool ID
-router.get('/pool-submissions/:poolId', requireWalletAddress, async (req: Request, res: Response) => {
-  try {
-    const { poolId } = req.params;
-    
-    if (!poolId) {
-      res.status(400).json({ error: 'Pool ID is required' });
-      return;
+router.get(
+  '/pool-submissions/:poolId',
+  requireWalletAddress,
+  async (req: Request, res: Response) => {
+    try {
+      const { poolId } = req.params;
+
+      if (!poolId) {
+        res.status(400).json({ error: 'Pool ID is required' });
+        return;
+      }
+
+      // @ts-ignore - Get walletAddress from the request object
+      const address = req.walletAddress;
+
+      // Verify that the pool belongs to the user
+      const pool = await TrainingPoolModel.findById(poolId);
+      if (!pool) {
+        res.status(404).json({ error: 'Pool not found' });
+        return;
+      }
+
+      if (pool.ownerAddress !== address) {
+        res.status(403).json({ error: 'Not authorized to view submissions for this pool' });
+        return;
+      }
+
+      const submissions = await ForgeRaceSubmission.find({ 'meta.quest.pool_id': poolId })
+        .sort({ createdAt: -1 })
+        .select('-__v');
+
+      res.json(submissions);
+    } catch (error) {
+      console.error('Error listing pool submissions:', error);
+      res.status(500).json({ error: 'Failed to list pool submissions' });
     }
-
-    // @ts-ignore - Get walletAddress from the request object
-    const address = req.walletAddress;
-
-    // Verify that the pool belongs to the user
-    const pool = await TrainingPoolModel.findById(poolId);
-    if (!pool) {
-      res.status(404).json({ error: 'Pool not found' });
-      return;
-    }
-
-    if (pool.ownerAddress !== address) {
-      res.status(403).json({ error: 'Not authorized to view submissions for this pool' });
-      return;
-    }
-
-    const submissions = await ForgeRaceSubmission.find({ 'meta.quest.pool_id': poolId })
-      .sort({ createdAt: -1 })
-      .select('-__v');
-
-    res.json(submissions);
-  } catch (error) {
-    console.error('Error listing pool submissions:', error);
-    res.status(500).json({ error: 'Failed to list pool submissions' });
   }
-});
+);
 
 // Store wallet address for token
 router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response) => {
@@ -541,20 +561,20 @@ router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response)
         // Create the message that was signed
         const message = `viralmind desktop\nnonce: ${timestamp}`;
         const messageBytes = new TextEncoder().encode(message);
-        
+
         // Convert base64 signature to Uint8Array
         const signatureBytes = Buffer.from(signature, 'base64');
-        
+
         // Convert address to PublicKey
         const publicKey = new PublicKey(address);
-        
+
         // Verify the signature
         const verified = nacl.sign.detached.verify(
           messageBytes,
           signatureBytes,
           publicKey.toBytes()
         );
-        
+
         if (!verified) {
           res.status(400).json({ error: 'Invalid signature' });
           return;
@@ -908,76 +928,80 @@ interface RefreshPoolBody {
 }
 
 // Refresh pool balance
-router.post('/refresh', requireWalletAddress, async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
-  try {
-    const { id } = req.body;
+router.post(
+  '/refresh',
+  requireWalletAddress,
+  async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
+    try {
+      const { id } = req.body;
 
-    if (!id) {
-      res.status(400).json({ error: 'Pool ID is required' });
-      return;
+      if (!id) {
+        res.status(400).json({ error: 'Pool ID is required' });
+        return;
+      }
+
+      const pool = await TrainingPoolModel.findById(id);
+      if (!pool) {
+        res.status(404).json({ error: 'Training pool not found' });
+        return;
+      }
+
+      // @ts-ignore - Get walletAddress from the request object
+      const address = req.walletAddress;
+
+      // Verify that the pool belongs to the user
+      if (pool.ownerAddress !== address) {
+        res.status(403).json({ error: 'Not authorized to refresh this pool' });
+        return;
+      }
+
+      // Get current token balance from blockchain
+      const balance = await blockchainService.getTokenBalance(
+        pool.token.address,
+        pool.depositAddress
+      );
+
+      // Get SOL balance to check for gas
+      const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+      const noGas = solBalance === 0;
+
+      // Update pool funds and status
+      pool.funds = balance;
+
+      // Update status based on token and SOL balances
+      if (noGas) {
+        pool.status = TrainingPoolStatus.noGas;
+      } else if (balance === 0) {
+        pool.status = TrainingPoolStatus.noFunds;
+      } else if (balance < pool.pricePerDemo) {
+        pool.status = TrainingPoolStatus.noFunds;
+      } else if (
+        pool.status === TrainingPoolStatus.noFunds ||
+        pool.status === TrainingPoolStatus.noGas
+      ) {
+        pool.status = TrainingPoolStatus.paused;
+      }
+
+      await pool.save();
+
+      // Get demonstration count
+      const demoCount = await ForgeRaceSubmission.countDocuments({
+        'meta.quest.pool_id': pool._id.toString()
+      });
+
+      // Return pool without private key but with demo count and noGas flag
+      const { depositPrivateKey: _, ...poolObj } = pool.toObject();
+      res.json({
+        ...poolObj,
+        demonstrations: demoCount,
+        solBalance
+      });
+    } catch (error) {
+      console.error('Error refreshing pool balance:', error);
+      res.status(500).json({ error: 'Failed to refresh pool balance' });
     }
-
-    const pool = await TrainingPoolModel.findById(id);
-    if (!pool) {
-      res.status(404).json({ error: 'Training pool not found' });
-      return;
-    }
-
-    // @ts-ignore - Get walletAddress from the request object
-    const address = req.walletAddress;
-    
-    // Verify that the pool belongs to the user
-    if (pool.ownerAddress !== address) {
-      res.status(403).json({ error: 'Not authorized to refresh this pool' });
-      return;
-    }
-
-    // Get current token balance from blockchain
-    const balance = await blockchainService.getTokenBalance(
-      pool.token.address,
-      pool.depositAddress
-    );
-
-    // Get SOL balance to check for gas
-    const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
-    const noGas = solBalance === 0;
-
-    // Update pool funds and status
-    pool.funds = balance;
-
-    // Update status based on token and SOL balances
-    if (noGas) {
-      pool.status = TrainingPoolStatus.noGas;
-    } else if (balance === 0) {
-      pool.status = TrainingPoolStatus.noFunds;
-    } else if (balance < pool.pricePerDemo) {
-      pool.status = TrainingPoolStatus.noFunds;
-    } else if (
-      pool.status === TrainingPoolStatus.noFunds ||
-      pool.status === TrainingPoolStatus.noGas
-    ) {
-      pool.status = TrainingPoolStatus.paused;
-    }
-
-    await pool.save();
-
-    // Get demonstration count
-    const demoCount = await ForgeRaceSubmission.countDocuments({
-      'meta.quest.pool_id': pool._id.toString()
-    });
-
-    // Return pool without private key but with demo count and noGas flag
-    const { depositPrivateKey: _, ...poolObj } = pool.toObject();
-    res.json({
-      ...poolObj,
-      demonstrations: demoCount,
-      solBalance
-    });
-  } catch (error) {
-    console.error('Error refreshing pool balance:', error);
-    res.status(500).json({ error: 'Failed to refresh pool balance' });
   }
-});
+);
 
 // List training pools
 router.post('/list', requireWalletAddress, async (req: Request, res: Response) => {
@@ -1032,140 +1056,150 @@ router.post('/list', requireWalletAddress, async (req: Request, res: Response) =
 });
 
 // Create training pool
-router.post('/create', requireWalletAddress, async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
-  try {
-    const { name, skills, token, pricePerDemo, apps } = req.body;
+router.post(
+  '/create',
+  requireWalletAddress,
+  async (req: Request<{}, {}, CreatePoolBody>, res: Response) => {
+    try {
+      const { name, skills, token, pricePerDemo, apps } = req.body;
 
-    if (!name || !skills || !token) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
-
-    // @ts-ignore - Get walletAddress from the request object
-    const ownerAddress = req.walletAddress;
-
-    // Generate Solana keypair for deposit address
-    const keypair = Keypair.generate();
-    const depositAddress = keypair.publicKey.toString();
-    const depositPrivateKey = Buffer.from(keypair.secretKey).toString('base64');
-
-    const pool = new TrainingPoolModel({
-      name,
-      skills,
-      token,
-      ownerAddress,
-      status: TrainingPoolStatus.noFunds,
-      demonstrations: 0,
-      funds: 0,
-      pricePerDemo: pricePerDemo ? Math.max(1, pricePerDemo) : 10, // Default to 10 if not provided, minimum of 1
-      depositAddress,
-      depositPrivateKey
-    });
-
-    await pool.save();
-
-    const poolId = pool._id.toString();
-
-    // If predefined apps were provided, use those
-    if (apps && Array.isArray(apps) && apps.length > 0) {
-      console.log(`Using ${apps.length} predefined apps for pool ${poolId}`);
-      
-      try {
-        // Store the predefined apps
-        for (const app of apps) {
-          await ForgeApp.create({
-            ...app,
-            pool_id: poolId
-          });
-        }
-        
-        // Log success
-        console.log(`Successfully added ${apps.length} predefined apps for pool ${poolId}`);
-        await notifyForgeWebhook(
-          `✅ Added ${apps.length} predefined apps for pool "${pool.name}" (${poolId})\n${apps
-            .map((a) => `- ${a.name}`)
-            .join('\n')}`
-        );
-      } catch (error) {
-        const appError = error as Error;
-        console.error('Error adding predefined apps:', appError);
-        await notifyForgeWebhook(`❌ Error adding predefined apps for pool ${poolId}: ${appError.message}`);
-        // Continue with creating the pool, just log the error
+      if (!name || !skills || !token) {
+        res.status(400).json({ error: 'Missing required fields' });
+        return;
       }
-    } else {
-      // No predefined apps, generate them using OpenAI (non-blocking)
-      generateAppsForPool(poolId, skills).catch((error) => {
-        console.error('Error generating initial apps:', error);
+
+      // @ts-ignore - Get walletAddress from the request object
+      const ownerAddress = req.walletAddress;
+
+      // Generate Solana keypair for deposit address
+      const keypair = Keypair.generate();
+      const depositAddress = keypair.publicKey.toString();
+      const depositPrivateKey = Buffer.from(keypair.secretKey).toString('base64');
+
+      const pool = new TrainingPoolModel({
+        name,
+        skills,
+        token,
+        ownerAddress,
+        status: TrainingPoolStatus.noFunds,
+        demonstrations: 0,
+        funds: 0,
+        pricePerDemo: pricePerDemo ? Math.max(1, pricePerDemo) : 10, // Default to 10 if not provided, minimum of 1
+        depositAddress,
+        depositPrivateKey
       });
+
+      await pool.save();
+
+      const poolId = pool._id.toString();
+
+      // If predefined apps were provided, use those
+      if (apps && Array.isArray(apps) && apps.length > 0) {
+        console.log(`Using ${apps.length} predefined apps for pool ${poolId}`);
+
+        try {
+          // Store the predefined apps
+          for (const app of apps) {
+            await ForgeApp.create({
+              ...app,
+              pool_id: poolId
+            });
+          }
+
+          // Log success
+          console.log(`Successfully added ${apps.length} predefined apps for pool ${poolId}`);
+          await notifyForgeWebhook(
+            `✅ Added ${apps.length} predefined apps for pool "${pool.name}" (${poolId})\n${apps
+              .map((a) => `- ${a.name}`)
+              .join('\n')}`
+          );
+        } catch (error) {
+          const appError = error as Error;
+          console.error('Error adding predefined apps:', appError);
+          await notifyForgeWebhook(
+            `❌ Error adding predefined apps for pool ${poolId}: ${appError.message}`
+          );
+          // Continue with creating the pool, just log the error
+        }
+      } else {
+        // No predefined apps, generate them using OpenAI (non-blocking)
+        generateAppsForPool(poolId, skills).catch((error) => {
+          console.error('Error generating initial apps:', error);
+        });
+      }
+
+      // Create response object without private key
+      const { depositPrivateKey: _, ...response } = pool.toObject();
+
+      res.json(response);
+    } catch (error) {
+      console.error('Error creating pool:', error);
+      res.status(500).json({ error: 'Failed to create training pool' });
     }
-
-    // Create response object without private key
-    const { depositPrivateKey: _, ...response } = pool.toObject();
-
-    res.json(response);
-  } catch (error) {
-    console.error('Error creating pool:', error);
-    res.status(500).json({ error: 'Failed to create training pool' });
   }
-});
+);
 
 // Update training pool
-router.post('/update', requireWalletAddress, async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
-  try {
-    const { id, status, skills, pricePerDemo } = req.body;
+router.post(
+  '/update',
+  requireWalletAddress,
+  async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
+    try {
+      const { id, status, skills, pricePerDemo } = req.body;
 
-    if (!id) {
-      res.status(400).json({ error: 'Pool ID is required' });
-      return;
+      if (!id) {
+        res.status(400).json({ error: 'Pool ID is required' });
+        return;
+      }
+
+      if (status && ![TrainingPoolStatus.live, TrainingPoolStatus.paused].includes(status)) {
+        res.status(400).json({ error: 'Invalid status' });
+        return;
+      }
+
+      const pool = await TrainingPoolModel.findById(id);
+      if (!pool) {
+        res.status(404).json({ error: 'Training pool not found' });
+        return;
+      }
+
+      // @ts-ignore - Get walletAddress from the request object
+      if (pool.ownerAddress !== req.walletAddress) {
+        res.status(403).json({ error: 'Not authorized to update this pool' });
+        return;
+      }
+
+      // Only allow status update if funds > 0 and funds >= pricePerDemo
+      if (status && (pool.funds === 0 || pool.funds < pool.pricePerDemo)) {
+        res.status(400).json({ error: 'Cannot update status: pool has insufficient funds' });
+        return;
+      }
+
+      const updates: Partial<TrainingPool> = {};
+      if (status) updates.status = status;
+      if (skills) updates.skills = skills;
+      if (pricePerDemo !== undefined) updates.pricePerDemo = Math.max(1, pricePerDemo);
+
+      const updatedPool = await TrainingPoolModel.findByIdAndUpdate(
+        id,
+        { $set: updates },
+        { new: true }
+      ).select('-depositPrivateKey'); // Exclude private key from response
+
+      // If skills were updated, start app regeneration (non-blocking)
+      if (skills) {
+        generateAppsForPool(id, skills).catch((error) => {
+          console.error('Error regenerating apps:', error);
+        });
+      }
+
+      res.json(updatedPool);
+    } catch (error) {
+      console.error('Error updating pool:', error);
+      res.status(500).json({ error: 'Failed to update training pool' });
     }
-
-    if (status && ![TrainingPoolStatus.live, TrainingPoolStatus.paused].includes(status)) {
-      res.status(400).json({ error: 'Invalid status' });
-      return;
-    }
-
-    const pool = await TrainingPoolModel.findById(id);
-    if (!pool) {
-      res.status(404).json({ error: 'Training pool not found' });
-      return;
-    }
-    
-    // @ts-ignore - Get walletAddress from the request object
-    if (pool.ownerAddress !== req.walletAddress) {
-      res.status(403).json({ error: 'Not authorized to update this pool' });
-      return;
-    }
-
-    // Only allow status update if funds > 0 and funds >= pricePerDemo
-    if (status && (pool.funds === 0 || pool.funds < pool.pricePerDemo)) {
-      res.status(400).json({ error: 'Cannot update status: pool has insufficient funds' });
-      return;
-    }
-
-    const updates: Partial<TrainingPool> = {};
-    if (status) updates.status = status;
-    if (skills) updates.skills = skills;
-    if (pricePerDemo !== undefined) updates.pricePerDemo = Math.max(1, pricePerDemo);
-
-    const updatedPool = await TrainingPoolModel.findByIdAndUpdate(
-      id,
-      { $set: updates },
-      { new: true }
-    ).select('-depositPrivateKey'); // Exclude private key from response
-
-    // If skills were updated, start app regeneration (non-blocking)
-    if (skills) {
-      generateAppsForPool(id, skills).catch((error) => {
-        console.error('Error regenerating apps:', error);
-      });
-    }
-
-    res.json(updatedPool);
-  } catch (error) {
-    console.error('Error updating pool:', error);
-    res.status(500).json({ error: 'Failed to update training pool' });
   }
-});
+);
 
 // Get active gym races
 router.get('/gym', async (_req: Request, res: Response) => {
@@ -1215,7 +1249,7 @@ router.get('/reward', requireWalletAddress, async (req: Request, res: Response) 
   //   .digest('hex');
   // // Convert first 8 chars of hash to number between 0-1
   // const rng = parseInt(hash.slice(0, 8), 16) / 0xffffffff;
-  
+
   // Use pricePerDemo as the base reward value
   const reward = pool.pricePerDemo;
 
@@ -1244,7 +1278,7 @@ router.post('/generate', async (req: Request, res: Response) => {
       messages: [
         {
           role: 'user',
-          content: formatted_prompt 
+          content: formatted_prompt
         }
       ]
     } as any); // Type assertion to handle custom model params
@@ -1276,25 +1310,25 @@ router.post('/generate', async (req: Request, res: Response) => {
 
 /**
  * ## API Documentation
- * 
+ *
  * ### POST /forge/generate
- * 
+ *
  * Generates content using OpenAI's API based on the provided prompt.
- * 
+ *
  * #### Request Body
  * ```json
  * {
  *   "prompt": "string" // Required: The prompt to send to OpenAI
  * }
  * ```
- * 
+ *
  * #### Response
  * ```json
  * {
  *   "content": {} // Parsed JSON content from OpenAI's response
  * }
  * ```
- * 
+ *
  * #### Error Response
  * If JSON parsing fails:
  * ```json
@@ -1303,14 +1337,14 @@ router.post('/generate', async (req: Request, res: Response) => {
  *   "parsing_error": "Failed to parse content as JSON"
  * }
  * ```
- * 
+ *
  * If OpenAI request fails:
  * ```json
  * {
  *   "error": "Failed to generate content"
  * }
  * ```
- * 
+ *
  * #### Example Usage
  * ```javascript
  * const response = await fetch('/api/forge/generate', {
