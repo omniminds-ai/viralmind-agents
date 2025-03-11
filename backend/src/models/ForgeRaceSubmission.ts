@@ -292,9 +292,29 @@ export async function processNextInQueue() {
   let submission = null;
 
   try {
-    submission = await ForgeRaceSubmission.findById(submissionId);
+    // Retry findById 3 times with 100ms delay between attempts
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        submission = await ForgeRaceSubmission.findById(submissionId);
+        if (submission) break;
+        retries--;
+        if (retries === 0) {
+          throw new Error(`Submission ${submissionId} not found`);
+        }
+        // Wait 100ms before retrying
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      } catch (error) {
+        retries--;
+        if (retries === 0) throw error;
+        // Wait 100ms before retrying
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+    
+    // After retries, ensure submission is not null
     if (!submission) {
-      throw new Error(`Submission ${submissionId} not found`);
+      throw new Error(`Submission ${submissionId} not found after retries`);
     }
 
     // Update status to processing
@@ -409,7 +429,15 @@ export async function processNextInQueue() {
 
             // Calculate final reward based on grade_result score (clamped 0-100)
             clampedScore = Math.max(0, Math.min(100, gradeResult.score));
-            reward = Math.ceil((maxReward * clampedScore) / 100);
+
+            // Set reward to 0 if score is below 50%
+            if (clampedScore < 50) {
+              reward = 0;
+              // Add prefix to reasoning
+              gradeResult.reasoning = `( system: reward returned to pool due to <50% quality score ) ${gradeResult.reasoning}`;
+            } else {
+              reward = Math.max(0, Math.min(maxReward, (maxReward * clampedScore) / 100));
+            }
 
             // Create treasury transfer record if reward exists
             if (reward && reward > 0) {
@@ -519,6 +547,27 @@ export async function processNextInQueue() {
       submission.treasuryTransfer = treasuryTransfer;
       submission.status = ProcessingStatus.COMPLETED;
       await submission.save();
+      
+      // Always send a webhook notification for successful processing, even if there was no reward
+      // Only send if it wasn't already sent during the reward processing
+      if (!reward || reward === 0 || !treasuryTransfer) {
+        await notifyForgeWebhook('success', {
+          title: submission.meta.quest.title,
+          app: submission.meta.quest.app,
+          duration: submission.meta.duration_seconds,
+          score: gradeResult.score,
+          reward: reward || 0,
+          maxReward: maxReward || 0,
+          clampedScore: clampedScore || 0,
+          summary: gradeResult.summary,
+          feedback: gradeResult.reasoning,
+          address: submission.address,
+          pool: pool ? {
+            name: pool.name,
+            token: pool.token
+          } : undefined
+        });
+      }
     } catch (error) {
       throw new Error(`Failed to process submission: ${(error as Error).message}`);
     }
