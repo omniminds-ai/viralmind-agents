@@ -168,7 +168,7 @@
                 class="absolute left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
                 transition:slide>
                 <a
-                  href="https://discord.gg/KMUaXHnsXr"
+                  href="https://discord.gg/C9NyQmkz5W"
                   target="_blank"
                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <i class="si si-discord h-4 w-4" />
@@ -313,7 +313,7 @@
               <span class="animated-underline">GitHub</span>
             </a>
             <a
-              href="https://discord.gg/KMUaXHnsXr"
+              href="https://discord.gg/C9NyQmkz5W"
               target="_blank"
               class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
               <i class="si si-discord h-5 w-5" />
