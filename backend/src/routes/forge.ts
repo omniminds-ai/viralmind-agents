@@ -35,7 +35,7 @@ const openai = new OpenAI({
 const upload = multer({
   dest: 'uploads/',
   limits: {
-    fileSize: 5 * 1024 * 1024 * 1024 // 5GB limit for /upload-race endpoint
+    fileSize: 15 * 1024 * 1024 * 1024 // 15GB limit for /upload-race endpoint
   }
 });
 
