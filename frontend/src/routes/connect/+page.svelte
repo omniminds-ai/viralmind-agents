@@ -2,10 +2,11 @@
   import { onMount } from 'svelte';
   import { walletStore } from '$lib/walletStore';
   import { Coins } from 'lucide-svelte';
-  
+  import { Buffer } from 'buffer';
+
   let token = '';
   let connecting = false;
-  
+
   onMount(() => {
     // Get token from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
@@ -23,7 +24,7 @@
       }
 
       // Select and connect to Phantom wallet
-      const phantomWallet = $walletStore.wallets.find(w => w.adapter.name === 'Phantom');
+      const phantomWallet = $walletStore.wallets.find((w) => w.adapter.name === 'Phantom');
       if (!phantomWallet) {
         alert('Phantom wallet not found. Please install Phantom wallet.');
         return;
@@ -36,7 +37,21 @@
         throw new Error('Failed to connect wallet');
       }
 
-      // Send address to backend
+      // Create message with timestamp nonce
+      const timestamp = Date.now();
+      const message = `viralmind desktop\nnonce: ${timestamp}`;
+
+      // Sign the message
+      if (!$walletStore.signMessage) {
+        throw new Error('Wallet does not support message signing');
+      }
+
+      // Convert message to Uint8Array for signing
+      const messageBytes = new TextEncoder().encode(message);
+      const signature = await $walletStore.signMessage(messageBytes);
+      const signatureBase64 = Buffer.from(signature).toString('base64');
+
+      // Send address, signature and timestamp to backend
       await fetch('/api/forge/connect', {
         method: 'POST',
         headers: {
@@ -44,7 +59,9 @@
         },
         body: JSON.stringify({
           token,
-          address: $walletStore.publicKey.toString()
+          address: $walletStore.publicKey.toString(),
+          signature: signatureBase64,
+          timestamp
         })
       });
 
@@ -60,28 +77,30 @@
   }
 </script>
 
-<div class="flex flex-col items-center justify-center min-h-screen bg-black">
-  <div class="p-8 rounded-2xl border border-white/20 bg-black/90 backdrop-blur-xl shadow-2xl max-w-md mx-4">
-    <div class="text-center mb-8">
-      <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20">
+<div class="flex min-h-screen flex-col items-center justify-center bg-black">
+  <div
+    class="mx-4 max-w-md rounded-2xl border border-white/20 bg-black/90 p-8 shadow-2xl backdrop-blur-xl">
+    <div class="mb-8 text-center">
+      <div
+        class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20">
         <Coins class="h-8 w-8 text-gray-400" />
       </div>
-      <h1 class="text-2xl font-bold mb-2 text-white">Connect Your Wallet</h1>
+      <h1 class="mb-2 text-2xl font-bold text-white">Connect Your Wallet</h1>
       <p class="text-gray-400">Connect your Phantom wallet to continue using ViralMind Desktop</p>
     </div>
 
     {#if !token}
-      <div class="text-red-400 text-center mb-4 p-4 rounded-lg bg-red-500/10">
+      <div class="mb-4 rounded-lg bg-red-500/10 p-4 text-center text-red-400">
         Error: No connection token provided
       </div>
     {:else}
       <button
         on:click={connectWallet}
         disabled={connecting}
-        class="w-full px-6 py-3 text-white font-medium bg-gradient-to-r from-purple-500 to-blue-500 rounded-full hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
+        class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-3 font-medium text-white transition-all duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
         {#if connecting}
-          <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <div class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white">
+          </div>
           Connecting...
         {:else}
           Connect Phantom Wallet
@@ -92,8 +111,7 @@
         href="https://phantom.app/download"
         target="_blank"
         rel="noopener noreferrer"
-        class="mt-4 text-center block text-sm text-gray-400 hover:text-white transition-colors"
-      >
+        class="mt-4 block text-center text-sm text-gray-400 transition-colors hover:text-white">
         Don't have Phantom wallet? Click here to install
       </a>
     {/if}
