@@ -161,7 +161,7 @@
           <div class="flex flex-col gap-4">
             <div class="flex flex-col items-center gap-4 sm:flex-row">
               <a
-                href="https://discord.gg/KMUaXHnsXr"
+                href="https://discord.gg/C9NyQmkz5W"
                 target="_blank"
                 class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-blue-600">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
