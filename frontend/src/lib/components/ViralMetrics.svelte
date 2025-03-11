@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { Coins, Activity, BarChart3 } from 'lucide-svelte';
+  import { BarChart3, ArrowUpDown } from 'lucide-svelte';
   import { onMount } from 'svelte';
-  import solIcon from '$lib/assets/solIcon.png';
-  import Card from '$lib/components/Card.svelte';
 
   const TOKEN_DATA = {
     contractAddress: 'HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump',
@@ -37,65 +35,38 @@
 </script>
 
 <!-- Token Metrics Grid -->
-<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+<div class="grid gap-8 md:grid-cols-2">
   <!-- SOL Price -->
-  <div class="rounded-xl border border-purple-600/30 bg-stone-900/30 p-6 backdrop-blur-md">
-    <div class="mb-4 flex items-center gap-2">
-      <img src={solIcon} alt="SOL" class="h-6 w-6" />
-      <h3 class="font-semibold">VIRAL per SOL</h3>
+  <div class="flex flex-col justify-between rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-purple-50/30 p-8 shadow-lg transition-transform hover:scale-[1.02]">
+    <div class="mb-6 flex items-center gap-3">
+      <div class="rounded-xl bg-purple-100/50 p-3">
+        <ArrowUpDown class="h-7 w-7 text-purple-500" />
+      </div>
+      <h3 class="text-xl font-bold text-gray-900">VIRAL per SOL</h3>
     </div>
-    <div class="mb-1 text-2xl font-bold">
-      {viralPerSol.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-    </div>
-    <div class="text-sm text-gray-400">
-      1 SOL = ${solPrice.toFixed(2)}
+    <div>
+      <div class="mb-2 text-4xl font-bold text-gray-900">
+        {viralPerSol.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+      </div>
+      <div class="text-base text-gray-600">
+        1 SOL = ${solPrice.toFixed(2)}
+      </div>
     </div>
   </div>
 
-  <!-- Market Cap card (assuming a total supply of 1B VIRAL): -->
-  <Card>
-    <div class="mb-4 flex items-center gap-2">
-      <BarChart3 class="h-6 w-6 text-purple-400" />
-      <h3 class="font-semibold">Market Cap</h3>
+  <!-- Market Cap -->
+  <div class="flex flex-col justify-between rounded-2xl border border-gray-100 bg-gradient-to-br from-white to-purple-50/30 p-8 shadow-lg transition-transform hover:scale-[1.02]">
+    <div class="mb-6 flex items-center gap-3">
+      <div class="rounded-xl bg-purple-100/50 p-3">
+        <BarChart3 class="h-7 w-7 text-purple-500" />
+      </div>
+      <h3 class="text-xl font-bold text-gray-900">Market Cap</h3>
     </div>
-    <div class="mb-1 text-2xl font-bold">
-      ${(viralPrice * 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+    <div>
+      <div class="mb-2 text-4xl font-bold text-gray-900">
+        ${(viralPrice * 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+      </div>
+      <div class="text-base text-gray-600">Fully Diluted</div>
     </div>
-    <div class="text-sm text-gray-400">Fully Diluted</div>
-  </Card>
-  <!-- Volume -->
-  <Card>
-    <div class="mb-4 flex items-center gap-2">
-      <Activity class="h-6 w-6 text-purple-400" />
-      <h3 class="font-semibold">24h Volume</h3>
-    </div>
-    <div class="mb-1 text-2xl font-bold">
-      <a
-        href={TOKEN_DATA.dexscreenerUrl}
-        target="_blank"
-        class="transition-colors hover:text-purple-400"
-      >
-        View Live →
-      </a>
-    </div>
-    <div class="text-sm text-gray-400">Real-time trading data</div>
-  </Card>
-
-  <!-- Trading -->
-  <Card>
-    <div class="mb-4 flex items-center gap-2">
-      <Coins class="h-6 w-6 text-purple-400" />
-      <h3 class="font-semibold">Buy $VIRAL</h3>
-    </div>
-    <div class="mb-1 text-2xl font-bold">
-      <a
-        href={TOKEN_DATA.dexscreenerUrl}
-        target="_blank"
-        class="transition-colors hover:text-purple-400"
-      >
-        Trade Now →
-      </a>
-    </div>
-    <div class="text-sm text-gray-400">Multiple DEXs Available</div>
-  </Card>
+  </div>
 </div>

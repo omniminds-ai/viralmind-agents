@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Send, AlertCircle, MessageSquare, X } from 'lucide-svelte';
+  import { Send, AlertCircle, X } from 'lucide-svelte';
   import ChatMessage from './ChatMessage.svelte';
   import type { Tournament, TournamentMessage } from '$lib/types';
   import { onMount } from 'svelte';
@@ -155,7 +155,7 @@
   {#if isMobileOpen}
     <X class="h-6 w-6" />
   {:else}
-    <MessageSquare class="h-6 w-6" />
+    <i class="si si-discord h-6 w-6" />
   {/if}
 </button>
 

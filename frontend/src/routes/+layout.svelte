@@ -39,7 +39,7 @@
 </svelte:head>
 
 <WalletProvider {localStorageKey} wallets={walletAdapters} autoConnect />
-<div class="bg-primary-500">
+<div class="bg-white">
   {#if isGymRoute}
     <GymHeader />
   {:else}

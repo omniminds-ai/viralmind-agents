@@ -40,12 +40,12 @@
       // Create message with timestamp nonce
       const timestamp = Date.now();
       const message = `viralmind desktop\nnonce: ${timestamp}`;
-
+      
       // Sign the message
       if (!$walletStore.signMessage) {
         throw new Error('Wallet does not support message signing');
       }
-
+      
       // Convert message to Uint8Array for signing
       const messageBytes = new TextEncoder().encode(message);
       const signature = await $walletStore.signMessage(messageBytes);
@@ -77,20 +77,19 @@
   }
 </script>
 
-<div class="flex min-h-screen flex-col items-center justify-center bg-black">
-  <div
-    class="mx-4 max-w-md rounded-2xl border border-white/20 bg-black/90 p-8 shadow-2xl backdrop-blur-xl">
-    <div class="mb-8 text-center">
-      <div
-        class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20">
-        <Coins class="h-8 w-8 text-gray-400" />
+<div class="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+  <div class="p-8 rounded-2xl border border-gray-200 bg-white shadow-lg max-w-md mx-4">
+    <div class="text-center mb-8">
+      <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500/10 to-blue-500/10">
+        <Coins class="h-8 w-8 text-gray-600" />
       </div>
-      <h1 class="mb-2 text-2xl font-bold text-white">Connect Your Wallet</h1>
-      <p class="text-gray-400">Connect your Phantom wallet to continue using ViralMind Desktop</p>
+      <h1 class="text-2xl font-bold mb-2 text-gray-800">Connect Your Wallet</h1>
+      <p class="text-gray-600">Connect your Phantom wallet to continue using ViralMind Desktop</p>
     </div>
 
     {#if !token}
-      <div class="mb-4 rounded-lg bg-red-500/10 p-4 text-center text-red-400">
+      <div class="text-red-600 text-center mb-4 p-4 rounded-lg bg-red-50">
+
         Error: No connection token provided
       </div>
     {:else}
@@ -111,7 +110,8 @@
         href="https://phantom.app/download"
         target="_blank"
         rel="noopener noreferrer"
-        class="mt-4 block text-center text-sm text-gray-400 transition-colors hover:text-white">
+        class="mt-4 text-center block text-sm text-gray-500 hover:text-gray-800 transition-colors"
+      >
         Don't have Phantom wallet? Click here to install
       </a>
     {/if}

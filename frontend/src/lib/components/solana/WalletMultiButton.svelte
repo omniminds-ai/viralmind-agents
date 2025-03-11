@@ -124,39 +124,33 @@
 </script>
 
 {#if $walletStore.connected}
-  <div class="relative inline-block wallet-button-container">
+  <div class="wallet-button-container relative inline-block">
     <button
       id="connected-wallet-btn"
-      on:click|stopPropagation={() => isOpen = !isOpen}
-      class="flex items-center rounded-full border-2 border-transparent bg-black py-1 pr-5 text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 md:pl-4"
-    >
+      on:click|stopPropagation={() => (isOpen = !isOpen)}
+      class="flex items-center rounded-full border-2 border-transparent bg-black px-5 py-1 text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10">
       <img
         alt="icon of {$walletStore!.adapter!.name}"
         src={$walletStore!.adapter!.icon}
-        class="mr-2 h-5 w-5"
-      />
+        class="mr-2 h-5 w-5" />
       <span class="font-medium">{abbrAddress($walletStore.publicKey!.toBase58())}</span>
     </button>
     {#if isOpen}
       <ul
         id="connected-wallet-menu"
         transition:fade
-        class="animate-in fade-in slide-in-from-top-2 fixed right-4 top-[4.5rem] z-[99999] min-w-[280px] rounded-2xl border border-white/20 bg-black/90 p-3 font-[-apple-system,system-ui] shadow-2xl backdrop-blur-xl duration-200"
-      >
+        class="animate-in fade-in slide-in-from-top-2 fixed right-4 top-[4.5rem] z-[99999] min-w-[280px] rounded-2xl border border-white/20 bg-black/90 p-3 font-[-apple-system,system-ui] shadow-2xl backdrop-blur-xl duration-200">
         <li>
           <div
-            class="flex w-full items-center gap-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 px-4 py-3 text-left"
-          >
+            class="flex w-full items-center gap-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 px-4 py-3 text-left">
             <div
-              class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500"
-            >
+              class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500">
               <Coins class="h-5 w-5 text-white" />
             </div>
             <div class="flex-1">
               <div class="font-medium text-white">$VIRAL Balance</div>
               <div
-                class="bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-lg font-bold text-transparent"
-              >
+                class="bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-lg font-bold text-transparent">
                 {#if tokenBalance === null}
                   <div class="flex items-center gap-2">
                     <Clock class="h-4 w-4 text-gray-400" />
@@ -172,8 +166,7 @@
         <li>
           <button
             on:click={copyToClipboard}
-            class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-gray-300 transition-all duration-200 hover:bg-white/5"
-          >
+            class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-gray-300 transition-all duration-200 hover:bg-white/5">
             <Copy class="h-5 w-5 text-gray-500" />
             <div>
               <div class="font-medium text-white">Copy Address</div>
@@ -184,8 +177,7 @@
         <li>
           <button
             on:click={handleDisconnect}
-            class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-400 transition-all duration-200 hover:bg-red-500/10"
-          >
+            class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-red-400 transition-all duration-200 hover:bg-red-500/10">
             <LogOut class="h-5 w-5" />
             <div>
               <div class="font-medium">Disconnect Wallet</div>
@@ -197,25 +189,22 @@
     {/if}
   </div>
 {:else}
-  <div class="relative inline-block wallet-button-container">
+  <div class="wallet-button-container relative inline-block">
     <button
       id="select-wallet-btn"
-      on:click|stopPropagation={() => isOpen = !isOpen}
-      class="rounded-full border-2 border-transparent bg-black py-1 pr-5 font-medium tracking-tight text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 md:pl-4"
-    >
+      on:click|stopPropagation={() => (isOpen = !isOpen)}
+      class="rounded-full border-2 border-transparent bg-black px-5 py-1 font-medium tracking-tight text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:border-purple-500/50 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10">
       Connect Solana Wallet
     </button>
     {#if isOpen}
       <div
         id="select-wallet-modal"
         transition:fade
-        class="animate-in fade-in slide-in-from-top-2 fixed right-4 top-[4.5rem] z-[99999] min-w-[320px] rounded-2xl border border-white/20 bg-black/90 p-3 font-[-apple-system,system-ui] shadow-2xl backdrop-blur-xl duration-200"
-      >
+        class="animate-in fade-in slide-in-from-top-2 fixed right-4 top-[4.5rem] z-[99999] min-w-[320px] rounded-2xl border border-white/20 bg-black/90 p-3 font-[-apple-system,system-ui] shadow-2xl backdrop-blur-xl duration-200">
         {#if installedWalletAdaptersWithReadyState.length === 0}
           <div class="p-6 text-center">
             <div
-              class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20"
-            >
+              class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20">
               <Coins class="h-8 w-8 text-gray-400" />
             </div>
             <h3 class="mb-2 text-lg font-semibold tracking-tight text-white">No Wallet Found</h3>
@@ -226,8 +215,7 @@
               href="https://phantom.app/download"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500 px-5 py-2.5 font-medium tracking-tight text-white shadow-sm transition-all duration-200 hover:opacity-90 hover:shadow-md"
-            >
+              class="inline-flex items-center rounded-full bg-gradient-to-r from-purple-500 to-blue-500 px-5 py-2.5 font-medium tracking-tight text-white shadow-sm transition-all duration-200 hover:opacity-90 hover:shadow-md">
               Get Phantom Wallet
               <ExternalLink class="ml-2 h-4 w-4" />
             </a>
@@ -240,13 +228,11 @@
                   <button
                     on:click={() => handleConnect(wallet.adapter)}
                     type="button"
-                    class="group relative flex w-full items-center rounded-xl px-4 py-3 transition-all duration-200 hover:bg-white/5"
-                  >
+                    class="group relative flex w-full items-center rounded-xl px-4 py-3 transition-all duration-200 hover:bg-white/5">
                     <img
                       alt="icon of {wallet.adapter.name}"
                       src={wallet.adapter.icon}
-                      class="mr-4 h-8 w-8 transition-transform duration-200 group-hover:scale-105"
-                    />
+                      class="mr-4 h-8 w-8 transition-transform duration-200 group-hover:scale-105" />
                     <div>
                       <div class="font-medium tracking-tight text-white">{wallet.adapter.name}</div>
                       <div class="text-sm text-gray-400">Click to connect your wallet</div>
