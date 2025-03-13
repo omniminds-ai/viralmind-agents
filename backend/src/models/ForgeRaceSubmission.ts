@@ -57,19 +57,19 @@ async function notifyForgeWebhook(
             type === 'processing'
               ? '🎯 Processing New Submission'
               : type === 'success'
-                ? '✨ Submission Graded Successfully'
-                : type === 'transfer-error'
-                  ? '⚠️ Treasury Transfer Failed'
-                  : '❌ Submission Processing Failed',
+              ? '✨ Submission Graded Successfully'
+              : type === 'transfer-error'
+              ? '⚠️ Treasury Transfer Failed'
+              : '❌ Submission Processing Failed',
           fields: [],
           color:
             type === 'processing'
               ? 3447003 // Blue
               : type === 'success'
-                ? 5793266 // Green
-                : type === 'transfer-error'
-                  ? 16098851 // Yellow
-                  : 15158332 // Red
+              ? 5793266 // Green
+              : type === 'transfer-error'
+              ? 16098851 // Yellow
+              : 15158332 // Red
         }
       ]
     };
@@ -102,7 +102,9 @@ async function notifyForgeWebhook(
     if (data.address) {
       payload.embeds[0].fields.push({
         name: '👤 Submitter',
-        value: `[${data.address.slice(0, 4)}...${data.address.slice(-4)}](https://solscan.io/account/${data.address})`,
+        value: `[${data.address.slice(0, 4)}...${data.address.slice(
+          -4
+        )}](https://solscan.io/account/${data.address})`,
         inline: true
       });
     }
@@ -118,7 +120,9 @@ async function notifyForgeWebhook(
     if (data.reward !== undefined && data.maxReward) {
       payload.embeds[0].fields.push({
         name: '💎 Reward',
-        value: `${data.reward.toFixed(2)} ${data.pool?.token.symbol || '$VIRAL'} (${data.clampedScore}% of ${data.maxReward.toFixed(2)})`,
+        value: `${data.reward.toFixed(2)} ${data.pool?.token.symbol || '$VIRAL'} (${
+          data.clampedScore
+        }% of ${data.maxReward.toFixed(2)})`,
         inline: true
       });
     }
@@ -126,7 +130,12 @@ async function notifyForgeWebhook(
     if (data.pool) {
       payload.embeds[0].fields.push({
         name: '🏦 Pool',
-        value: `${data.pool.name}\n${data.pool.token.symbol} ([${data.pool.token.address.slice(0, 4)}...${data.pool.token.address.slice(-4)}](https://solscan.io/token/${data.pool.token.address}))`,
+        value: `${data.pool.name}\n${data.pool.token.symbol} ([${data.pool.token.address.slice(
+          0,
+          4
+        )}...${data.pool.token.address.slice(-4)}](https://solscan.io/token/${
+          data.pool.token.address
+        }))`,
         inline: true
       });
 
@@ -311,7 +320,7 @@ export async function processNextInQueue() {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
-    
+
     // After retries, ensure submission is not null
     if (!submission) {
       throw new Error(`Submission ${submissionId} not found after retries`);
@@ -450,6 +459,8 @@ export async function processNextInQueue() {
               console.log('Creating treasury transfer for reward:', treasuryTransfer);
               console.log('Creating treasury transfer to address:', submission.address);
 
+              if (process.env.NODE_ENV === 'development') break;
+
               try {
                 console.log('Attempting blockchain transfer');
                 // Create keypair from private key
@@ -547,7 +558,7 @@ export async function processNextInQueue() {
       submission.treasuryTransfer = treasuryTransfer;
       submission.status = ProcessingStatus.COMPLETED;
       await submission.save();
-      
+
       // Always send a webhook notification for successful processing, even if there was no reward
       // Only send if it wasn't already sent during the reward processing
       if (!reward || reward === 0 || !treasuryTransfer) {
@@ -562,10 +573,12 @@ export async function processNextInQueue() {
           summary: gradeResult.summary,
           feedback: gradeResult.reasoning,
           address: submission.address,
-          pool: pool ? {
-            name: pool.name,
-            token: pool.token
-          } : undefined
+          pool: pool
+            ? {
+                name: pool.name,
+                token: pool.token
+              }
+            : undefined
         });
       }
     } catch (error) {
