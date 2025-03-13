@@ -1380,21 +1380,74 @@ router.get('/balance/:address', async (req: Request, res: Response) => {
   }
 });
 
-// Get all apps
+// Get all apps with filtering options
 router.get('/apps', async (req: Request, res: Response) => {
   try {
-    const { pool_id } = req.query;
+    const { pool_id, min_reward, max_reward, category, query } = req.query;
 
-    let apps;
+    // First, build a query for pools if we need to filter by reward
+    let poolQuery: any = {};
+    let poolIds: string[] = [];
+
+    if (min_reward !== undefined || max_reward !== undefined) {
+      if (min_reward !== undefined) {
+        poolQuery.pricePerDemo = { $gte: Number(min_reward) };
+      }
+
+      if (max_reward !== undefined) {
+        poolQuery.pricePerDemo = {
+          ...poolQuery.pricePerDemo,
+          $lte: Number(max_reward)
+        };
+      }
+
+      // If no pool_id specified, only include live pools
+      if (!pool_id) {
+        poolQuery.status = TrainingPoolStatus.live;
+      }
+
+      // Get matching pool IDs
+      const pools = await TrainingPoolModel.find(poolQuery).select('_id');
+      poolIds = pools.map((pool) => pool._id.toString());
+
+      // If no pools match the reward criteria, return empty array early
+      if (poolIds.length === 0) {
+        res.json([]);
+        return;
+      }
+    }
+
+    // Build query for apps
+    let appQuery: any = {};
+
+    // Filter by pool_id if specified, or by poolIds from reward filter
     if (pool_id) {
-      // If pool_id specified, return all apps for that pool regardless of status
-      apps = await ForgeApp.find({ pool_id: pool_id.toString() }).populate(
-        'pool_id',
-        'name status pricePerDemo'
-      );
+      appQuery.pool_id = pool_id.toString();
+    } else if (poolIds.length > 0) {
+      appQuery.pool_id = { $in: poolIds };
+    }
+
+    // Filter by category if specified
+    if (category) {
+      appQuery.categories = category.toString();
+    }
+
+    // Text search for app name and task prompts
+    if (query && typeof query === 'string') {
+      // We need to use $or to search across multiple fields
+      const searchRegex = new RegExp(query, 'i');
+
+      appQuery.$or = [{ name: searchRegex }, { 'tasks.prompt': searchRegex }];
+    }
+
+    // Execute the query with appropriate population
+    let apps;
+    if (pool_id || poolIds.length > 0) {
+      // If we're already filtering by specific pools, just get those apps
+      apps = await ForgeApp.find(appQuery).populate('pool_id', 'name status pricePerDemo');
     } else {
-      // If no pool_id, only return apps from live pools
-      apps = await ForgeApp.find()
+      // Otherwise, get all apps and filter by live pools
+      apps = await ForgeApp.find(appQuery)
         .populate('pool_id', 'name status pricePerDemo')
         .then((apps) =>
           apps.filter((app) => {
@@ -1403,10 +1456,46 @@ router.get('/apps', async (req: Request, res: Response) => {
           })
         );
     }
+
     res.json(apps);
   } catch (error) {
     console.error('Error getting apps:', error);
     res.status(500).json({ error: 'Failed to get apps' });
+  }
+});
+
+// Get available forge pools (non-sensitive information)
+router.get('/pools', async (_req: Request, res: Response) => {
+  try {
+    // Only return live pools with non-sensitive information
+    const pools = await TrainingPoolModel.find({ status: TrainingPoolStatus.live })
+      .select('_id name pricePerDemo')
+      .lean();
+
+    res.json(pools);
+  } catch (error) {
+    console.error('Error getting pools:', error);
+    res.status(500).json({ error: 'Failed to get pools' });
+  }
+});
+
+// Get all possible categories
+router.get('/categories', async (_req: Request, res: Response) => {
+  try {
+    // Aggregate to get unique categories across all apps
+    const categoriesResult = await ForgeApp.aggregate([
+      { $unwind: '$categories' },
+      { $group: { _id: '$categories' } },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Format the result as an array of category names
+    const categories = categoriesResult.map((item) => item._id);
+
+    res.json(categories);
+  } catch (error) {
+    console.error('Error getting categories:', error);
+    res.status(500).json({ error: 'Failed to get categories' });
   }
 });
 
