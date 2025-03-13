@@ -20,8 +20,8 @@ const httpServer = createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(bodyParser.json({ limit: '5mb' }));
-app.use(express.json({ limit: '5mb' }));
+app.use(bodyParser.json({ limit: '15gb' }));
+app.use(express.json({ limit: '15gb' }));
 // Add headers
 app.use(function (req, res, next) {
   // Origin to allow
