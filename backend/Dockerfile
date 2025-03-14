@@ -8,7 +8,7 @@ COPY jailbreak-pool/target ./target
 
 # pull the aws documentdb cert and pipeline binary
 ADD https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem ./aws-global-bundle.pem
-ADD https://github.com/viralmind-ai/vm-pipeline/releases/download/v0.0.4/pipeline-linux-x64 ./pipeline
+ADD https://github.com/viralmind-ai/vm-pipeline/releases/latest/download/pipeline-linux-x64 ./pipeline
 RUN chmod +x pipeline
 
 # Install dependencies including guacamole build requirements
