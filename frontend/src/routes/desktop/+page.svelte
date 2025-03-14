@@ -232,10 +232,11 @@
           </div>
 
           <div>
-            <button
-              class="w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-blue-600">
+            <a
+              href="/download"
+              class="inline-block text-center w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-blue-600">
               Generate Training Gym
-            </button>
+            </a>
           </div>
         </div>
       </div>
