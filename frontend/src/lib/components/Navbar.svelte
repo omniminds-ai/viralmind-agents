@@ -175,6 +175,13 @@
                   Discord
                 </a>
                 <a
+                  href="https://t.me/viralmind"
+                  target="_blank"
+                  class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
+                  <i class="si si-telegram h-4 w-4" />
+                  Telegram
+                </a>
+                <a
                   href="https://twitter.com/ViralMindAI"
                   target="_blank"
                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
