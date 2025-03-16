@@ -303,8 +303,8 @@ interface CreatePoolBody {
   apps?: {
     name: string;
     domain: string;
-    description: string;
-    categories: string[];
+    description?: string;
+    categories?: string[];
     tasks: {
       prompt: string;
     }[];
@@ -313,9 +313,19 @@ interface CreatePoolBody {
 
 interface UpdatePoolBody {
   id: string;
+  name?: string;
   status?: TrainingPoolStatus.live | TrainingPoolStatus.paused;
   skills?: string;
   pricePerDemo?: number;
+  apps?: {
+    name: string;
+    domain: string;
+    description?: string;
+    categories?: string[];
+    tasks: {
+      prompt: string;
+    }[];
+  }[];
 }
 
 interface ListPoolsBody {
@@ -1145,7 +1155,7 @@ router.post(
   requireWalletAddress,
   async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
     try {
-      const { id, status, skills, pricePerDemo } = req.body;
+      const { id, name, status, skills, pricePerDemo, apps } = req.body;
 
       if (!id) {
         res.status(400).json({ error: 'Pool ID is required' });
@@ -1176,6 +1186,7 @@ router.post(
       }
 
       const updates: Partial<TrainingPool> = {};
+      if (name) updates.name = name;
       if (status) updates.status = status;
       if (skills) updates.skills = skills;
       if (pricePerDemo !== undefined) updates.pricePerDemo = Math.max(1, pricePerDemo);
@@ -1186,8 +1197,36 @@ router.post(
         { new: true }
       ).select('-depositPrivateKey'); // Exclude private key from response
 
-      // If skills were updated, start app regeneration (non-blocking)
-      if (skills) {
+      // If apps were provided, update the apps
+      if (apps && Array.isArray(apps) && apps.length > 0) {
+        try {
+          // Delete existing apps for this pool
+          await ForgeApp.deleteMany({ pool_id: id });
+          
+          // Store the new apps
+          for (const app of apps) {
+            await ForgeApp.create({
+              ...app,
+              pool_id: id
+            });
+          }
+          
+          console.log(`Successfully updated ${apps.length} apps for pool ${id}`);
+          // await notifyForgeWebhook(
+          //   `✅ Updated ${apps.length} apps for pool "${updatedPool?.name}" (${id})\n${apps
+          //     .map((a) => `- ${a.name}`)
+          //     .join('\n')}`
+          // );
+        } catch (error) {
+          const appError = error as Error;
+          console.error('Error updating apps:', appError);
+          // await notifyForgeWebhook(
+          //   `❌ Error updating apps for pool ${id}: ${appError.message}`
+          // );
+        }
+      } 
+      // If skills were updated but no apps were provided, generate apps
+      else if (skills) {
         generateAppsForPool(id, skills).catch((error) => {
           console.error('Error regenerating apps:', error);
         });
