@@ -313,6 +313,7 @@ interface CreatePoolBody {
 
 interface UpdatePoolBody {
   id: string;
+  name?: string;
   status?: TrainingPoolStatus.live | TrainingPoolStatus.paused;
   skills?: string;
   pricePerDemo?: number;
@@ -1145,7 +1146,7 @@ router.post(
   requireWalletAddress,
   async (req: Request<{}, {}, UpdatePoolBody>, res: Response) => {
     try {
-      const { id, status, skills, pricePerDemo } = req.body;
+      const { id, name, status, skills, pricePerDemo } = req.body;
 
       if (!id) {
         res.status(400).json({ error: 'Pool ID is required' });
@@ -1176,6 +1177,7 @@ router.post(
       }
 
       const updates: Partial<TrainingPool> = {};
+      if (name) updates.name = name;
       if (status) updates.status = status;
       if (skills) updates.skills = skills;
       if (pricePerDemo !== undefined) updates.pricePerDemo = Math.max(1, pricePerDemo);
