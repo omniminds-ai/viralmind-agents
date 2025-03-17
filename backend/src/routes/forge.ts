@@ -1202,7 +1202,7 @@ router.post(
         try {
           // Delete existing apps for this pool
           await ForgeApp.deleteMany({ pool_id: id });
-          
+
           // Store the new apps
           for (const app of apps) {
             await ForgeApp.create({
@@ -1210,7 +1210,7 @@ router.post(
               pool_id: id
             });
           }
-          
+
           console.log(`Successfully updated ${apps.length} apps for pool ${id}`);
           // await notifyForgeWebhook(
           //   `✅ Updated ${apps.length} apps for pool "${updatedPool?.name}" (${id})\n${apps
@@ -1224,7 +1224,7 @@ router.post(
           //   `❌ Error updating apps for pool ${id}: ${appError.message}`
           // );
         }
-      } 
+      }
       // If skills were updated but no apps were provided, generate apps
       else if (skills) {
         generateAppsForPool(id, skills).catch((error) => {
@@ -1422,7 +1422,7 @@ router.get('/balance/:address', async (req: Request, res: Response) => {
 // Get all apps with filtering options
 router.get('/apps', async (req: Request, res: Response) => {
   try {
-    const { pool_id, min_reward, max_reward, category, query } = req.query;
+    const { pool_id, min_reward, max_reward, categories, query } = req.query;
 
     // First, build a query for pools if we need to filter by reward
     let poolQuery: any = {};
@@ -1466,9 +1466,19 @@ router.get('/apps', async (req: Request, res: Response) => {
       appQuery.pool_id = { $in: poolIds };
     }
 
-    // Filter by category if specified
-    if (category) {
-      appQuery.categories = category.toString();
+    // Filter by categories if specified
+    if (categories) {
+      try {
+        // Parse the JSON array of categories
+        const categoriesArray = (categories as string).split(',');
+        if (Array.isArray(categoriesArray) && categoriesArray.length > 0) {
+          // Use $in operator to match any of the categories
+          appQuery.categories = { $in: categoriesArray };
+        }
+      } catch (e) {
+        console.error('Error parsing categories parameter:', e);
+        // If parsing fails, just don't apply the category filter
+      }
     }
 
     // Text search for app name and task prompts
