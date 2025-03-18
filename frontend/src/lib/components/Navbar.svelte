@@ -14,7 +14,8 @@
     Hammer,
     Dumbbell,
     Earth,
-    Monitor
+    Monitor,
+    ChevronUp
   } from 'lucide-svelte';
   import { onMount } from 'svelte';
   import WalletMultiButton from '$lib/components/solana/WalletMultiButton.svelte';
@@ -24,6 +25,7 @@
   let isScrolled = false;
   let isMobileMenuOpen = false;
   let isDropdownOpen: 'community' | 'research' | 'ecosystem' | null = null;
+  let isMobileCommunityDropdownOpen = true;
 
   afterNavigate(() => {
     if (isMobileMenuOpen) toggleMobileMenu();
@@ -273,7 +275,7 @@
       <div
         transition:slide
         class="absolute left-0 right-0 top-16 border-b border-gray-200 bg-white/95 backdrop-blur-lg lg:hidden">
-        <nav class="space-y-4 px-6 py-4">
+        <nav class="space-y-2 px-6 py-2">
           <!-- Ecosystem Section -->
           <div class="border-t border-gray-200 pt-2">
             <p class="px-2 py-1 text-xs font-semibold uppercase text-gray-500">Ecosystem</p>
@@ -311,28 +313,45 @@
 
           <!-- Community Section -->
           <div class="border-t border-gray-200 pt-2">
-            <p class="px-2 py-1 text-xs font-semibold uppercase text-gray-500">Community</p>
-            <a
-              href="https://github.com/viralmind-ai"
-              target="_blank"
-              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
-              <i class="si si-github h-5 w-5" />
-              <span class="animated-underline">GitHub</span>
-            </a>
-            <a
-              href="https://discord.gg/C9NyQmkz5W"
-              target="_blank"
-              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
-              <i class="si si-discord h-5 w-5" />
-              Discord
-            </a>
-            <a
-              href="https://twitter.com/ViralMindAI"
-              target="_blank"
-              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
-              <i class="si si-twitter h-5 w-5" />
-              Twitter
-            </a>
+            <button
+              onclick={() => (isMobileCommunityDropdownOpen = !isMobileCommunityDropdownOpen)}
+              class="flex w-full flex-row items-center text-left">
+              <p class="grow px-2 py-1 text-xs font-semibold uppercase text-gray-500">Community</p>
+              <ChevronUp
+                class={`h-5 w-5 grow-0 ${isMobileCommunityDropdownOpen ? 'rotate-180' : ''} transition-transform`} />
+            </button>
+            {#if isMobileCommunityDropdownOpen}
+              <div transition:slide>
+                <a
+                  href="https://github.com/viralmind-ai"
+                  target="_blank"
+                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+                  <i class="si si-github h-5 w-5" />
+                  <span class="animated-underline">GitHub</span>
+                </a>
+                <a
+                  href="https://discord.gg/C9NyQmkz5W"
+                  target="_blank"
+                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+                  <i class="si si-discord h-5 w-5" />
+                  Discord
+                </a>
+                <a
+                  href="https://t.me/viralmind"
+                  target="_blank"
+                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+                  <i class="si si-telegram h-5 w-5" />
+                  Telegram
+                </a>
+                <a
+                  href="https://twitter.com/ViralMindAI"
+                  target="_blank"
+                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+                  <i class="si si-twitter h-5 w-5" />
+                  Twitter
+                </a>
+              </div>
+            {/if}
           </div>
 
           <!-- Research Section -->
