@@ -439,8 +439,20 @@ export async function processNextInQueue() {
             // Calculate final reward based on grade_result score (clamped 0-100)
             clampedScore = Math.max(0, Math.min(100, gradeResult.score));
 
-            // Set reward to 0 if score is below 50%
-            if (clampedScore < 50) {
+            // Check for previous submissions with same or higher score
+            const previousSubmission = await ForgeRaceSubmission.findOne({
+              address: submission.address,
+              'meta.quest.pool_id': pool._id.toString(),
+              'meta.quest.title': submission.meta.quest.title,
+              'grade_result.score': { $gte: gradeResult.score },
+              _id: { $ne: submission._id }
+            }).sort({ 'grade_result.score': -1 });
+
+            if (previousSubmission) {
+              reward = 0;
+              // Add prefix to reasoning
+              gradeResult.reasoning = `( system: no reward given - previous submission exists with score of ${previousSubmission.grade_result?.score || 0} ) ${gradeResult.reasoning}`;
+            } else if (clampedScore < 50) {
               reward = 0;
               // Add prefix to reasoning
               gradeResult.reasoning = `( system: reward returned to pool due to <50% quality score ) ${gradeResult.reasoning}`;
