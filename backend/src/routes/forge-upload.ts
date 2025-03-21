@@ -8,7 +8,12 @@ import { createHash } from 'crypto';
 import { AWSS3Service } from '../services/aws/index.ts';
 import { ForgeRaceSubmission, ProcessingStatus, addToProcessingQueue } from '../models/ForgeRaceSubmission.js';
 import { WalletConnectionModel } from '../models/WalletConnection.js';
+import { TrainingPoolModel, TrainingPoolStatus } from '../models/TrainingPool.js';
+import BlockchainService from '../services/blockchain/index.ts';
 import axios from 'axios';
+
+// Initialize blockchain service
+const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
 
 // Configure multer for handling chunk uploads
 const upload = multer({
@@ -487,6 +492,42 @@ router.post('/complete/:uploadId', requireWalletAddress, requireUploadSession, a
         console.log(`[UPLOAD] Generated time expired: ${meta.generatedTime} (now: ${now})`);
         res.status(400).json({ error: 'Generated time expired' });
         return;
+      }
+      
+      // Verify pool exists and check balance
+      console.log(`[UPLOAD] Verifying pool balance and status for poolId: ${meta.poolId}`);
+      const pool = await TrainingPoolModel.findById(meta.poolId);
+      if (!pool) {
+        console.log(`[UPLOAD] Pool not found: ${meta.poolId}`);
+        res.status(400).json({ error: 'Pool not found' });
+        return;
+      }
+      
+      // Get current token balance from blockchain to ensure it's up-to-date
+      const currentBalance = await blockchainService.getTokenBalance(
+        pool.token.address,
+        pool.depositAddress
+      );
+      
+      // Check if pool has sufficient funds
+      if (currentBalance < pool.pricePerDemo) {
+        console.log(`[UPLOAD] Insufficient funds: ${currentBalance} < ${pool.pricePerDemo}`);
+        res.status(400).json({ error: 'Pool has insufficient funds' });
+        return;
+      }
+      
+      // Check if pool is in live status
+      if (pool.status !== TrainingPoolStatus.live) {
+        console.log(`[UPLOAD] Pool not in live status: ${pool.status}`);
+        res.status(400).json({ error: `Pool is not active (status: ${pool.status})` });
+        return;
+      }
+      
+      // Update pool funds in database with current balance
+      if (pool.funds !== currentBalance) {
+        pool.funds = currentBalance;
+        await pool.save();
+        console.log(`[UPLOAD] Updated pool funds from ${pool.funds} to ${currentBalance}`);
       }
     }
 

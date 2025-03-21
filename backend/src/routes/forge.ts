@@ -26,6 +26,80 @@ import * as bs58 from 'bs58';
 import nacl from 'tweetnacl';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
+const BALANCE_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
+
+// Set up interval to refresh pool balances
+setInterval(async () => {
+  try {
+    console.log('Starting periodic pool balance refresh');
+    // Get all live and paused pools
+    const pools = await TrainingPoolModel.find({
+      status: { $in: [TrainingPoolStatus.live, TrainingPoolStatus.paused] }
+    });
+    
+    console.log(`Refreshing balances for ${pools.length} pools`);
+    
+    // Process pools in batches to avoid too many concurrent blockchain calls
+    const batchSize = 5;
+    for (let i = 0; i < pools.length; i += batchSize) {
+      const batch = pools.slice(i, i + batchSize);
+      await Promise.all(batch.map(async (pool) => {
+        try {
+          // Get current token balance from blockchain
+          const balance = await blockchainService.getTokenBalance(
+            pool.token.address,
+            pool.depositAddress
+          );
+          
+          // Get SOL balance to check for gas
+          const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+          const noGas = solBalance === 0;
+          
+          // Update pool funds
+          let statusChanged = false;
+          if (pool.funds !== balance) {
+            pool.funds = balance;
+            statusChanged = true;
+          }
+          
+          // Update status based on token and SOL balances
+          if (noGas) {
+            if (pool.status !== TrainingPoolStatus.noGas) {
+              pool.status = TrainingPoolStatus.noGas;
+              statusChanged = true;
+            }
+          } else if (balance === 0 || balance < pool.pricePerDemo) {
+            if (pool.status !== TrainingPoolStatus.noFunds) {
+              pool.status = TrainingPoolStatus.noFunds;
+              statusChanged = true;
+            }
+          } else if (
+            (pool.status === TrainingPoolStatus.noFunds || pool.status === TrainingPoolStatus.noGas)
+          ) {
+            pool.status = TrainingPoolStatus.paused;
+            statusChanged = true;
+          }
+          
+          if (statusChanged) {
+            await pool.save();
+            console.log(`Updated pool ${pool._id} balance to ${balance} and status to ${pool.status}`);
+          }
+        } catch (error) {
+          console.error(`Error refreshing pool ${pool._id}:`, error);
+        }
+      }));
+      
+      // Add a small delay between batches to avoid rate limiting
+      if (i + batchSize < pools.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    console.log('Completed periodic pool balance refresh');
+  } catch (error) {
+    console.error('Error in periodic pool balance refresh:', error);
+  }
+}, BALANCE_REFRESH_INTERVAL);
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
