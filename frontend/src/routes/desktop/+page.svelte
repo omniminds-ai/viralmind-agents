@@ -48,6 +48,21 @@
   });
 </script>
 
+<svelte:head>
+  <title>viralmind.ai - Viralmind Desktop</title>
+  <meta property="og:title" content="viralmind.ai - Viralmind Desktop" />
+  <meta name="twitter:title" content="viralmind.ai - Viralmind Desktop" />
+  <meta
+    name="description"
+    content="Your unified platform for contributing to, training, and evaluating computer-use agents, all in one powerful desktop application." />
+  <meta
+    name="twitter:description"
+    content="Your unified platform for contributing to, training, and evaluating computer-use agents, all in one powerful desktop application." />
+  <meta
+    property="og:description"
+    content="Your unified platform for contributing to, training, and evaluating computer-use agents, all in one powerful desktop application." />
+</svelte:head>
+
 <div class="min-h-screen">
   <!-- Hero Section -->
   <section class="relative bg-white">
@@ -234,7 +249,7 @@
           <div>
             <a
               href="/download"
-              class="inline-block text-center w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-blue-600">
+              class="inline-block w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-center text-white transition-colors hover:from-purple-700 hover:to-blue-600">
               Generate Training Gym
             </a>
           </div>

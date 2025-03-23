@@ -120,6 +120,20 @@
   });
 </script>
 
+<svelte:head>
+  <title>viralmind.ai - Download Viralmind</title>
+  <meta property="og:title" content="viralmind.ai - Download Viralmind" />
+  <meta name="twitter:title" content="viralmind.ai - Download Vrialmind" />
+  <meta
+    name="description"
+    content="Download Viralmind Desktop for all-in-one computer-use training." />
+  <meta
+    name="twitter:description"
+    content="Download Viralmind Desktop for all-in-one computer-use training." />
+  <meta
+    property="og:description"
+    content="Download Viralmind Desktop for all-in-one computer-use training." />
+</svelte:head>
 <div class="pt-2 md:pt-8">
   <div class="mx-auto max-w-6xl px-10 md:px-5">
     <!-- Header -->

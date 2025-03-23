@@ -33,6 +33,21 @@
   };
 </script>
 
+<svelte:head>
+  <title>viralmind.ai - $VIRAL</title>
+  <meta property="og:title" content="viralmind.ai - $VIRAL" />
+  <meta name="twitter:title" content="viralmind.ai - $VIRAL" />
+  <meta
+    name="description"
+    content="Incentivizing high-quality AI training data at scale through instant, quality-based rewards." />
+  <meta
+    name="twitter:description"
+    content="Incentivizing high-quality AI training data at scale through instant, quality-based rewards." />
+  <meta
+    property="og:description"
+    content="Incentivizing high-quality AI training data at scale through instant, quality-based rewards." />
+</svelte:head>
+
 <main class="min-h-screen">
   <!-- Hero Section -->
   <div class="bg-white py-24">
