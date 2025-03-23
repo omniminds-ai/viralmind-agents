@@ -7,7 +7,9 @@ const ForgeAppSchema = new mongoose.Schema({
   categories: [{ type: String, required: false }],
   pool_id: { type: mongoose.Schema.Types.ObjectId, ref: 'TrainingPool', required: true },
   tasks: [{
-    prompt: { type: String, required: true }
+    prompt: { type: String, required: true },
+    uploadLimit: { type: Number, required: false },
+    rewardLimit: { type: Number, required: false }
   }]
 },
 { 
