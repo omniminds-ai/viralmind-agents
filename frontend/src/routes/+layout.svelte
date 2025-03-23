@@ -15,25 +15,34 @@
 
   const isGymRoute = $derived(page.url.pathname.startsWith('/gym'));
   const isTournamentRoute = $derived(page.url.pathname.startsWith('/tournament'));
+
+  const title = $derived.by(() => {
+    let pre = 'viralmind.ai';
+    const route = page.route.id?.split('/')[1];
+    if (route) {
+      pre += ' - ' + route[0].toUpperCase() + route.slice(1, route.length);
+    }
+    return pre;
+  });
 </script>
 
 <svelte:head>
   <!-- HTML Meta Tags -->
-  <title>viralmind.ai</title>
+  <title>{title}</title>
   <meta name="description" content="The Next Meta in Agentic AI." />
 
   <!-- Facebook Meta Tags -->
-  <meta property="og:url" content="https://viralmind.ai" />
+  <meta property="og:url" content={page.url.toString()} />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="viralmind.ai" />
+  <meta property="og:title" content={title} />
   <meta property="og:description" content="The Next Meta in Agentic AI." />
   <meta property="og:image" content="https://viralmind.ai/favicon.png" />
 
   <!-- Twitter Meta Tags -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta property="twitter:domain" content="viralmind.ai" />
-  <meta property="twitter:url" content="https://viralmind.ai" />
-  <meta name="twitter:title" content="viralmind.ai" />
+  <meta property="twitter:url" content={page.url.toString()} />
+  <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content="The Next Meta in Agentic AI." />
   <meta name="twitter:image" content="https://viralmind.ai/favicon.png" />
 </svelte:head>
