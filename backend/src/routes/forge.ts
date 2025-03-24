@@ -2,7 +2,12 @@ import express, { Request, Response, Router, NextFunction } from 'express';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import OpenAI from 'openai';
 import axios from 'axios';
-import { TrainingPoolModel, TrainingPool, TrainingPoolStatus, UploadLimitType } from '../models/TrainingPool.js';
+import {
+  TrainingPoolModel,
+  TrainingPool,
+  TrainingPoolStatus,
+  UploadLimitType
+} from '../models/TrainingPool.js';
 import { WalletConnectionModel } from '../models/WalletConnection.js';
 import { ForgeApp } from '../models/ForgeApp.js';
 import { ForgeRace } from '../models/ForgeRace.js';
@@ -31,71 +36,71 @@ const BALANCE_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
 // Set up interval to refresh pool balances
 setInterval(async () => {
   try {
-    console.log('Starting periodic pool balance refresh');
     // Get all live and paused pools
     const pools = await TrainingPoolModel.find({
       status: { $in: [TrainingPoolStatus.live, TrainingPoolStatus.paused] }
     });
-    
-    console.log(`Refreshing balances for ${pools.length} pools`);
-    
+
     // Process pools in batches to avoid too many concurrent blockchain calls
     const batchSize = 5;
     for (let i = 0; i < pools.length; i += batchSize) {
       const batch = pools.slice(i, i + batchSize);
-      await Promise.all(batch.map(async (pool) => {
-        try {
-          // Get current token balance from blockchain
-          const balance = await blockchainService.getTokenBalance(
-            pool.token.address,
-            pool.depositAddress
-          );
-          
-          // Get SOL balance to check for gas
-          const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
-          const noGas = solBalance === 0;
-          
-          // Update pool funds
-          let statusChanged = false;
-          if (pool.funds !== balance) {
-            pool.funds = balance;
-            statusChanged = true;
-          }
-          
-          // Update status based on token and SOL balances
-          if (noGas) {
-            if (pool.status !== TrainingPoolStatus.noGas) {
-              pool.status = TrainingPoolStatus.noGas;
+      await Promise.all(
+        batch.map(async (pool) => {
+          try {
+            // Get current token balance from blockchain
+            const balance = await blockchainService.getTokenBalance(
+              pool.token.address,
+              pool.depositAddress
+            );
+
+            // Get SOL balance to check for gas
+            const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+            const noGas = solBalance === 0;
+
+            // Update pool funds
+            let statusChanged = false;
+            if (pool.funds !== balance) {
+              pool.funds = balance;
               statusChanged = true;
             }
-          } else if (balance === 0 || balance < pool.pricePerDemo) {
-            if (pool.status !== TrainingPoolStatus.noFunds) {
-              pool.status = TrainingPoolStatus.noFunds;
+
+            // Update status based on token and SOL balances
+            if (noGas) {
+              if (pool.status !== TrainingPoolStatus.noGas) {
+                pool.status = TrainingPoolStatus.noGas;
+                statusChanged = true;
+              }
+            } else if (balance === 0 || balance < pool.pricePerDemo) {
+              if (pool.status !== TrainingPoolStatus.noFunds) {
+                pool.status = TrainingPoolStatus.noFunds;
+                statusChanged = true;
+              }
+            } else if (
+              pool.status === TrainingPoolStatus.noFunds ||
+              pool.status === TrainingPoolStatus.noGas
+            ) {
+              pool.status = TrainingPoolStatus.paused;
               statusChanged = true;
             }
-          } else if (
-            (pool.status === TrainingPoolStatus.noFunds || pool.status === TrainingPoolStatus.noGas)
-          ) {
-            pool.status = TrainingPoolStatus.paused;
-            statusChanged = true;
+
+            if (statusChanged) {
+              await pool.save();
+              console.log(
+                `Updated pool ${pool._id} balance to ${balance} and status to ${pool.status}`
+              );
+            }
+          } catch (error) {
+            console.error(`Error refreshing pool ${pool._id}:`, error);
           }
-          
-          if (statusChanged) {
-            await pool.save();
-            console.log(`Updated pool ${pool._id} balance to ${balance} and status to ${pool.status}`);
-          }
-        } catch (error) {
-          console.error(`Error refreshing pool ${pool._id}:`, error);
-        }
-      }));
-      
+        })
+      );
+
       // Add a small delay between batches to avoid rate limiting
       if (i + batchSize < pools.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
-    
-    console.log('Completed periodic pool balance refresh');
   } catch (error) {
     console.error('Error in periodic pool balance refresh:', error);
   }
@@ -530,7 +535,7 @@ router.post(
                 status: ProcessingStatus.COMPLETED, // Only count completed submissions
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
-              
+
               if (gymSubmissions >= pool.uploadLimit.type) {
                 res.status(400).json({ error: 'Daily upload limit reached for this gym' });
                 return;
@@ -543,7 +548,7 @@ router.post(
                 status: ProcessingStatus.COMPLETED, // Only count completed submissions
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
-              
+
               if (gymSubmissions >= pool.uploadLimit.type) {
                 res.status(400).json({ error: 'Total upload limit reached for this gym' });
                 return;
@@ -560,7 +565,7 @@ router.post(
           });
 
           if (app) {
-            const task = app.tasks.find(t => t._id.toString() === meta.quest.task_id);
+            const task = app.tasks.find((t) => t._id.toString() === meta.quest.task_id);
             if (task?.uploadLimit) {
               const taskSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.task_id': meta.quest.task_id,
@@ -574,9 +579,11 @@ router.post(
               }
 
               // Check gym-wide per-task limit if applicable
-              if (pool.uploadLimit?.limitType === UploadLimitType.perTask && 
-                  pool.uploadLimit?.type && 
-                  taskSubmissions >= pool.uploadLimit.type) {
+              if (
+                pool.uploadLimit?.limitType === UploadLimitType.perTask &&
+                pool.uploadLimit?.type &&
+                taskSubmissions >= pool.uploadLimit.type
+              ) {
                 res.status(400).json({ error: 'Per-task upload limit reached for this gym' });
                 return;
               }
@@ -1349,19 +1356,19 @@ router.post(
 
       // Create update operations
       let updateOperation: any = {};
-      
+
       // Build $set operation for regular updates
       const setUpdates: Partial<TrainingPool> = {};
       if (name) setUpdates.name = name;
       if (status) setUpdates.status = status;
       if (skills) setUpdates.skills = skills;
       if (pricePerDemo !== undefined) setUpdates.pricePerDemo = Math.max(1, pricePerDemo);
-      
+
       // Add $set operation if we have updates
       if (Object.keys(setUpdates).length > 0) {
         updateOperation.$set = setUpdates;
       }
-      
+
       // Handle upload limit updates - allow setting to null to remove limits
       if (req.body.hasOwnProperty('uploadLimit')) {
         if (req.body.uploadLimit === null) {
@@ -1374,11 +1381,9 @@ router.post(
         }
       }
 
-      const updatedPool = await TrainingPoolModel.findByIdAndUpdate(
-        id,
-        updateOperation,
-        { new: true }
-      ).select('-depositPrivateKey'); // Exclude private key from response
+      const updatedPool = await TrainingPoolModel.findByIdAndUpdate(id, updateOperation, {
+        new: true
+      }).select('-depositPrivateKey'); // Exclude private key from response
 
       // If apps were provided, update the apps
       if (apps && Array.isArray(apps) && apps.length > 0) {
@@ -1676,7 +1681,10 @@ router.get('/apps', async (req: Request, res: Response) => {
     let apps;
     if (pool_id || poolIds.length > 0) {
       // If we're already filtering by specific pools, just get those apps
-      apps = await ForgeApp.find(appQuery).populate('pool_id', 'name status pricePerDemo uploadLimit');
+      apps = await ForgeApp.find(appQuery).populate(
+        'pool_id',
+        'name status pricePerDemo uploadLimit'
+      );
     } else {
       // Otherwise, get all apps and filter by live pools
       apps = await ForgeApp.find(appQuery)
@@ -1705,7 +1713,7 @@ router.get('/apps', async (req: Request, res: Response) => {
       gymLimitType?: UploadLimitType;
       gymLimitValue?: number;
     }
-    
+
     // Define interface for task with limit information
     interface TaskWithLimitInfo {
       _id: any;
@@ -1716,7 +1724,7 @@ router.get('/apps', async (req: Request, res: Response) => {
       currentSubmissions: number;
       limitReason: string | null;
     }
-    
+
     // Mark tasks that have reached their upload limits instead of filtering them out
     const appsWithLimitInfo = await Promise.all(
       apps.map(async (app) => {
@@ -1729,14 +1737,14 @@ router.get('/apps', async (req: Request, res: Response) => {
           gymLimitType: undefined,
           gymLimitValue: undefined
         };
-        
+
         // Check gym-wide upload limit
         let gymLimitReached = false;
         let gymSubmissions = 0;
-        
+
         if (pool.uploadLimit?.type) {
           const poolId = (pool as any)._id.toString();
-          
+
           switch (pool.uploadLimit.limitType) {
             case UploadLimitType.perDay:
               const today = new Date();
@@ -1747,30 +1755,30 @@ router.get('/apps', async (req: Request, res: Response) => {
                 status: ProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
-              
+
               // Check if gym has reached daily limit
               gymLimitReached = gymSubmissions >= pool.uploadLimit.type;
               break;
-              
+
             case UploadLimitType.total:
               gymSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.pool_id': poolId,
                 status: ProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
-              
+
               // Check if gym has reached total limit
               gymLimitReached = gymSubmissions >= pool.uploadLimit.type;
               break;
           }
         }
-        
+
         // Add gym limit info to app object
         appObj.gymLimitReached = gymLimitReached;
         appObj.gymSubmissions = gymSubmissions;
         appObj.gymLimitType = pool.uploadLimit?.limitType;
         appObj.gymLimitValue = pool.uploadLimit?.type;
-        
+
         // Process tasks and add limit information
         const tasksWithLimitInfo = await Promise.all(
           app.tasks.map(async (task) => {
@@ -1778,39 +1786,45 @@ router.get('/apps', async (req: Request, res: Response) => {
             let taskLimitReached = false;
             let taskSubmissions = 0;
             let limitReason: string | null = null;
-            
+
             // Count submissions for this specific task
-            if (task.uploadLimit || (pool.uploadLimit?.limitType === UploadLimitType.perTask && pool.uploadLimit?.type)) {
+            if (
+              task.uploadLimit ||
+              (pool.uploadLimit?.limitType === UploadLimitType.perTask && pool.uploadLimit?.type)
+            ) {
               taskSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.task_id': task._id.toString(),
                 status: ProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
-              
+
               // Check if task has reached its limit
               if (task.uploadLimit && taskSubmissions >= task.uploadLimit) {
                 taskLimitReached = true;
                 limitReason = 'Task limit reached';
               }
-              
+
               // Check gym-wide per-task limit if applicable
-              if (!taskLimitReached && 
-                  pool.uploadLimit?.limitType === UploadLimitType.perTask && 
-                  pool.uploadLimit?.type && 
-                  taskSubmissions >= pool.uploadLimit.type) {
+              if (
+                !taskLimitReached &&
+                pool.uploadLimit?.limitType === UploadLimitType.perTask &&
+                pool.uploadLimit?.type &&
+                taskSubmissions >= pool.uploadLimit.type
+              ) {
                 taskLimitReached = true;
                 limitReason = 'Per-task gym limit reached';
               }
             }
-            
+
             // If gym limit is reached, mark all tasks as limited
             if (gymLimitReached) {
               taskLimitReached = true;
-              limitReason = pool.uploadLimit?.limitType === UploadLimitType.perDay ? 
-                           'Daily gym limit reached' : 
-                           'Total gym limit reached';
+              limitReason =
+                pool.uploadLimit?.limitType === UploadLimitType.perDay
+                  ? 'Daily gym limit reached'
+                  : 'Total gym limit reached';
             }
-            
+
             // Add limit info to task object
             return {
               ...taskObj,
@@ -1820,7 +1834,7 @@ router.get('/apps', async (req: Request, res: Response) => {
             } as TaskWithLimitInfo;
           })
         );
-        
+
         // Return app with all tasks and limit information
         return {
           ...appObj,
@@ -1828,7 +1842,7 @@ router.get('/apps', async (req: Request, res: Response) => {
         };
       })
     );
-    
+
     // Return all apps with limit information
     res.json(appsWithLimitInfo);
   } catch (error) {
