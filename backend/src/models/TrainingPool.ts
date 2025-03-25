@@ -7,6 +7,12 @@ export enum TrainingPoolStatus {
   noGas = 'no-gas'
 }
 
+export enum UploadLimitType {
+  perTask = 'per-task',
+  perDay = 'per-day',
+  total = 'total'
+}
+
 export interface TrainingPool {
   id: string;
   name: string;
@@ -23,6 +29,10 @@ export interface TrainingPool {
   ownerAddress: string;
   depositAddress: string;
   depositPrivateKey: string; // Store private key securely
+  uploadLimit?: {
+    type: number;
+    limitType: UploadLimitType;
+  };
 }
 
 const trainingPoolSchema = new Schema<TrainingPool>(
@@ -49,7 +59,18 @@ const trainingPoolSchema = new Schema<TrainingPool>(
     skills: { type: String, required: true },
     ownerAddress: { type: String, required: true },
     depositAddress: { type: String, required: true },
-    depositPrivateKey: { type: String, required: true }
+    depositPrivateKey: { type: String, required: true },
+    uploadLimit: {
+      type: {
+        type: Number,
+        required: false
+      },
+      limitType: {
+        type: String,
+        enum: Object.values(UploadLimitType),
+        required: false
+      }
+    }
   },
   {
     timestamps: true,

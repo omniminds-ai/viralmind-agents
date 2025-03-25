@@ -6,6 +6,7 @@ import { Keypair } from '@solana/web3.js';
 import { spawn } from 'child_process';
 import { createHash } from 'crypto';
 import { TrainingPoolModel } from './TrainingPool.ts';
+import { ForgeApp } from './ForgeApp.js';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 
@@ -298,7 +299,7 @@ export async function processNextInQueue() {
 
   isProcessing = true;
   const submissionId = processingQueue[0];
-  let submission = null;
+  let submission: mongoose.Document | null = null;
 
   try {
     // Retry findById 3 times with 100ms delay between attempts
@@ -331,8 +332,8 @@ export async function processNextInQueue() {
     await submission.save();
 
     await notifyForgeWebhook('processing', {
-      title: submission.meta.quest.title,
-      app: submission.meta.quest.app,
+      title: submission?.meta?.quest.title,
+      app: submission?.meta?.quest.app,
       duration: submission.meta.duration_seconds,
       address: submission.address
     });
@@ -412,16 +413,16 @@ export async function processNextInQueue() {
       let retries = 3;
 
       // Get pool details if poolId exists
-      console.log('Checking for poolId:', submission.meta.quest.pool_id);
+      console.log('Checking for poolId:', submission?.meta?.quest.pool_id);
       let pool = null;
-      if (submission.meta.quest.pool_id) {
-        console.log('Looking up pool:', submission.meta.quest.pool_id);
-        pool = await TrainingPoolModel.findById(submission.meta.quest.pool_id);
+      if (submission?.meta?.quest.pool_id) {
+        console.log('Looking up pool:', submission?.meta?.quest.pool_id);
+        pool = await TrainingPoolModel.findById(submission?.meta?.quest.pool_id);
         console.log('Found pool:', pool ? pool.name : 'null');
       }
 
-      if (submission.meta.quest.pool_id && !pool) {
-        throw new Error(`Pool not found: ${submission.meta.quest.pool_id}`);
+      if (submission?.meta?.quest.pool_id && !pool) {
+        throw new Error(`Pool not found: ${submission?.meta?.quest.pool_id}`);
       }
 
       if (pool) {
@@ -430,11 +431,28 @@ export async function processNextInQueue() {
           try {
             // Verify time is within last 5 minutes
             const now = Date.now();
-            const generatedTime = submission.meta.quest.reward.time;
+            const generatedTime = submission?.meta?.quest.reward.time;
             // if (now - generatedTime > 5 * 60 * 1000) {
             //   throw new Error("Generated time expired");
             // }
+            // Default maxReward is the pool's pricePerDemo
             maxReward = pool.pricePerDemo;
+
+            // Check if the task has a rewardLimit
+            if (submission?.meta?.quest.task_id) {
+              const app = await ForgeApp.findOne({
+                pool_id: pool._id.toString(),
+                'tasks._id': submission?.meta?.quest.task_id
+              });
+
+              if (app) {
+                const task = app.tasks.find(t => t._id.toString() === submission?.meta?.quest.task_id);
+                if (task?.rewardLimit) {
+                  // Use the task's rewardLimit instead of the pool's pricePerDemo
+                  maxReward = task.rewardLimit;
+                }
+              }
+            }
 
             // Calculate final reward based on grade_result score (clamped 0-100)
             clampedScore = Math.max(0, Math.min(100, gradeResult.score));
@@ -443,7 +461,7 @@ export async function processNextInQueue() {
             const previousSubmission = await ForgeRaceSubmission.findOne({
               address: submission.address,
               'meta.quest.pool_id': pool._id.toString(),
-              'meta.quest.title': submission.meta.quest.title,
+              'meta.quest.title': submission?.meta?.quest.title,
               'grade_result.score': { $gte: gradeResult.score },
               _id: { $ne: submission._id }
             }).sort({ 'grade_result.score': -1 });
@@ -521,8 +539,8 @@ export async function processNextInQueue() {
                 };
 
                 await notifyForgeWebhook('success', {
-                  title: submission.meta.quest.title,
-                  app: submission.meta.quest.app,
+                  title: submission?.meta?.quest.title,
+                  app: submission?.meta?.quest.app,
                   duration: submission.meta.duration_seconds,
                   score: gradeResult.score,
                   reward,
@@ -538,7 +556,7 @@ export async function processNextInQueue() {
                 console.error('Treasury transfer failed:', error);
                 // Continue processing but log the error
                 await notifyForgeWebhook('transfer-error', {
-                  title: submission.meta.quest.title,
+                  title: submission?.meta?.quest.title,
                   reward,
                   error: (error as Error).message,
                   address: submission.address,
@@ -575,8 +593,8 @@ export async function processNextInQueue() {
       // Only send if it wasn't already sent during the reward processing
       if (!reward || reward === 0 || !treasuryTransfer) {
         await notifyForgeWebhook('success', {
-          title: submission.meta.quest.title,
-          app: submission.meta.quest.app,
+          title: submission?.meta?.quest.title,
+          app: submission?.meta?.quest.app,
           duration: submission.meta.duration_seconds,
           score: gradeResult.score,
           reward: reward || 0,
