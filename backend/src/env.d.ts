@@ -11,6 +11,9 @@ declare namespace NodeJS {
     OPEN_AI_SECRET: string;
     ANTHROPIC_API_KEY: string;
 
+    // Minecraft
+    MINECRAFT_CHAT_WEBHOOK: string;
+
     // Blockchain Configuration
     RPC_URL: string;
     IPC_SECRET: string;

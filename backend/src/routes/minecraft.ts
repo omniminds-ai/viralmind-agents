@@ -12,8 +12,7 @@ dotenv.config();
 const router = express.Router();
 const solanaRpc = process.env.RPC_URL!;
 const ipcSecret = process.env.IPC_SECRET!;
-const DISCORD_WEBHOOK_URL =
-  'https://discord.com/api/webhooks/1324084322151567442/U7SIuKh859Lt7g73UWxMa6Zk7p9-seJoQmd6sgVc9Msj__dMCbxQDu2S8RTCzfFEt3nG';
+const DISCORD_WEBHOOK_URL = process.env.MINECRAFT_CHAT_WEBHOOK;
 const VIRAL_TOKEN = new PublicKey('HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump');
 
 router.get('/whitelist', async (req: Request, res: Response) => {
