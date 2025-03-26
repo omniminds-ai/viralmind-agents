@@ -4,3 +4,4 @@ export * from './gym.ts';
 export * from './llm.ts';
 export * from './forge.ts';
 export * from './blockchain.ts';
+export * from './webhook.ts';

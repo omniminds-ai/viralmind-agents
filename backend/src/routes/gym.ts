@@ -152,6 +152,7 @@ async function generateQuest(
 
     const response = await openai.chat.completions.create({
       model: 'o3-mini',
+      //@ts-ignore: ignore the error here -- it's defined in the documention, not sure why the types are broken
       reasoning_effort: 'medium',
       messages: [
         {

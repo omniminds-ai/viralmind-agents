@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import BlockchainService from '../services/blockchain/index.ts';
 import dotenv from 'dotenv';
-import DatabaseService, { ChallengeDocument, ChatDocument } from '../services/db/index.ts';
+import DatabaseService from '../services/db/index.ts';
 import VNCService from '../services/vnc/index.ts';
 import fs from 'fs';
 import path from 'path';
+import { DBChat } from '../types/db.ts';
 
 dotenv.config();
 
@@ -227,7 +228,7 @@ router.get('/get-challenge', async (req: Request, res: Response) => {
         const blockchainService = new BlockchainService(solanaRpc, programId);
         const concluded = await blockchainService.concludeTournament(tournamentPDA, winner!);
         const successMessage = `🥳 Tournament concluded: ${concluded}`;
-        const assistantMessage: ChatDocument = {
+        const assistantMessage: DBChat = {
           challenge: challengeName,
           model: model,
           role: 'assistant',

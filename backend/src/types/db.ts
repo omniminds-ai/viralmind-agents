@@ -41,7 +41,7 @@ export interface DBChallenge {
   winning_prize?: number;
   tools_description?: string;
   custom_rules?: string;
-  disable?: Array<any>;
+  disable: any[];
   success_function?: string;
   fail_function?: string;
   tool_choice?: string;
@@ -151,7 +151,7 @@ export interface DBForgeRaceSubmission {
 }
 
 export interface DBGymSession {
-  _id: Types.ObjectId;
+  _id?: Types.ObjectId;
   address: string;
   status: 'active' | 'completed' | 'expired';
   preview?: string;

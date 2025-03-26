@@ -6,16 +6,13 @@ import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
 import { AWSS3Service } from '../services/aws/index.ts';
-import {
-  ForgeRaceSubmission,
-  ProcessingStatus,
-  addToProcessingQueue
-} from '../models/ForgeRaceSubmission.ts';
+import { ForgeRaceSubmission } from '../models/Models.ts';
 import { WalletConnectionModel } from '../models/WalletConnection.ts';
 import { TrainingPoolModel } from '../models/TrainingPool.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 import axios from 'axios';
-import { TrainingPoolStatus } from '../types/index.ts';
+import { ForgeSubmissionProcessingStatus, TrainingPoolStatus } from '../types/index.ts';
+import { addToProcessingQueue } from '../services/forge/index.ts';
 
 // Initialize blockchain service
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
@@ -577,7 +574,7 @@ router.post(
         _id: uuid,
         address,
         meta,
-        status: ProcessingStatus.PENDING,
+        status: ForgeSubmissionProcessingStatus.PENDING,
         files: uploads
       });
       console.log(`[UPLOAD] Submission created with ID: ${submission._id}`);

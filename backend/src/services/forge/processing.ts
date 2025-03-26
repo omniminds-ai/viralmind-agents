@@ -3,14 +3,16 @@ import {
   ForgeSubmissionGradeResult,
   ForgeTreasuryTransfer,
   DBForgeRaceSubmission,
-  ForgeSubmissionProcessingStatus
+  ForgeSubmissionProcessingStatus,
+  WebhookColor,
+  EmbedField
 } from '../../types/index.ts';
 import { ForgeRaceSubmission, TrainingPoolModel, ForgeAppModel } from '../../models/Models.ts';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Keypair } from '@solana/web3.js';
 import { spawn } from 'child_process';
-import { WebhookColor, EmbedField, Webhook } from '../webhook/index.ts';
+import { Webhook } from '../webhook/index.ts';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 

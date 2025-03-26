@@ -3,14 +3,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { LLMService } from '../services/llm/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
-import DatabaseService, { ChatDocument } from '../services/db/index.ts';
+import DatabaseService from '../services/db/index.ts';
 import VNCService from '../services/vnc/index.ts';
 
 import { executeComputerAction } from '../services/vnc/actions.ts';
 import TournamentService from '../services/tournament/index.ts';
 import MessageFilters from '../services/tournament/filters.ts';
 import ConversationService from '../services/conversation/index.ts';
-import { GenericModelMessage } from '../types/index.ts';
+import { DBChat, GenericModelMessage } from '../types/index.ts';
 
 const router = express.Router();
 
@@ -47,7 +47,7 @@ router.post('/submit/:id', async (req: Request, res: Response) => {
 
     // validate tournament program + transaction
     const tournamentPDA = challenge.tournamentPDA!;
-    const blockchain = new BlockchainService(process.env.RPC_URL!, challenge.idl?.address);
+    const blockchain = new BlockchainService(process.env.RPC_URL!, challenge.idl?.address!);
     const tournament = await blockchain.getTournamentData(tournamentPDA);
     if (!tournament) {
       res.write('Tournament data not found');
@@ -150,7 +150,7 @@ router.post('/submit/:id', async (req: Request, res: Response) => {
     });
 
     // create message entry
-    const userMessage: ChatDocument = {
+    const userMessage: DBChat = {
       challenge: challengeName!,
       model: model,
 
@@ -168,12 +168,12 @@ router.post('/submit/:id', async (req: Request, res: Response) => {
     await DatabaseService.createChat(userMessage);
 
     // initialize assistant entry
-    const assistantMessage: ChatDocument = {
+    const assistantMessage: DBChat = {
       challenge: challengeName!,
       model: model,
       role: 'assistant',
       content: '',
-      tool_calls: null,
+      tool_calls: undefined,
       address: walletAddress,
       date: new Date(),
       screenshot: screenshot

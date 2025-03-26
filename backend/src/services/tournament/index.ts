@@ -1,6 +1,7 @@
-import DatabaseService, { ChallengeDocument } from '../db/index.ts';
+import DatabaseService from '../db/index.ts';
 import BlockchainService from '../blockchain/index.ts';
 import axios from 'axios';
+import { DBChallenge } from '../../types/db.ts';
 
 class TournamentService {
   solanaRpc: string;
@@ -9,7 +10,7 @@ class TournamentService {
   }
 
   // validate
-  async validateChallenge(challenge: ChallengeDocument) {
+  async validateChallenge(challenge: DBChallenge) {
     if (!challenge) throw new Error('Challenge not found');
 
     if (challenge.status === 'upcoming')
@@ -43,7 +44,7 @@ class TournamentService {
    *   });
    * }
    */
-  async checkScores(): Promise<ChallengeDocument['scores'] | void> {
+  async checkScores(): Promise<DBChallenge['scores'] | void> {
     try {
       const response = await axios.get(
         `http://${process.env.SERVICE_HOST}:${process.env.SERVICE_PORT}/scores`

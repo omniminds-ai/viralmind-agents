@@ -1,6 +1,5 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
-import { GenericModelMessage } from './index.ts';
 
 export type LLMProvider = 'openai' | 'anthropic';
 

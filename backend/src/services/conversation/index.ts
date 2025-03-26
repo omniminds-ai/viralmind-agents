@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import DatabaseService, { ChatDocument } from '../db/index.ts';
-import { GenericModelMessage } from '../../types/index.ts';
+import DatabaseService from '../db/index.ts';
+import { DBChallenge, DBChat, GenericModelMessage } from '../../types/index.ts';
 
 class ConversationService {
   // Helper function to generate tool use ID
@@ -231,7 +231,7 @@ class ConversationService {
   }
 
   // Create a new chat message
-  async createChatMessage(messageData: ChatDocument) {
+  async createChatMessage(messageData: DBChat) {
     return DatabaseService.createChat(messageData);
   }
 

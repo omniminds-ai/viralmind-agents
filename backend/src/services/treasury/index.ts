@@ -1,7 +1,8 @@
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import BlockchainService from '../blockchain/index.ts';
-import { Webhook, Embed } from '../webhook/index.ts';
+import { Webhook } from '../webhook/index.ts';
+import { Embed } from '../../types/index.ts';
 
 export class TreasuryService {
   private blockchainService: BlockchainService;
