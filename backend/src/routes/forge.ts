@@ -2,15 +2,10 @@ import express, { Request, Response, Router, NextFunction } from 'express';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import OpenAI from 'openai';
 import axios from 'axios';
-import {
-  TrainingPoolModel,
-  TrainingPool,
-  TrainingPoolStatus,
-  UploadLimitType
-} from '../models/TrainingPool.js';
+import { TrainingPoolModel } from '../models/TrainingPool.js';
 import { WalletConnectionModel } from '../models/WalletConnection.js';
-import { ForgeApp } from '../models/ForgeApp.js';
-import { ForgeRace } from '../models/ForgeRace.js';
+import { ForgeAppModel } from '../models/ForgeApp.js';
+import { ForgeRaceModel } from '../models/ForgeRace.js';
 import {
   ForgeRaceSubmission,
   ProcessingStatus,
@@ -29,6 +24,17 @@ import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
 import * as bs58 from 'bs58';
 import nacl from 'tweetnacl';
+import {
+  AppInfo,
+  AppWithLimitInfo,
+  ConnectBody,
+  CreatePoolBody,
+  TaskWithLimitInfo,
+  DBTrainingPool,
+  TrainingPoolStatus,
+  UpdatePoolBody,
+  UploadLimitType
+} from '../types/index.ts';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 const BALANCE_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
@@ -160,7 +166,7 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
     );
     try {
       // Delete existing apps for this pool
-      await ForgeApp.deleteMany({ pool_id: poolId });
+      await ForgeAppModel.deleteMany({ pool_id: poolId });
 
       // Generate new apps using OpenAI
       const prompt = APP_TASK_GENERATION_PROMPT.replace('{skill list}', skills);
@@ -192,7 +198,7 @@ async function generateAppsForPool(poolId: string, skills: string): Promise<void
 
         // Store new apps
         for (const app of apps) {
-          await ForgeApp.create({
+          await ForgeAppModel.create({
             ...app,
             pool_id: poolId
           });
@@ -364,67 +370,6 @@ async function getAddressFromToken(token: string): Promise<string | null> {
   return connection?.address || null;
 }
 
-interface ConnectBody {
-  token: string;
-  address: string;
-  signature?: string;
-  timestamp?: number;
-}
-
-interface CreatePoolBody {
-  name: string;
-  skills: string;
-  token: {
-    type: 'SOL' | 'VIRAL' | 'CUSTOM';
-    symbol: string;
-    address: string;
-  };
-  ownerAddress?: string; // Now optional since we get it from the token
-  pricePerDemo?: number;
-  uploadLimit?: {
-    type: number;
-    limitType: UploadLimitType;
-  };
-  apps?: {
-    name: string;
-    domain: string;
-    description?: string;
-    categories?: string[];
-    tasks: {
-      prompt: string;
-      uploadLimit?: number;
-      rewardLimit?: number;
-    }[];
-  }[];
-}
-
-interface UpdatePoolBody {
-  id: string;
-  name?: string;
-  status?: TrainingPoolStatus.live | TrainingPoolStatus.paused;
-  skills?: string;
-  pricePerDemo?: number;
-  uploadLimit?: {
-    type: number;
-    limitType: UploadLimitType;
-  };
-  apps?: {
-    name: string;
-    domain: string;
-    description?: string;
-    categories?: string[];
-    tasks: {
-      prompt: string;
-      uploadLimit?: number;
-      rewardLimit?: number;
-    }[];
-  }[];
-}
-
-interface ListPoolsBody {
-  address?: string; // Now optional since we get it from the token
-}
-
 // Upload race data endpoint
 router.post(
   '/upload-race',
@@ -561,7 +506,7 @@ router.post(
 
         // Check task-specific upload limit
         if (meta.quest?.task_id) {
-          const app = await ForgeApp.findOne({
+          const app = await ForgeAppModel.findOne({
             pool_id: meta.poolId,
             'tasks._id': meta.quest.task_id
           });
@@ -831,13 +776,6 @@ interface Message {
   tool_call_id?: string;
 }
 
-interface AppInfo {
-  type: 'executable' | 'website';
-  name: string;
-  path?: string;
-  url?: string;
-}
-
 interface ChatBody {
   messages: Message[];
   task_prompt: string;
@@ -1104,15 +1042,11 @@ router.post('/chat', async (req: Request<{}, {}, ChatBody>, res: Response) => {
   }
 });
 
-interface RefreshPoolBody {
-  id: string;
-}
-
 // Refresh pool balance
 router.post(
   '/refresh',
   requireWalletAddress,
-  async (req: Request<{}, {}, RefreshPoolBody>, res: Response) => {
+  async (req: Request<{}, {}, { id: string }>, res: Response) => {
     try {
       const { id } = req.body;
 
@@ -1285,7 +1219,7 @@ router.post(
         try {
           // Store the predefined apps
           for (const app of apps) {
-            await ForgeApp.create({
+            await ForgeAppModel.create({
               ...app,
               pool_id: poolId
             });
@@ -1364,7 +1298,7 @@ router.post(
       let updateOperation: any = {};
 
       // Build $set operation for regular updates
-      const setUpdates: Partial<TrainingPool> = {};
+      const setUpdates: Partial<DBTrainingPool> = {};
       if (name) setUpdates.name = name;
       if (status) setUpdates.status = status;
       if (skills) setUpdates.skills = skills;
@@ -1395,11 +1329,11 @@ router.post(
       if (apps && Array.isArray(apps) && apps.length > 0) {
         try {
           // Delete existing apps for this pool
-          await ForgeApp.deleteMany({ pool_id: id });
+          await ForgeAppModel.deleteMany({ pool_id: id });
 
           // Store the new apps
           for (const app of apps) {
-            await ForgeApp.create({
+            await ForgeAppModel.create({
               ...app,
               pool_id: id
             });
@@ -1437,7 +1371,7 @@ router.post(
 // Get active gym races
 router.get('/gym', async (_req: Request, res: Response) => {
   try {
-    const races = await ForgeRace.find({
+    const races = await ForgeRaceModel.find({
       status: 'active',
       type: 'gym'
     }).sort({
@@ -1646,7 +1580,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
     }
 
     // Get all apps matching the initial query
-    let apps = await ForgeApp.find(appQuery).populate(
+    let apps = await ForgeAppModel.find(appQuery).populate(
       'pool_id',
       'name status pricePerDemo uploadLimit'
     );
@@ -1654,7 +1588,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
     // Filter by live pools if no specific pool_id was provided
     if (!pool_id) {
       apps = apps.filter((app) => {
-        const pool = app.pool_id as unknown as TrainingPool;
+        const pool = app.pool_id as unknown as DBTrainingPool;
         return pool && pool.status === TrainingPoolStatus.live;
       });
     }
@@ -1663,7 +1597,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
     const tasks = [];
 
     for (const app of apps) {
-      const pool = app.pool_id as unknown as TrainingPool;
+      const pool = app.pool_id as unknown as DBTrainingPool;
 
       // Check gym-wide upload limit
       let gymLimitReached = false;
@@ -1864,54 +1798,26 @@ router.get('/apps', async (req: Request, res: Response) => {
     let apps;
     if (pool_id || poolIds.length > 0) {
       // If we're already filtering by specific pools, just get those apps
-      apps = await ForgeApp.find(appQuery).populate(
+      apps = await ForgeAppModel.find(appQuery).populate(
         'pool_id',
         'name status pricePerDemo uploadLimit'
       );
     } else {
       // Otherwise, get all apps and filter by live pools
-      apps = await ForgeApp.find(appQuery)
+      apps = await ForgeAppModel.find(appQuery)
         .populate('pool_id', 'name status pricePerDemo uploadLimit')
         .then((apps) =>
           apps.filter((app) => {
-            const pool = app.pool_id as unknown as TrainingPool;
+            const pool = app.pool_id as unknown as DBTrainingPool;
             return pool && pool.status === TrainingPoolStatus.live;
           })
         );
     }
 
-    // Define interface for extended app object with limit information
-    interface AppWithLimitInfo {
-      _id: any;
-      name: string;
-      domain: string;
-      description?: string | null;
-      categories?: string[];
-      pool_id: any;
-      tasks: any[];
-      createdAt?: Date;
-      updatedAt?: Date;
-      gymLimitReached: boolean;
-      gymSubmissions: number;
-      gymLimitType?: UploadLimitType;
-      gymLimitValue?: number;
-    }
-
-    // Define interface for task with limit information
-    interface TaskWithLimitInfo {
-      _id: any;
-      prompt: string;
-      uploadLimit?: number;
-      rewardLimit?: number;
-      uploadLimitReached: boolean;
-      currentSubmissions: number;
-      limitReason: string | null;
-    }
-
     // Mark tasks that have reached their upload limits instead of filtering them out
     const appsWithLimitInfo = await Promise.all(
       apps.map(async (app) => {
-        const pool = app.pool_id as unknown as TrainingPool;
+        const pool = app.pool_id as unknown as DBTrainingPool;
         // Create a new object with the required properties
         const appObj: AppWithLimitInfo = {
           ...app.toObject(),
@@ -1965,7 +1871,6 @@ router.get('/apps', async (req: Request, res: Response) => {
         // Process tasks and add limit information
         const tasksWithLimitInfo = await Promise.all(
           app.tasks.map(async (task) => {
-            const taskObj = task.toObject();
             let taskLimitReached = false;
             let taskSubmissions = 0;
             let limitReason: string | null = null;
@@ -2010,7 +1915,7 @@ router.get('/apps', async (req: Request, res: Response) => {
 
             // Add limit info to task object
             return {
-              ...taskObj,
+              ...task,
               uploadLimitReached: taskLimitReached,
               currentSubmissions: taskSubmissions,
               limitReason: limitReason
@@ -2053,7 +1958,7 @@ router.get('/pools', async (_req: Request, res: Response) => {
 router.get('/categories', async (_req: Request, res: Response) => {
   try {
     // Aggregate to get unique categories across all apps
-    const categoriesResult = await ForgeApp.aggregate([
+    const categoriesResult = await ForgeAppModel.aggregate([
       { $unwind: '$categories' },
       { $group: { _id: '$categories' } },
       { $sort: { _id: 1 } }

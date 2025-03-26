@@ -4,9 +4,14 @@ import * as path from 'path';
 import axios from 'axios';
 import { Keypair } from '@solana/web3.js';
 import { spawn } from 'child_process';
-import { createHash } from 'crypto';
 import { TrainingPoolModel } from './TrainingPool.ts';
-import { ForgeApp } from './ForgeApp.js';
+import { ForgeAppModel } from './ForgeApp.js';
+import {
+  DBForgeRaceSubmission,
+  ForgeSubmissionGradeResult,
+  ForgeSubmissionProcessingStatus,
+  ForgeTreasuryTransfer
+} from '../types/index.ts';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 
@@ -36,7 +41,7 @@ async function notifyForgeWebhook(
     summary?: string;
     feedback?: string;
     error?: string;
-    treasuryTransfer?: TreasuryTransfer;
+    treasuryTransfer?: ForgeTreasuryTransfer;
     address?: string;
     pool?: {
       name: string;
@@ -187,62 +192,15 @@ async function notifyForgeWebhook(
   }
 }
 
-export enum ProcessingStatus {
-  PENDING = 'pending',
-  PROCESSING = 'processing',
-  COMPLETED = 'completed',
-  FAILED = 'failed'
-}
-
-export interface MetaData {
-  id: string;
-  timestamp: string;
-  duration_seconds: number;
-  status: string;
-  reason: string;
-  title: string;
-  description: string;
-  platform: string;
-  arch: string;
-  version: string;
-  locale: string;
-  primary_monitor: {
-    width: number;
-    height: number;
-  };
-  quest: {
-    title: string;
-    app: string;
-    icon_url: string;
-    objectives: string[];
-    content: string;
-  };
-}
-
-export interface GradeResult {
-  summary: string;
-  score: number;
-  reasoning: string;
-}
-
-// Interface for treasury transfer details
-export interface TreasuryTransfer {
-  tokenAddress: string;
-  treasuryWallet: string;
-  amount: number;
-  timestamp: number;
-  txHash?: string;
-}
-
-export const forgeRaceSubmissionSchema = new mongoose.Schema(
+export const forgeRaceSubmissionSchema = new mongoose.Schema<DBForgeRaceSubmission>(
   {
     _id: { type: String },
     address: { type: String, required: true },
     meta: { type: mongoose.Schema.Types.Mixed, required: true },
     status: {
       type: String,
-      enum: Object.values(ProcessingStatus),
-      default: ProcessingStatus.PENDING
+      enum: Object.values(ForgeSubmissionProcessingStatus),
+      default: ForgeSubmissionProcessingStatus.PENDING
     },
     files: [
       {
@@ -299,7 +257,9 @@ export async function processNextInQueue() {
 
   isProcessing = true;
   const submissionId = processingQueue[0];
-  let submission: mongoose.Document | null = null;
+  let submission:
+    | (mongoose.Document<unknown, {}, DBForgeRaceSubmission> & DBForgeRaceSubmission)
+    | null = null;
 
   try {
     // Retry findById 3 times with 100ms delay between attempts
@@ -328,7 +288,7 @@ export async function processNextInQueue() {
     }
 
     // Update status to processing
-    submission.status = ProcessingStatus.PROCESSING;
+    submission.status = ForgeSubmissionProcessingStatus.PROCESSING;
     await submission.save();
 
     await notifyForgeWebhook('processing', {
@@ -402,14 +362,14 @@ export async function processNextInQueue() {
       console.log('Reading scores.json');
       const scoresContent = await fs.readFile(scoresPath, 'utf8');
       console.log('scores.json content:', scoresContent);
-      const gradeResult: GradeResult = JSON.parse(scoresContent);
+      const gradeResult: ForgeSubmissionGradeResult = JSON.parse(scoresContent);
       console.log('Parsed grade result:', gradeResult);
 
       // Get pool details and calculate reward
       let reward = undefined;
       let maxReward = undefined;
       let clampedScore = undefined;
-      let treasuryTransfer: TreasuryTransfer | undefined = undefined;
+      let treasuryTransfer: ForgeTreasuryTransfer | undefined = undefined;
       let retries = 3;
 
       // Get pool details if poolId exists
@@ -440,13 +400,15 @@ export async function processNextInQueue() {
 
             // Check if the task has a rewardLimit
             if (submission?.meta?.quest.task_id) {
-              const app = await ForgeApp.findOne({
+              const app = await ForgeAppModel.findOne({
                 pool_id: pool._id.toString(),
                 'tasks._id': submission?.meta?.quest.task_id
               });
 
               if (app) {
-                const task = app.tasks.find(t => t._id.toString() === submission?.meta?.quest.task_id);
+                const task = app.tasks.find(
+                  (t) => t._id.toString() === submission?.meta?.quest.task_id
+                );
                 if (task?.rewardLimit) {
                   // Use the task's rewardLimit instead of the pool's pricePerDemo
                   maxReward = task.rewardLimit;
@@ -469,7 +431,9 @@ export async function processNextInQueue() {
             if (previousSubmission) {
               reward = 0;
               // Add prefix to reasoning
-              gradeResult.reasoning = `( system: no reward given - previous submission exists with score of ${previousSubmission.grade_result?.score || 0} ) ${gradeResult.reasoning}`;
+              gradeResult.reasoning = `( system: no reward given - previous submission exists with score of ${
+                previousSubmission.grade_result?.score || 0
+              } ) ${gradeResult.reasoning}`;
             } else if (clampedScore < 50) {
               reward = 0;
               // Add prefix to reasoning
@@ -586,7 +550,7 @@ export async function processNextInQueue() {
       submission.maxReward = maxReward;
       submission.clampedScore = clampedScore;
       submission.treasuryTransfer = treasuryTransfer;
-      submission.status = ProcessingStatus.COMPLETED;
+      submission.status = ForgeSubmissionProcessingStatus.COMPLETED;
       await submission.save();
 
       // Always send a webhook notification for successful processing, even if there was no reward
@@ -618,7 +582,7 @@ export async function processNextInQueue() {
     const errorMessage = (error as Error).message;
     // Update submission with error
     await ForgeRaceSubmission.findByIdAndUpdate(submissionId, {
-      status: ProcessingStatus.FAILED,
+      status: ForgeSubmissionProcessingStatus.FAILED,
       error: errorMessage
     });
 

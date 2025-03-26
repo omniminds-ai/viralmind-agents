@@ -11,12 +11,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-import { TrainingEvent } from '../models/TrainingEvent.ts';
-import { RaceSession } from '../models/Models.ts';
+import { TrainingEventModel } from '../models/TrainingEvent.ts';
+import { RaceSessionModel } from '../models/Models.ts';
 import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
-import { VPSRegion } from '../services/gym-vps/types.ts';
+import { VPSRegion } from '../types/gym.ts';
 import { TreasuryService } from '../services/treasury/index.ts';
 import { AWSS3Service } from '../services/aws/index.ts';
 import { unlink } from 'fs/promises';
@@ -121,7 +121,7 @@ async function generateHint(
     // Mark this session as generating a hint
     generatingHints.add(session._id.toString());
 
-    const recentHint = await TrainingEvent.findOne(
+    const recentHint = await TrainingEventModel.findOne(
       {
         session: session._id,
         type: 'hint',
@@ -141,7 +141,7 @@ async function generateHint(
     }
 
     // Get latest quest event (no time limit)
-    const latestQuestEvent = await TrainingEvent.findOne(
+    const latestQuestEvent = await TrainingEventModel.findOne(
       {
         session: session._id,
         type: 'quest'
@@ -604,7 +604,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
   // Only process rewards if session is active
   if (was_active) {
     // Get all reward events for this session
-    const rewardEvents = await TrainingEvent.find({
+    const rewardEvents = await TrainingEventModel.find({
       session: id,
       type: 'reward',
       'metadata.rewardValue': { $exists: true }
@@ -641,7 +641,7 @@ async function stopRaceSession(id: string): Promise<{ success: boolean; totalRew
         await vpsService.removeTrainer(session.vm_credentials?.username!);
 
         // save recording to s3 if we have a video path
-        const sessionEvents = await TrainingEvent.find({
+        const sessionEvents = await TrainingEventModel.find({
           session: id
         }).sort({ timestamp: 1 }); // Sort by timestamp ascending
         if (sessionEvents.length > 0) {
@@ -820,7 +820,7 @@ router.get('/active', async (req: Request, res: Response) => {
     const inactiveTime = now - 60 * 1000; // 1 minute ago
 
     // Update expired sessions in a single operation - only those that are actually expired
-    await RaceSession.updateMany(
+    await RaceSessionModel.updateMany(
       {
         address: walletAddress,
         status: 'active',
@@ -838,7 +838,7 @@ router.get('/active', async (req: Request, res: Response) => {
     );
 
     // Find active race session - this will only find sessions that are still active after the update
-    const activeRaceSession = await RaceSession.findOne({
+    const activeRaceSession = await RaceSessionModel.findOne({
       address: walletAddress,
       status: 'active'
     });
@@ -873,7 +873,7 @@ router.get('/history', async (req: Request, res: Response) => {
     const inactiveTime = now - 60 * 1000; // 1 minute ago
 
     // Update expired sessions in a single operation
-    await RaceSession.updateMany(
+    await RaceSessionModel.updateMany(
       {
         address: walletAddress,
         status: 'active',
@@ -991,7 +991,7 @@ router.get('/history', async (req: Request, res: Response) => {
       }
     ];
 
-    const enrichedRaces = await RaceSession.aggregate(aggregationPipeline);
+    const enrichedRaces = await RaceSessionModel.aggregate(aggregationPipeline);
 
     if (!enrichedRaces || enrichedRaces.length === 0) {
       res.status(404).json({ error: 'No races found' });
@@ -1040,7 +1040,7 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
     // if theres a screenshot but no initial quest
     // then assume the initial quest is still generating & abort
     if (session.preview) {
-      const latestQuestEvent = await TrainingEvent.findOne(
+      const latestQuestEvent = await TrainingEventModel.findOne(
         { session: id, type: 'quest' },
         {},
         { sort: { timestamp: -1 } }
@@ -1065,14 +1065,14 @@ router.post('/session/:id/hint', async (req: Request, res: Response) => {
     const imageUrl = screenshot;
 
     // Get current quest from latest quest event
-    const latestQuestEvent = await TrainingEvent.findOne(
+    const latestQuestEvent = await TrainingEventModel.findOne(
       { session: id, type: 'quest' },
       {},
       { sort: { timestamp: -1 } }
     );
 
     // Get hint history
-    const hintEvents = await TrainingEvent.find(
+    const hintEvents = await TrainingEventModel.find(
       { session: id, type: 'hint' },
       { message: 1 },
       { sort: { timestamp: -1 }, limit: 3 }
@@ -1160,7 +1160,7 @@ router.get('/export', async (req: Request, res: Response) => {
     }
 
     // Get all events for this session
-    const sessionEvents = await TrainingEvent.find({
+    const sessionEvents = await TrainingEventModel.find({
       session: session._id
     }).sort({ timestamp: 1 }); // Sort by timestamp ascending
     // Transform events into a more readable format
@@ -1216,7 +1216,7 @@ router.post('/export', async (req: Request, res: Response) => {
     // Get all training events for the selected sessions
     const events = await Promise.all(
       sessions.map(async (session) => {
-        const sessionEvents = await TrainingEvent.find({
+        const sessionEvents = await TrainingEventModel.find({
           session: session._id
         }).sort({ timestamp: 1 }); // Sort by timestamp ascending
         // Transform events into a more readable format
