@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import axios from 'axios';
 import { Keypair } from '@solana/web3.js';
 import { spawn } from 'child_process';
 import { TrainingPoolModel } from './TrainingPool.ts';
@@ -12,22 +11,13 @@ import {
   ForgeSubmissionProcessingStatus,
   ForgeTreasuryTransfer
 } from '../types/index.ts';
+import { WebhookColor, EmbedField, Webhook } from '../services/webhook/index.ts';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 
-interface WebhookPayload {
-  embeds: Array<{
-    title: string;
-    description?: string;
-    fields: Array<{
-      name: string;
-      value: string;
-      inline?: boolean;
-    }>;
-    color: number;
-  }>;
-}
-
+/**
+ * Send a notification to the forge webhook
+ */
 async function notifyForgeWebhook(
   type: 'processing' | 'success' | 'transfer-error' | 'error',
   data: {
@@ -54,35 +44,14 @@ async function notifyForgeWebhook(
   }
 ) {
   if (!FORGE_WEBHOOK) return;
+  const webhook = new Webhook(FORGE_WEBHOOK);
 
   try {
-    const payload: WebhookPayload = {
-      embeds: [
-        {
-          title:
-            type === 'processing'
-              ? '🎯 Processing New Submission'
-              : type === 'success'
-              ? '✨ Submission Graded Successfully'
-              : type === 'transfer-error'
-              ? '⚠️ Treasury Transfer Failed'
-              : '❌ Submission Processing Failed',
-          fields: [],
-          color:
-            type === 'processing'
-              ? 3447003 // Blue
-              : type === 'success'
-              ? 5793266 // Green
-              : type === 'transfer-error'
-              ? 16098851 // Yellow
-              : 15158332 // Red
-        }
-      ]
-    };
+    // Prepare fields based on available data
+    const fields: EmbedField[] = [];
 
-    // Add fields based on type and available data
     if (data.title) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '📝 Task',
         value: data.title,
         inline: true
@@ -90,7 +59,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.app) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '🖥️ App',
         value: data.app,
         inline: true
@@ -98,7 +67,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.duration) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '⏱️ Duration',
         value: `${data.duration}s`,
         inline: true
@@ -106,7 +75,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.address) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '👤 Submitter',
         value: `[${data.address.slice(0, 4)}...${data.address.slice(
           -4
@@ -116,7 +85,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.score !== undefined) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '📊 Score',
         value: `${data.score}/100 ${data.score >= 80 ? '🏆' : '📝'}`,
         inline: true
@@ -124,7 +93,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.reward !== undefined && data.maxReward) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '💎 Reward',
         value: `${data.reward.toFixed(2)} ${data.pool?.token.symbol || '$VIRAL'} (${
           data.clampedScore
@@ -134,7 +103,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.pool) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '🏦 Pool',
         value: `${data.pool.name}\n${data.pool.token.symbol} ([${data.pool.token.address.slice(
           0,
@@ -146,7 +115,7 @@ async function notifyForgeWebhook(
       });
 
       if (data.pool.treasuryBalance !== undefined) {
-        payload.embeds[0].fields.push({
+        fields.push({
           name: '💰 Treasury Balance',
           value: `${data.pool.treasuryBalance.toLocaleString()} ${data.pool.token.symbol}`,
           inline: true
@@ -155,7 +124,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.treasuryTransfer?.txHash) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '🔗 Transaction',
         value: `[View on Solscan](https://solscan.io/tx/${data.treasuryTransfer.txHash})`,
         inline: true
@@ -163,7 +132,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.summary) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '📋 Summary',
         value: data.summary,
         inline: false
@@ -171,7 +140,7 @@ async function notifyForgeWebhook(
     }
 
     if (data.feedback) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '💭 Feedback',
         value: data.feedback,
         inline: false
@@ -179,14 +148,42 @@ async function notifyForgeWebhook(
     }
 
     if (data.error) {
-      payload.embeds[0].fields.push({
+      fields.push({
         name: '❌ Error',
         value: `\`\`\`${data.error}\`\`\``,
         inline: false
       });
     }
 
-    await axios.post(FORGE_WEBHOOK, payload);
+    // Determine title and color based on type
+    let title = '';
+    let color = WebhookColor.INFO;
+
+    switch (type) {
+      case 'processing':
+        title = '🎯 Processing New Submission';
+        color = WebhookColor.INFO;
+        break;
+      case 'success':
+        title = '✨ Submission Graded Successfully';
+        color = WebhookColor.SUCCESS;
+        break;
+      case 'transfer-error':
+        title = '⚠️ Treasury Transfer Failed';
+        color = WebhookColor.WARNING;
+        break;
+      case 'error':
+        title = '❌ Submission Processing Failed';
+        color = WebhookColor.ERROR;
+        break;
+    }
+
+    // Send webhook using the webhook service
+    await webhoo.sendEmbed({
+      title,
+      fields,
+      color
+    });
   } catch (error) {
     console.error('Error sending forge webhook:', error);
   }

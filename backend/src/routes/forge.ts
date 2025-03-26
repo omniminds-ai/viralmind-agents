@@ -1,19 +1,15 @@
 import express, { Request, Response, Router, NextFunction } from 'express';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import OpenAI from 'openai';
-import axios from 'axios';
 import { TrainingPoolModel } from '../models/TrainingPool.js';
 import { WalletConnectionModel } from '../models/WalletConnection.js';
 import { ForgeAppModel } from '../models/ForgeApp.js';
 import { ForgeRaceModel } from '../models/ForgeRace.js';
-import {
-  ForgeRaceSubmission,
-  ProcessingStatus,
-  addToProcessingQueue
-} from '../models/ForgeRaceSubmission.js';
+import { ForgeRaceSubmission, addToProcessingQueue } from '../models/ForgeRaceSubmission.js';
 import DatabaseService from '../services/db/index.js';
 import { AWSS3Service } from '../services/aws/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
+import { Webhook } from '../services/webhook/index.ts';
 
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
 import multer from 'multer';
@@ -33,7 +29,8 @@ import {
   DBTrainingPool,
   TrainingPoolStatus,
   UpdatePoolBody,
-  UploadLimitType
+  UploadLimitType,
+  ForgeSubmissionProcessingStatus
 } from '../types/index.ts';
 
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
@@ -134,9 +131,8 @@ async function notifyForgeWebhook(message: string) {
   if (!FORGE_WEBHOOK) return;
 
   try {
-    await axios.post(FORGE_WEBHOOK, {
-      content: message
-    });
+    const webhook = new Webhook(FORGE_WEBHOOK);
+    await webhook.sendText(message);
   } catch (error) {
     console.error('Error sending forge webhook:', error);
   }
@@ -479,7 +475,7 @@ router.post(
               gymSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.pool_id': poolId,
                 createdAt: { $gte: today },
-                status: ProcessingStatus.COMPLETED, // Only count completed submissions
+                status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
 
@@ -492,7 +488,7 @@ router.post(
             case UploadLimitType.total:
               gymSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.pool_id': poolId,
-                status: ProcessingStatus.COMPLETED, // Only count completed submissions
+                status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
 
@@ -516,7 +512,7 @@ router.post(
             if (task?.uploadLimit) {
               const taskSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.task_id': meta.quest.task_id,
-                status: ProcessingStatus.COMPLETED, // Only count completed submissions
+                status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
 
@@ -555,7 +551,7 @@ router.post(
         _id: uuid,
         address,
         meta,
-        status: ProcessingStatus.PENDING,
+        status: ForgeSubmissionProcessingStatus.PENDING,
         files: uploads
       });
 
@@ -1613,7 +1609,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
             gymSubmissions = await ForgeRaceSubmission.countDocuments({
               'meta.quest.pool_id': poolId,
               createdAt: { $gte: today },
-              status: ProcessingStatus.COMPLETED,
+              status: ForgeSubmissionProcessingStatus.COMPLETED,
               reward: { $gt: 0 }
             });
 
@@ -1624,7 +1620,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
           case UploadLimitType.total:
             gymSubmissions = await ForgeRaceSubmission.countDocuments({
               'meta.quest.pool_id': poolId,
-              status: ProcessingStatus.COMPLETED,
+              status: ForgeSubmissionProcessingStatus.COMPLETED,
               reward: { $gt: 0 }
             });
 
@@ -1662,7 +1658,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
         ) {
           taskSubmissions = await ForgeRaceSubmission.countDocuments({
             'meta.quest.task_id': task._id.toString(),
-            status: ProcessingStatus.COMPLETED,
+            status: ForgeSubmissionProcessingStatus.COMPLETED,
             reward: { $gt: 0 }
           });
 
@@ -1841,7 +1837,7 @@ router.get('/apps', async (req: Request, res: Response) => {
               gymSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.pool_id': poolId,
                 createdAt: { $gte: today },
-                status: ProcessingStatus.COMPLETED,
+                status: ForgeSubmissionProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
 
@@ -1852,7 +1848,7 @@ router.get('/apps', async (req: Request, res: Response) => {
             case UploadLimitType.total:
               gymSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.pool_id': poolId,
-                status: ProcessingStatus.COMPLETED,
+                status: ForgeSubmissionProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
 
@@ -1882,7 +1878,7 @@ router.get('/apps', async (req: Request, res: Response) => {
             ) {
               taskSubmissions = await ForgeRaceSubmission.countDocuments({
                 'meta.quest.task_id': task._id.toString(),
-                status: ProcessingStatus.COMPLETED,
+                status: ForgeSubmissionProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
               });
 

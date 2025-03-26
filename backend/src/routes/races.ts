@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
-import DatabaseService, { RaceSessionDocument } from '../services/db/index.ts';
+import DatabaseService from '../services/db/index.ts';
 import { GymVPSService } from '../services/gym-vps/index.ts';
 import GuacamoleService from '../services/guacamole/index.ts';
+import { Webhook } from '../services/webhook/index.ts';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 
@@ -22,8 +23,9 @@ import { AWSS3Service } from '../services/aws/index.ts';
 import { unlink } from 'fs/promises';
 import { isAxiosError } from 'axios';
 import { handleAxiosError } from '../services/util.ts';
+import { DBRace, DBRaceSession } from '../types/db.ts';
 
-async function generateQuest(imageUrl: string, prompt: string, session: RaceSessionDocument) {
+async function generateQuest(imageUrl: string, prompt: string, session: DBRaceSession) {
   try {
     // Get treasury balance
     const treasuryBalance = await blockchainService.getTokenBalance(
@@ -98,7 +100,7 @@ async function generateHint(
   imageUrl: string,
   currentQuest: string,
   prompt: string,
-  session: RaceSessionDocument,
+  session: DBRaceSession,
   maxReward: number,
   hintHistory: string[] = []
 ) {
@@ -359,7 +361,7 @@ Output as JSON with three fields:
 const router = express.Router();
 
 type RaceCategory = 'creative' | 'mouse' | 'slacker' | 'gaming' | 'wildcard';
-type RaceSessionInput = Omit<RaceSessionDocument, '_id'> & {
+type RaceSessionInput = Omit<DBRaceSession, '_id'> & {
   category: RaceCategory;
 };
 
@@ -718,8 +720,8 @@ async function checkRaceExpiration(id: string): Promise<boolean> {
   if (session.status !== 'active') return true;
 
   const now = Date.now();
-  const sessionAge = now - session.created_at.getTime();
-  const lastUpdateAge = now - session.updated_at.getTime();
+  const sessionAge = now - session.created_at!.getTime();
+  const lastUpdateAge = now - session.updated_at!.getTime();
 
   // Expire if:
   // 1. Session is older than 15 minutes OR
@@ -786,16 +788,8 @@ router.post('/feedback', async (req: Request, res: Response) => {
     // Forward to webhook if configured
     const webhookUrl = process.env.FEEDBACK_WEBHOOK;
     if (webhookUrl) {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          content: `New Race Idea Submission:\n${raceIdea}`,
-          timestamp: new Date().toISOString()
-        })
-      });
+      const webhook = new Webhook(webhookUrl);
+      await webhook.sendText(`New Race Idea Submission:\n${raceIdea}`);
     }
 
     res.json({ success: true, message: 'Feedback received' });

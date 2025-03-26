@@ -1,11 +1,11 @@
 import express, { Request, Response } from 'express';
 import nacl from 'tweetnacl';
-import axios from 'axios';
 import dotenv from 'dotenv';
 import { Connection, PublicKey } from '@solana/web3.js';
 import BlockchainService from '../services/blockchain/index.ts';
 import DatabaseService from '../services/db/index.ts';
 import { ChallengeModel } from '../models/Models.ts';
+import { Webhook } from '../services/webhook/index.ts';
 
 dotenv.config();
 
@@ -144,35 +144,32 @@ router.post('/reveal', async (req: Request, res: Response) => {
     });
 
     // Send Discord webhook
-    await axios.post(DISCORD_WEBHOOK_URL, {
-      embeds: [
+    const webhook = new Webhook(DISCORD_WEBHOOK_URL);
+    await webhook.sendEmbed({
+      title: 'New Server IP Reveal',
+      fields: [
         {
-          title: 'New Server IP Reveal',
-          fields: [
-            {
-              name: 'Username',
-              value: username,
-              inline: true
-            },
-            {
-              name: 'Wallet',
-              value: address,
-              inline: true
-            },
-            {
-              name: '$VIRAL Balance',
-              value: tokenBalance.toString(),
-              inline: true
-            },
-            {
-              name: 'Challenge',
-              value: challengeName,
-              inline: true
-            }
-          ],
-          color: 0x9945ff // Purple color
+          name: 'Username',
+          value: username,
+          inline: true
+        },
+        {
+          name: 'Wallet',
+          value: address,
+          inline: true
+        },
+        {
+          name: '$VIRAL Balance',
+          value: tokenBalance.toString(),
+          inline: true
+        },
+        {
+          name: 'Challenge',
+          value: challengeName,
+          inline: true
         }
-      ]
+      ],
+      color: 0x9945ff // Purple color
     });
 
     res.json({
