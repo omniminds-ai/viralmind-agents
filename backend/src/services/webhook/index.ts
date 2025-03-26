@@ -11,9 +11,6 @@ export class Webhook {
    * @param url The webhook URL
    */
   constructor(url: string) {
-    if (!url) {
-      throw new Error('Webhook URL is required');
-    }
     this.url = url;
   }
 
@@ -23,6 +20,10 @@ export class Webhook {
    */
   async send(payload: Omit<WebhookPayload, 'url'>): Promise<void> {
     try {
+      if (!this.url) {
+        console.error('Webhook URL is required');
+        return;
+      }
       const response = await fetch(this.url, {
         method: 'POST',
         headers: {
@@ -85,6 +86,10 @@ export class Webhook {
       const blob = new Blob([file.content], { type: 'application/octet-stream' });
       formData.append('file', blob, file.name);
 
+      if (!this.url) {
+        console.error('Webhook URL is required');
+        return;
+      }
       const response = await fetch(this.url, {
         method: 'POST',
         body: formData

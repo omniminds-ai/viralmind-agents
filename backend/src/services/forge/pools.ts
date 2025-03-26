@@ -99,25 +99,13 @@ export function startRefreshInterval() {
   }, BALANCE_REFRESH_INTERVAL);
 }
 
-// Send webhook notification
-async function notifyForgeWebhook(message: string) {
-  if (!FORGE_WEBHOOK) return;
-
-  try {
-    const webhook = new Webhook(FORGE_WEBHOOK);
-    await webhook.sendText(message);
-  } catch (error) {
-    console.error('Error sending forge webhook:', error);
-  }
-}
-
 // Generate apps for a pool
 export async function generateAppsForPool(poolId: string, skills: string): Promise<void> {
   // Cancel any existing generation for this pool
   const existingPromise = activeGenerations.get(poolId);
   if (existingPromise) {
     console.log(`Canceling existing app generation for pool ${poolId}`);
-    await notifyForgeWebhook(`🔄 Canceling existing app generation for pool ${poolId}`);
+    await webhook.sendText(`🔄 Canceling existing app generation for pool ${poolId}`);
     // Let the existing promise continue but we'll ignore its results
     activeGenerations.delete(poolId);
   }
@@ -130,7 +118,7 @@ export async function generateAppsForPool(poolId: string, skills: string): Promi
       throw new Error(`Pool ${poolId} not found`);
     }
 
-    await notifyForgeWebhook(
+    await webhook.sendText(
       `🎬 Starting app generation for pool "${pool.name}" (${poolId})\nSkills: ${skills}`
     );
     try {
@@ -173,7 +161,7 @@ export async function generateAppsForPool(poolId: string, skills: string): Promi
           });
         }
         console.log(`Successfully generated apps for pool ${poolId}`);
-        await notifyForgeWebhook(
+        await webhook.sendText(
           `✅ Generated ${apps.length} apps for gym "${collectionName}" in pool "${
             pool.name
           }" (${poolId})\n${apps.map((a: { name: string }) => `- ${a.name}`).join('\n')}`
@@ -184,7 +172,7 @@ export async function generateAppsForPool(poolId: string, skills: string): Promi
     } catch (error) {
       const err = error as Error;
       console.error('Error generating apps:', err);
-      await notifyForgeWebhook(`❌ Error generating apps for pool ${poolId}: ${err.message}`);
+      await webhook.sendText(`❌ Error generating apps for pool ${poolId}: ${err.message}`);
       throw err;
     } finally {
       // Clean up if this is still the active generation
