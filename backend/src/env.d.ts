@@ -20,12 +20,12 @@ declare namespace NodeJS {
 
     // VNC Configuration
     VNC_HOST: string; // Default: windows
-    VNC_PORT: number; // Default: 5900
+    VNC_PORT: string; // Default: 5900
     VNC_PASSWORD: string; // Default: admin
 
     // Service Configuration
     SERVICE_HOST: string; // Default: windows
-    SERVICE_PORT: number; // Default: 6950
+    SERVICE_PORT: string; // Default: 6950
 
     // GYM Configuration
     GYM_TREASURY_WALLET: string;
