@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../types/errors.ts';
+import { PublicKey } from '@solana/web3.js';
 
 /**
  * Type for validation rules
  */
 export type ValidationRule = {
-  validate: (value: any) => boolean;
+  validate: ((value: any) => boolean) | ((value: any) => Promise<boolean>);
   message: string;
 };
 
@@ -117,8 +118,13 @@ export const ValidationRules = {
 
   // Common validation patterns
   isSolanaAddress: (): ValidationRule => ({
-    validate: (value) => {
-      return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
+    validate: async (value) => {
+      try {
+        const pubKey = new PublicKey(value);
+        return await PublicKey.isOnCurve(pubKey);
+      } catch (error) {
+        return false;
+      }
     },
     message: 'Must be a valid Solana wallet address'
   }),
@@ -177,10 +183,10 @@ export const ValidationRules = {
 /**
  * Validate an object against a schema
  */
-export function validateObject(
+export async function validateObject(
   obj: Record<string, any>,
   schema: ValidationSchema
-): ValidationResult {
+): Promise<ValidationResult> {
   const errors: Record<string, string> = {};
 
   // Check each field in the schema
@@ -201,7 +207,7 @@ export function validateObject(
     // Apply validation rules
     if (validation.rules && value !== null) {
       for (const rule of validation.rules) {
-        if (!rule.validate(value)) {
+        if (!(await rule.validate(value))) {
           errors[field] = rule.message;
           break;
         }
@@ -219,8 +225,8 @@ export function validateObject(
  * Middleware to validate request body
  */
 export function validateBody(schema: ValidationSchema) {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    const { valid, errors } = validateObject(req.body, schema);
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const { valid, errors } = await validateObject(req.body, schema);
 
     if (!valid) {
       next(ApiError.validationError('Validation failed', { fields: errors }));
@@ -235,8 +241,8 @@ export function validateBody(schema: ValidationSchema) {
  * Middleware to validate request query parameters
  */
 export function validateQuery(schema: ValidationSchema) {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    const { valid, errors } = validateObject(req.query, schema);
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const { valid, errors } = await validateObject(req.query, schema);
 
     if (!valid) {
       next(ApiError.validationError('Query validation failed', { fields: errors }));
@@ -251,8 +257,8 @@ export function validateQuery(schema: ValidationSchema) {
  * Middleware to validate request parameters
  */
 export function validateParams(schema: ValidationSchema) {
-  return (req: Request, _res: Response, next: NextFunction) => {
-    const { valid, errors } = validateObject(req.params, schema);
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const { valid, errors } = await validateObject(req.params, schema);
 
     if (!valid) {
       next(ApiError.validationError('Parameter validation failed', { fields: errors }));
