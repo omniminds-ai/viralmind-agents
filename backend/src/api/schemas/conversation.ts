@@ -16,10 +16,7 @@ export const submitMessageSchema: ValidationSchema = {
     required: true,
     rules: [
       ValidationRules.isString(),
-      ValidationRules.pattern(
-        /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-        'Must be a valid Solana wallet address'
-      )
+      ValidationRules.isSolanaAddress()
     ]
   }
 };

@@ -16,13 +16,7 @@ export const whitelistQuerySchema: ValidationSchema = {
 export const revealServerSchema: ValidationSchema = {
   address: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.pattern(
-        /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-        'Must be a valid Solana wallet address'
-      )
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.isSolanaAddress()]
   },
   username: {
     required: true,
@@ -30,10 +24,7 @@ export const revealServerSchema: ValidationSchema = {
       ValidationRules.isString(),
       ValidationRules.minLength(3),
       ValidationRules.maxLength(16),
-      ValidationRules.pattern(
-        /^[a-zA-Z0-9_]+$/,
-        'Username must contain only letters, numbers, and underscores'
-      )
+      ValidationRules.isValidName()
     ]
   },
   signature: {
@@ -55,7 +46,8 @@ export const rewardPlayerSchema: ValidationSchema = {
     rules: [
       ValidationRules.isString(),
       ValidationRules.minLength(3),
-      ValidationRules.maxLength(16)
+      ValidationRules.maxLength(16),
+      ValidationRules.isValidName()
     ]
   },
   secret: {
@@ -73,7 +65,8 @@ export const chatMessageSchema: ValidationSchema = {
     rules: [
       ValidationRules.isString(),
       ValidationRules.minLength(3),
-      ValidationRules.maxLength(16)
+      ValidationRules.maxLength(16),
+      ValidationRules.isValidName()
     ]
   },
   content: {

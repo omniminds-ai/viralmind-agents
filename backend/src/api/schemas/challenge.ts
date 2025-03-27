@@ -10,10 +10,7 @@ export const createChallengeSchema: ValidationSchema = {
       ValidationRules.isString(),
       ValidationRules.minLength(3),
       ValidationRules.maxLength(50),
-      ValidationRules.pattern(
-        /^[a-zA-Z0-9-_]+$/,
-        'Must contain only letters, numbers, hyphens, and underscores'
-      )
+      ValidationRules.isValidName()
     ]
   },
   title: {
@@ -151,28 +148,10 @@ export const getChallengesSchema: ValidationSchema = {
   },
   limit: {
     required: false,
-    rules: [
-      {
-        validate: (value) => {
-          if (value === undefined) return true;
-          const num = parseInt(value as string);
-          return !isNaN(num) && num > 0 && num <= 100;
-        },
-        message: 'Limit must be a number between 1 and 100'
-      }
-    ]
+    rules: [ValidationRules.isQueryNumber(1, 100)]
   },
   page: {
     required: false,
-    rules: [
-      {
-        validate: (value) => {
-          if (value === undefined) return true;
-          const num = parseInt(value as string);
-          return !isNaN(num) && num > 0;
-        },
-        message: 'Page must be a positive number'
-      }
-    ]
+    rules: [ValidationRules.isQueryNumber(1)]
   }
 };

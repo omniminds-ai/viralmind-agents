@@ -6,13 +6,7 @@ import { ValidationSchema, ValidationRules } from '../middleware/validator.ts';
 export const questRequestSchema: ValidationSchema = {
   address: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.pattern(
-        /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-        'Must be a valid Solana wallet address'
-      )
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.isSolanaAddress()]
   },
   prompt: {
     required: true,
@@ -34,12 +28,6 @@ export const progressCheckSchema: ValidationSchema = {
   },
   screenshots: {
     required: true,
-    rules: [
-      ValidationRules.isArray(),
-      ValidationRules.custom(
-        (value) => Array.isArray(value) && value.length > 0,
-        'Must provide at least one screenshot'
-      )
-    ]
+    rules: [ValidationRules.isArray(), ValidationRules.isNonEmptyArray()]
   }
 };
