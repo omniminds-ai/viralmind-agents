@@ -115,6 +115,59 @@ export const ValidationRules = {
     message: customMessage || `Must be one of: ${values.join(', ')}`
   }),
 
+  // Common validation patterns
+  isSolanaAddress: (): ValidationRule => ({
+    validate: (value) => {
+      return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value);
+    },
+    message: 'Must be a valid Solana wallet address'
+  }),
+
+  isValidName: (): ValidationRule => ({
+    validate: (value) => {
+      return /^[a-zA-Z0-9_]+$/.test(value);
+    },
+    message: 'Must contain only letters, numbers, and underscores'
+  }),
+
+  isNonEmptyArray: (): ValidationRule => ({
+    validate: (value) => {
+      return value.length > 0;
+    },
+    message: 'Must provide at least one element'
+  }),
+
+  isInteger: (): ValidationRule => ({
+    validate: (value) => {
+      return Number.isInteger(value);
+    },
+    message: 'Must be an integer'
+  }),
+
+  isQueryNumber: (min?: number, max?: number): ValidationRule => ({
+    validate: (value) => {
+      if (value === undefined) return true;
+
+      // Parse the string to a number
+      const num = parseInt(value as string);
+      if (isNaN(num)) return false;
+
+      // Apply min/max constraints if provided
+      if (min !== undefined && num < min) return false;
+      if (max !== undefined && num > max) return false;
+
+      return true;
+    },
+    message:
+      min !== undefined && max !== undefined
+        ? `Must be a number between ${min} and ${max}`
+        : min !== undefined
+        ? `Must be a number greater than or equal to ${min}`
+        : max !== undefined
+        ? `Must be a number less than or equal to ${max}`
+        : 'Must be a valid number'
+  }),
+
   custom: (validateFn: (value: any) => boolean, message: string): ValidationRule => ({
     validate: validateFn,
     message
