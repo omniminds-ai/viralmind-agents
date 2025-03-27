@@ -6,6 +6,9 @@ import VNCService from '../services/vnc/index.ts';
 import fs from 'fs';
 import path from 'path';
 import { DBChat } from '../types/db.ts';
+import { errorHandlerAsync } from './middleware/errorHandler.ts';
+import { validateParams, validateQuery, ValidationRules } from './middleware/validator.ts';
+import { ApiError, successResponse } from './types/errors.ts';
 
 dotenv.config();
 
@@ -16,11 +19,41 @@ const model = 'gpt-4o-mini';
 // Time threshold for screenshot updates (5 seconds)
 const SCREENSHOT_UPDATE_THRESHOLD = 5000;
 
-router.get('/get-challenge', async (req: Request, res: Response) => {
-  try {
-    const name = req.query.name;
+/**
+ * Get a challenge by name
+ * GET /api/challenges/:name
+ */
+router.get(
+  '/:name',
+  validateParams({
+    name: {
+      required: true,
+      rules: [ValidationRules.isString()]
+    }
+  }),
+  validateQuery({
+    initial: {
+      required: false,
+      rules: []
+    },
+    price: {
+      required: false,
+      rules: [
+        {
+          validate: (value) => {
+            if (value === undefined) return true;
+            const num = Number(value);
+            return !isNaN(num) && num >= 0;
+          },
+          message: 'Price must be a non-negative number'
+        }
+      ]
+    }
+  }),
+  errorHandlerAsync(async (req: Request, res: Response) => {
+    const { name } = req.params;
     const initial = req.query.initial;
-    let message_price = Number(req.query.price);
+    let message_price = Number(req.query.price || 0);
     let prize = message_price * 100;
 
     const projection: { [key: string]: number } = {
@@ -63,54 +96,47 @@ router.get('/get-challenge', async (req: Request, res: Response) => {
       projection.system_message = 1;
     }
 
-    let challenge = await DatabaseService.getChallengeByName(name as string, projection);
+    let challenge = await DatabaseService.getChallengeByName(name, projection);
     if (!challenge) {
-      res.status(404).send('Challenge not found');
-      return;
+      throw ApiError.notFound(`Challenge "${name}" not found`);
     }
+
     const challengeName = challenge.name!;
     const challengeId = challenge._id;
     const chatLimit = challenge.chatLimit as number | undefined; // type coercion for future use
 
-    if (!challenge) {
-      res.status(404).send('Challenge not found');
-      return;
-    }
-
     const allowedStatuses = ['active', 'concluded', 'upcoming'];
 
     if (!allowedStatuses.includes(challenge.status)) {
-      res.status(404).send('Challenge is not active');
-      return;
+      throw ApiError.badRequest(`Challenge is not active (status: ${challenge.status})`);
     }
 
     // For upcoming challenges, return early with basic info
     if (challenge.status === 'upcoming') {
-      res.status(200).json({
-        challenge,
-        break_attempts: 0,
-        message_price: 0,
-        prize: 0,
-        usdMessagePrice: 0,
-        usdPrize: 0,
-        chatHistory: [],
-        expiry: challenge.expiry,
-        solPrice: await BlockchainService.getSolPriceInUSDT(),
-        stream_src: challenge.stream_src
-      });
-      return;
+      return res.status(200).json(
+        successResponse({
+          challenge,
+          break_attempts: 0,
+          message_price: 0,
+          prize: 0,
+          usdMessagePrice: 0,
+          usdPrize: 0,
+          chatHistory: [],
+          expiry: challenge.expiry,
+          solPrice: await BlockchainService.getSolPriceInUSDT(),
+          stream_src: challenge.stream_src
+        })
+      );
     }
 
     const programId = challenge.idl?.address;
     if (!programId) {
-      res.write('Program ID not found');
-      return;
+      throw ApiError.badRequest('Program ID not found');
     }
 
     const tournamentPDA = challenge.tournamentPDA;
     if (!tournamentPDA) {
-      res.write('Tournament PDA not found');
-      return;
+      throw ApiError.badRequest('Tournament PDA not found');
     }
 
     const break_attempts = await DatabaseService.getChatCount({
@@ -143,7 +169,9 @@ router.get('/get-challenge', async (req: Request, res: Response) => {
       chatLimit
     );
 
-    if (!chatHistory) throw Error('Error getting chat history.');
+    if (!chatHistory) {
+      throw ApiError.internalError('Error getting chat history');
+    }
 
     const now = new Date();
     const expiry = challenge.expiry;
@@ -249,20 +277,22 @@ router.get('/get-challenge', async (req: Request, res: Response) => {
 
       const usdMessagePrice = message_price * solPrice;
       const usdPrize = prize * solPrice;
-      res.status(200).json({
-        challenge,
-        break_attempts,
-        message_price,
-        prize,
-        usdMessagePrice,
-        usdPrize,
-        expiry,
-        solPrice,
-        chatHistory: chatHistory.reverse(),
-        latestScreenshot,
-        stream_src: challenge.stream_src
-      });
-      return;
+
+      return res.status(200).json(
+        successResponse({
+          challenge,
+          break_attempts,
+          message_price,
+          prize,
+          usdMessagePrice,
+          usdPrize,
+          expiry,
+          solPrice,
+          chatHistory: chatHistory.reverse(),
+          latestScreenshot,
+          stream_src: challenge.stream_src
+        })
+      );
     }
 
     if (!challengeInitialized) {
@@ -280,7 +310,9 @@ router.get('/get-challenge', async (req: Request, res: Response) => {
       const blockchainService = new BlockchainService(solanaRpc, programId);
       const tournamentData = await blockchainService.getTournamentData(tournamentPDA);
 
-      if (!tournamentData) throw Error('Eror getting tournament data.');
+      if (!tournamentData) {
+        throw ApiError.internalError('Error getting tournament data');
+      }
 
       message_price = tournamentData.entryFee;
       prize = message_price * 100;
@@ -289,25 +321,101 @@ router.get('/get-challenge', async (req: Request, res: Response) => {
     const usdMessagePrice = message_price * solPrice;
     const usdPrize = prize * solPrice;
 
-    res.status(200).json({
-      challenge,
-      break_attempts,
-      message_price,
-      prize,
-      usdMessagePrice,
-      usdPrize,
-      chatHistory,
-      expiry,
-      solPrice,
-      latestScreenshot,
-      stream_src: challenge.stream_src
-    });
-    return;
-  } catch (err) {
-    console.error(err);
-    res.status(400).send(err);
-    return;
-  }
-});
+    return res.status(200).json(
+      successResponse({
+        challenge,
+        break_attempts,
+        message_price,
+        prize,
+        usdMessagePrice,
+        usdPrize,
+        chatHistory,
+        expiry,
+        solPrice,
+        latestScreenshot,
+        stream_src: challenge.stream_src
+      })
+    );
+  })
+);
+
+/**
+ * List all challenges with optional filtering
+ * GET /api/challenges
+ */
+router.get(
+  '/',
+  validateQuery({
+    status: {
+      required: false,
+      rules: [
+        ValidationRules.isIn(
+          ['active', 'upcoming', 'concluded', 'draft'],
+          'Status must be one of: active, upcoming, concluded, draft'
+        )
+      ]
+    },
+    limit: {
+      required: false,
+      rules: [
+        {
+          validate: (value) => {
+            if (value === undefined) return true;
+            const num = parseInt(value as string);
+            return !isNaN(num) && num > 0 && num <= 100;
+          },
+          message: 'Limit must be a number between 1 and 100'
+        }
+      ]
+    },
+    offset: {
+      required: false,
+      rules: [
+        {
+          validate: (value) => {
+            if (value === undefined) return true;
+            const num = parseInt(value as string);
+            return !isNaN(num) && num >= 0;
+          },
+          message: 'Offset must be a non-negative number'
+        }
+      ]
+    }
+  }),
+  errorHandlerAsync(async (req: Request, res: Response) => {
+    const { status, limit = '10', offset = '0' } = req.query;
+
+    // Build query
+    const query: any = {};
+    if (status) {
+      query.status = status;
+    }
+
+    // Parse pagination params
+    const limitNum = parseInt(limit as string);
+    const offsetNum = parseInt(offset as string);
+
+    // Get challenges
+    const challenges = await DatabaseService.getAllChallenges();
+
+    // Filter and paginate the challenges in memory
+    const filteredChallenges = (Array.isArray(challenges) ? challenges : [])
+      .filter((c: any) => !status || c.status === status)
+      .slice(offsetNum, offsetNum + limitNum);
+
+    const total = filteredChallenges.length;
+
+    return res.status(200).json(
+      successResponse({
+        challenges: filteredChallenges,
+        pagination: {
+          total,
+          offset: offsetNum,
+          limit: limitNum
+        }
+      })
+    );
+  })
+);
 
 export { router as challengesApi };

@@ -10,7 +10,10 @@ export const createChallengeSchema: ValidationSchema = {
       ValidationRules.isString(),
       ValidationRules.minLength(3),
       ValidationRules.maxLength(50),
-      ValidationRules.pattern(/^[a-zA-Z0-9-_]+$/, 'Must contain only letters, numbers, hyphens, and underscores')
+      ValidationRules.pattern(
+        /^[a-zA-Z0-9-_]+$/,
+        'Must contain only letters, numbers, hyphens, and underscores'
+      )
     ]
   },
   title: {
@@ -23,64 +26,39 @@ export const createChallengeSchema: ValidationSchema = {
   },
   task: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.minLength(10)
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.minLength(10)]
   },
   system_message: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.minLength(10)
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.minLength(10)]
   },
   tools_description: {
     required: false,
-    rules: [
-      ValidationRules.isString()
-    ]
+    rules: [ValidationRules.isString()]
   },
   custom_rules: {
     required: false,
-    rules: [
-      ValidationRules.isString()
-    ]
+    rules: [ValidationRules.isString()]
   },
   expiry: {
     required: true,
-    rules: [
-      ValidationRules.isDate()
-    ]
+    rules: [ValidationRules.isDate()]
   },
   entryFee: {
     required: true,
-    rules: [
-      ValidationRules.isNumber(),
-      ValidationRules.min(1)
-    ]
+    rules: [ValidationRules.isNumber(), ValidationRules.min(1)]
   },
   characterLimit: {
     required: false,
-    rules: [
-      ValidationRules.isNumber(),
-      ValidationRules.min(1),
-      ValidationRules.max(10000)
-    ]
+    rules: [ValidationRules.isNumber(), ValidationRules.min(1), ValidationRules.max(10000)]
   },
   contextLimit: {
     required: false,
-    rules: [
-      ValidationRules.isNumber(),
-      ValidationRules.min(1),
-      ValidationRules.max(20)
-    ]
+    rules: [ValidationRules.isNumber(), ValidationRules.min(1), ValidationRules.max(20)]
   },
   model: {
     required: false,
-    rules: [
-      ValidationRules.isString()
-    ]
+    rules: [ValidationRules.isString()]
   },
   status: {
     required: false,
@@ -105,64 +83,39 @@ export const updateChallengeSchema: ValidationSchema = {
   },
   task: {
     required: false,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.minLength(10)
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.minLength(10)]
   },
   system_message: {
     required: false,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.minLength(10)
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.minLength(10)]
   },
   tools_description: {
     required: false,
-    rules: [
-      ValidationRules.isString()
-    ]
+    rules: [ValidationRules.isString()]
   },
   custom_rules: {
     required: false,
-    rules: [
-      ValidationRules.isString()
-    ]
+    rules: [ValidationRules.isString()]
   },
   expiry: {
     required: false,
-    rules: [
-      ValidationRules.isDate()
-    ]
+    rules: [ValidationRules.isDate()]
   },
   entryFee: {
     required: false,
-    rules: [
-      ValidationRules.isNumber(),
-      ValidationRules.min(1)
-    ]
+    rules: [ValidationRules.isNumber(), ValidationRules.min(1)]
   },
   characterLimit: {
     required: false,
-    rules: [
-      ValidationRules.isNumber(),
-      ValidationRules.min(1),
-      ValidationRules.max(10000)
-    ]
+    rules: [ValidationRules.isNumber(), ValidationRules.min(1), ValidationRules.max(10000)]
   },
   contextLimit: {
     required: false,
-    rules: [
-      ValidationRules.isNumber(),
-      ValidationRules.min(1),
-      ValidationRules.max(20)
-    ]
+    rules: [ValidationRules.isNumber(), ValidationRules.min(1), ValidationRules.max(20)]
   },
   model: {
     required: false,
-    rules: [
-      ValidationRules.isString()
-    ]
+    rules: [ValidationRules.isString()]
   },
   status: {
     required: false,
@@ -179,45 +132,47 @@ export const updateChallengeSchema: ValidationSchema = {
 export const getChallengeByNameSchema: ValidationSchema = {
   name: {
     required: true,
-    rules: [
-      ValidationRules.isString()
-    ]
+    rules: [ValidationRules.isString()]
   }
 };
 
-
+/**
+ * Schema for listing challenges with filtering and pagination
+ */
 export const getChallengesSchema: ValidationSchema = {
   status: {
-      required: false,
-      rules: [
-        {
-          validate: (value) => ['active', 'upcoming', 'concluded', 'draft'].includes(value),
-          message: 'Status must be one of: active, upcoming, concluded, draft'
-        }
-      ]
-    },
-    limit: {
-      required: false,
-      rules: [
-        {
-          validate: (value) => {
-            const num = parseInt(value);
-            return !isNaN(num) && num > 0 && num <= 100;
-          },
-          message: 'Limit must be a number between 1 and 100'
-        }
-      ]
-    },
-    page: {
-      required: false,
-      rules: [
-        {
-          validate: (value) => {
-            const num = parseInt(value);
-            return !isNaN(num) && num > 0;
-          },
-          message: 'Page must be a positive number'
-        }
-      ]
-    }
-}
+    required: false,
+    rules: [
+      ValidationRules.isIn(
+        ['active', 'upcoming', 'concluded', 'draft'],
+        'Status must be one of: active, upcoming, concluded, draft'
+      )
+    ]
+  },
+  limit: {
+    required: false,
+    rules: [
+      {
+        validate: (value) => {
+          if (value === undefined) return true;
+          const num = parseInt(value as string);
+          return !isNaN(num) && num > 0 && num <= 100;
+        },
+        message: 'Limit must be a number between 1 and 100'
+      }
+    ]
+  },
+  page: {
+    required: false,
+    rules: [
+      {
+        validate: (value) => {
+          if (value === undefined) return true;
+          const num = parseInt(value as string);
+          return !isNaN(num) && num > 0;
+        },
+        message: 'Page must be a positive number'
+      }
+    ]
+  }
+};
