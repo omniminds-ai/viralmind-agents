@@ -5,6 +5,10 @@ import dotenv from 'dotenv';
 import { randomBytes } from 'crypto';
 import { TrainingEventModel } from '../models/TrainingEvent.ts';
 import { ChatCompletionContentPartImage } from 'openai/resources/index.mjs';
+import { errorHandlerAsync } from './middleware/errorHandler.ts';
+import { validateBody } from './middleware/validator.ts';
+import { questRequestSchema, progressCheckSchema } from './schemas/gym.ts';
+import { ApiError, successResponse } from './types/errors.ts';
 
 dotenv.config();
 
@@ -298,15 +302,12 @@ RULES:
 const router = express.Router();
 
 // Request a quest/hint
-router.post('/quest', async (req: Request, res: Response) => {
-  try {
+router.post(
+  '/quest',
+  validateBody(questRequestSchema),
+  errorHandlerAsync(async (req: Request, res: Response) => {
     const { address, prompt, installed_applications } = req.body;
     const screenshot = ''; // TODO: remove
-
-    if (!address || !prompt) {
-      res.status(400).json({ error: 'address and prompt are required' });
-      return;
-    }
 
     // Create or get session
     let session = await DatabaseService.getGymSession(address);
@@ -319,8 +320,7 @@ router.post('/quest', async (req: Request, res: Response) => {
       });
 
       if (!newSession) {
-        res.status(500).json({ error: 'Failed to create session' });
-        return;
+        throw ApiError.internalError('Failed to create session');
       }
 
       session = newSession;
@@ -328,8 +328,7 @@ router.post('/quest', async (req: Request, res: Response) => {
 
     const sessionId = session._id?.toString();
     if (!sessionId) {
-      res.status(500).json({ error: 'Invalid session ID' });
-      return;
+      throw ApiError.internalError('Invalid session ID');
     }
 
     // Store latest screenshot in session metadata
@@ -360,27 +359,17 @@ router.post('/quest', async (req: Request, res: Response) => {
       sessionId
     );
 
-    res.json(questData);
-  } catch (error) {
-    console.error('Error handling quest/hint request:', error);
-    res.status(500).json({ error: 'Failed to handle quest/hint request' });
-  }
-});
+    return res.status(200).json(successResponse(questData));
+  })
+);
 
 // Check quest progress based on recent screenshots
-router.post('/progress', async (req: Request, res: Response) => {
-  try {
+router.post(
+  '/progress',
+  validateBody(progressCheckSchema),
+  errorHandlerAsync(async (req: Request, res: Response) => {
     const { quest, screenshots } = req.body;
     console.log('CHECKING PROGRESS');
-    if (!screenshots || !Array.isArray(screenshots) || screenshots.length === 0) {
-      res.status(400).json({ error: 'screenshots array is required' });
-      return;
-    }
-
-    if (!quest || !quest.subgoals || !Array.isArray(quest.subgoals)) {
-      res.status(400).json({ error: 'valid quest object with subgoals is required' });
-      return;
-    }
 
     // Take up to last 5 screenshots
     const recentScreenshots = screenshots.slice(-5);
@@ -403,10 +392,10 @@ Example: [true, false, true] means subgoals 1 and 3 are completed, but 2 is not.
 Base your analysis on visual evidence from the screenshots showing completed actions.`
             },
             ...recentScreenshots.map(
-              (screenshot) =>
+              (screenshot: string) =>
                 ({
                   type: 'image_url',
-                  image_url: { url: screenshot as string }
+                  image_url: { url: screenshot }
                 } as ChatCompletionContentPartImage)
             )
           ]
@@ -432,14 +421,13 @@ Base your analysis on visual evidence from the screenshots showing completed act
     // Count completed objectives
     const completed_objectives = completed_subgoals.filter((complete: boolean) => complete).length;
 
-    res.json({
-      completed_subgoals,
-      completed_objectives
-    });
-  } catch (error) {
-    console.error('Error checking progress:', error);
-    res.status(500).json({ error: 'Failed to check progress' });
-  }
-});
+    return res.status(200).json(
+      successResponse({
+        completed_subgoals,
+        completed_objectives
+      })
+    );
+  })
+);
 
 export { router as gymApi };

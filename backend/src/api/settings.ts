@@ -1,10 +1,16 @@
 import express, { Request, Response } from 'express';
 import DatabaseService from '../services/db/index.ts';
 import BlockcahinService from '../services/blockchain/index.ts';
+import { errorHandlerAsync } from './middleware/errorHandler.ts';
+import { validateQuery } from './middleware/validator.ts';
+import { settingsQuerySchema } from './schemas/settings.ts';
+import { ApiError, successResponse } from './types/errors.ts';
 const router = express.Router();
 
-router.get('/', async (_req: Request, res: Response) => {
-  try {
+router.get(
+  '/',
+  validateQuery(settingsQuerySchema),
+  errorHandlerAsync(async (_req: Request, res: Response) => {
     const challenges = await DatabaseService.getSettings();
     const pages = await DatabaseService.getPages({});
     const endpoints = pages?.find((page) => page.name === 'api-endpoints')?.content?.endpoints;
@@ -75,11 +81,8 @@ router.get('/', async (_req: Request, res: Response) => {
       solPrice: solPrice
     };
 
-    res.send(response);
-  } catch (error) {
-    console.log('Error fetching settings:', error);
-    res.status(500).send({ error: 'Failed to fetch settings' });
-  }
-});
+    return res.status(200).json(successResponse(response));
+  })
+);
 
 export { router as settingsApi };

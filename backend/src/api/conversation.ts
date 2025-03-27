@@ -5,6 +5,10 @@ import { LLMService } from '../services/llm/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 import DatabaseService from '../services/db/index.ts';
 import VNCService from '../services/vnc/index.ts';
+import { errorHandlerAsync } from './middleware/errorHandler.ts';
+import { validateBody, validateParams } from './middleware/validator.ts';
+import { submitMessageSchema, conversationIdSchema } from './schemas/conversation.ts';
+import { ApiError, successResponse } from './types/errors.ts';
 
 import { executeComputerAction } from '../services/vnc/actions.ts';
 import TournamentService from '../services/tournament/index.ts';
@@ -15,8 +19,11 @@ import { DBChat, GenericModelMessage } from '../types/index.ts';
 const router = express.Router();
 
 // Handle Message Submission
-router.post('/submit/:id', async (req: Request, res: Response) => {
-  try {
+router.post(
+  '/submit/:id',
+  validateParams(conversationIdSchema),
+  validateBody(submitMessageSchema),
+  errorHandlerAsync(async (req: Request, res: Response) => {
     let { prompt, signature, walletAddress } = req.body as {
       prompt: string;
       signature: string;
@@ -24,11 +31,7 @@ router.post('/submit/:id', async (req: Request, res: Response) => {
     };
     const { id } = req.params;
 
-    // validate req data
-    if (!prompt || !signature || !walletAddress) {
-      res.write('Missing required fields');
-      return;
-    }
+    // All validation is now handled by middleware
     // make sure this message txn hasn't been sent already
     if (
       await DatabaseService.findOneChat({
@@ -40,7 +43,9 @@ router.post('/submit/:id', async (req: Request, res: Response) => {
     }
 
     const challenge = await DatabaseService.getChallengeById(id);
-    if (!challenge) throw Error('Error getting challenge from database.');
+    if (!challenge) {
+      throw ApiError.notFound('Challenge not found');
+    }
     const challengeName = challenge.name;
     // validate challenge + chain status
     await TournamentService.validateChallenge(challenge);
@@ -341,11 +346,7 @@ router.post('/submit/:id', async (req: Request, res: Response) => {
     }
 
     res.end();
-  } catch (error) {
-    console.error('Error handling submit:', error);
-    res.write((error as Error).message || 'Server error');
-    return;
-  }
-});
+  })
+);
 
 export { router as conversationApi };

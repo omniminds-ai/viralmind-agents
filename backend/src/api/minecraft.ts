@@ -6,6 +6,15 @@ import BlockchainService from '../services/blockchain/index.ts';
 import DatabaseService from '../services/db/index.ts';
 import { ChallengeModel } from '../models/Models.ts';
 import { Webhook } from '../services/webhook/index.ts';
+import { errorHandlerAsync } from './middleware/errorHandler.ts';
+import { validateBody, validateQuery } from './middleware/validator.ts';
+import { 
+  whitelistQuerySchema, 
+  revealServerSchema, 
+  rewardPlayerSchema, 
+  chatMessageSchema 
+} from './schemas/minecraft.ts';
+import { ApiError, successResponse } from './types/errors.ts';
 
 dotenv.config();
 
@@ -15,14 +24,11 @@ const ipcSecret = process.env.IPC_SECRET!;
 const DISCORD_WEBHOOK_URL = process.env.MINECRAFT_CHAT_WEBHOOK;
 const VIRAL_TOKEN = new PublicKey('HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump');
 
-router.get('/whitelist', async (req: Request, res: Response) => {
-  try {
+router.get(
+  '/whitelist',
+  validateQuery(whitelistQuerySchema),
+  errorHandlerAsync(async (req: Request, res: Response) => {
     const { name } = req.query;
-
-    if (!name) {
-      res.status(400).json({ error: 'Missing challenge name' });
-      return;
-    }
 
     const challenge = await ChallengeModel.findOne(
       { name: { $regex: name, $options: 'i' } },
@@ -32,25 +38,18 @@ router.get('/whitelist', async (req: Request, res: Response) => {
     ).lean();
 
     if (!challenge) {
-      res.status(404).json({ error: 'Challenge not found' });
-      return;
+      throw ApiError.notFound('Challenge not found');
     }
 
-    res.json({ whitelist: challenge.whitelist || [] });
-  } catch (error) {
-    console.error('Error getting whitelist:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+    return res.status(200).json(successResponse({ whitelist: challenge.whitelist || [] }));
+  })
+);
 
-router.post('/reveal', async (req: Request, res: Response) => {
-  try {
+router.post(
+  '/reveal',
+  validateBody(revealServerSchema),
+  errorHandlerAsync(async (req: Request, res: Response) => {
     const { address, username, signature, challengeName } = req.body;
-
-    if (!address || !username || !signature || !challengeName) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
 
     // Get challenge and verify it exists
     const challenge = await ChallengeModel.findOne(
@@ -64,8 +63,7 @@ router.post('/reveal', async (req: Request, res: Response) => {
     ).lean();
 
     if (!challenge) {
-      res.status(404).json({ error: 'Challenge not found' });
-      return;
+      throw ApiError.notFound('Challenge not found');
     }
 
     // Verify signature
@@ -77,13 +75,11 @@ router.post('/reveal', async (req: Request, res: Response) => {
       const verified = nacl.sign.detached.verify(message, signatureUint8, publicKey.toBytes());
 
       if (!verified) {
-        res.status(401).json({ error: 'Invalid signature' });
-        return;
+        throw ApiError.unauthorized('Invalid signature');
       }
     } catch (error) {
       console.error('Signature verification error:', error);
-      res.status(401).json({ error: 'Invalid signature' });
-      return;
+      throw ApiError.unauthorized('Invalid signature');
     }
 
     // Get token balance
@@ -171,28 +167,22 @@ router.post('/reveal', async (req: Request, res: Response) => {
       color: 0x9945ff // Purple color
     });
 
-    res.json({
-      success: true,
-      game_ip: challenge.game_ip
-    });
-  } catch (error) {
-    console.error('Error in /reveal:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+    return res.status(200).json(
+      successResponse({
+        game_ip: challenge.game_ip
+      })
+    );
+  })
+);
 
-router.post('/reward', async (req, res) => {
-  try {
+router.post(
+  '/reward',
+  validateBody(rewardPlayerSchema),
+  errorHandlerAsync(async (req, res) => {
     const { username, secret } = req.body;
 
-    if (!username || !secret) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
-
     if (secret !== ipcSecret) {
-      res.status(401).json({ error: 'Invalid secret' });
-      return;
+      throw ApiError.unauthorized('Invalid secret');
     }
 
     // Find active tournament
@@ -202,8 +192,7 @@ router.post('/reward', async (req, res) => {
     });
 
     if (!challenge) {
-      res.status(404).json({ error: 'No active game tournament found' });
-      return;
+      throw ApiError.notFound('No active game tournament found');
     }
 
     // Find winner's address from whitelist
@@ -212,16 +201,14 @@ router.post('/reward', async (req, res) => {
     );
 
     if (!winnerEntry || !winnerEntry.address) {
-      res.status(404).json({ error: 'Winner not found in whitelist' });
-      return;
+      throw ApiError.notFound('Winner not found in whitelist');
     }
 
     const programId = challenge.idl?.address;
     const tournamentPDA = challenge.tournamentPDA;
 
     if (!programId || !tournamentPDA) {
-      res.status(404).json({ error: 'Tournament program info not found' });
-      return;
+      throw ApiError.notFound('Tournament program info not found');
     }
 
     // Conclude tournament on-chain with winner's address
@@ -249,28 +236,21 @@ router.post('/reward', async (req, res) => {
       status: 'concluded'
     });
 
-    res.json({ success: true, transaction: concluded });
-  } catch (error) {
-    console.error('Error processing reward:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+    return res.status(200).json(successResponse({ transaction: concluded }));
+  })
+);
 
-router.post('/chat', async (req, res) => {
-  try {
+router.post(
+  '/chat',
+  validateBody(chatMessageSchema),
+  errorHandlerAsync(async (req, res) => {
     const { username, content, secret } = req.body;
 
     console.log(username, content, secret);
     console.log(process.env);
 
-    if (!username || !content || !secret) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
-
     if (secret !== ipcSecret) {
-      res.status(401).json({ error: 'Invalid secret' });
-      return;
+      throw ApiError.unauthorized('Invalid secret');
     }
 
     // if (username !== "viral_steve") {
@@ -285,8 +265,7 @@ router.post('/chat', async (req, res) => {
     });
 
     if (!challenge) {
-      res.status(404).json({ error: 'No active game challenge found' });
-      return;
+      throw ApiError.notFound('No active game challenge found');
     }
 
     // Create chat message
@@ -299,11 +278,8 @@ router.post('/chat', async (req, res) => {
       date: new Date()
     });
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error processing chat:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+    return res.status(200).json(successResponse({ message: 'Chat message saved successfully' }));
+  })
+);
 
 export { router as minecraftApi };

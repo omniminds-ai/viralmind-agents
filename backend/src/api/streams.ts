@@ -4,6 +4,15 @@ import DatabaseService from '../services/db/index.ts';
 import zstd from '@mongodb-js/zstd';
 import { writeFile } from 'fs/promises';
 import { AWSS3Service } from '../services/aws/index.ts';
+import { errorHandlerAsync } from './middleware/errorHandler.ts';
+import { validateBody, validateParams, validateQuery } from './middleware/validator.ts';
+import { 
+  challengeChatStreamSchema, 
+  raceDataStreamParamsSchema, 
+  raceDataStreamQuerySchema,
+  raceDataStreamBodySchema
+} from './schemas/streams.ts';
+import { ApiError, successResponse } from './types/errors.ts';
 dotenv.config();
 
 const router = express.Router();
@@ -16,14 +25,19 @@ DatabaseService.on('new-chat', async (chatData) => {
   });
 });
 
-router.get('/challenge-chat', async (req: Request, res: Response) => {
+router.get('/challenge-chat', validateQuery(challengeChatStreamSchema), async (req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders(); // flush the headers to establish SSE with client
 
-  const name = req.query.name;
+  const name = req.query.name as string;
+  if (!name) {
+    res.status(400).send('Challenge name is required');
+    return;
+  }
+  
   const projection: { [key: string]: number } = {
     _id: 1,
     title: 1,
@@ -64,7 +78,7 @@ router.get('/challenge-chat', async (req: Request, res: Response) => {
     projection.system_message = 1;
   }
 
-  let challenge = await DatabaseService.getChallengeByName(name as string, projection);
+  let challenge = await DatabaseService.getChallengeByName(name, projection);
   if (!challenge) {
     res.status(404).send('Challenge not found');
     return;
@@ -159,22 +173,23 @@ const processAndCleanup = async (sid: string) => {
 };
 
 // POST endpoint to handle data
-router.post('/races/:stream/data', async (req: Request, res: Response) => {
-  if (req.query.secret !== process.env.AX_PARSER_SECRET) {
-    console.log('Streams: Incorrect AX Parser Secret.');
-    res.status(400).send({ error: 'Incorrect AX Parser secret. Unauthorized.' });
-    return;
-  }
-  const streamId = req.params.stream; // linux username for the user
-  const session = await DatabaseService.getRaceSessionByStream(streamId);
-  if (!session) {
-    console.log('Streams: No session found.');
-    res.status(400).send({ error: `No session present for ${streamId}.` });
-    return;
-  }
+router.post(
+  '/races/:stream/data',
+  validateParams(raceDataStreamParamsSchema),
+  validateQuery(raceDataStreamQuerySchema),
+  validateBody(raceDataStreamBodySchema),
+  errorHandlerAsync(async (req: Request, res: Response) => {
+    if (req.query.secret !== process.env.AX_PARSER_SECRET) {
+      throw ApiError.unauthorized('Incorrect AX Parser secret');
+    }
+    
+    const streamId = req.params.stream; // linux username for the user
+    const session = await DatabaseService.getRaceSessionByStream(streamId);
+    if (!session) {
+      throw ApiError.notFound(`No session present for ${streamId}`);
+    }
   const sid = session._id!.toString();
 
-  try {
     const data: { data: any; type: string; platform: string } = req.body;
 
     let connection = raceDataStreams.get(sid);
@@ -199,15 +214,14 @@ router.post('/races/:stream/data', async (req: Request, res: Response) => {
 
     raceDataStreams.set(sid, connection);
 
-    res.status(200).json({
-      status: 'data_received',
-      timestamp: new Date().toISOString(),
-      data_points: connection.data.length
-    });
-  } catch (error) {
-    console.error('Error setting up stream handler:', error);
-    res.status(500).send({ error: 'Failed to set up stream handler' });
-  }
-});
+    return res.status(200).json(
+      successResponse({
+        status: 'data_received',
+        timestamp: new Date().toISOString(),
+        data_points: connection.data.length
+      })
+    );
+  })
+);
 
 export { router as streamsApi };
