@@ -8,9 +8,10 @@ export enum ErrorCode {
   INVALID_WALLET_SIGNATURE = 'INVALID_WALLET_SIGNATURE',
   FORBIDDEN = 'FORBIDDEN',
   NOT_FOUND = 'NOT_FOUND',
-  DB_VALIDATION_ERROR = 'DB_VALIDATION_ERROR',
+  REQ_VALIDATION_ERROR = 'REQ_VALIDATION_ERROR',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   CONFLICT = 'CONFLICT',
+  PAYMENT_REQUIRED = 'PAYMENT_REQUIRED',
 
   // Server errors (5xx)
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
@@ -51,6 +52,13 @@ export class ApiError extends Error {
    */
   static unauthorized(message: string = 'Authentication required') {
     return new ApiError(401, ErrorCode.UNAUTHORIZED, message);
+  }
+
+  /**
+   * Create a 402 Payment Required error
+   */
+  static paymentRequired(message: string = 'Payment required') {
+    return new ApiError(402, ErrorCode.PAYMENT_REQUIRED, message);
   }
 
   /**
@@ -137,10 +145,10 @@ export class ApiError extends Error {
    * Create a validation error with field-specific details
    */
   static validationError(
-    message: string = 'Database validation failed',
+    message: string = 'Request validation failed',
     details?: Record<string, any>
   ) {
-    return new ApiError(400, ErrorCode.DB_VALIDATION_ERROR, message, details);
+    return new ApiError(400, ErrorCode.REQ_VALIDATION_ERROR, message, details);
   }
 }
 

@@ -28,7 +28,7 @@ export const errorHandler = (
   } else if (err.name === 'ValidationError') {
     // Handle Mongoose validation errors
     statusCode = 400;
-    errorCode = ErrorCode.DB_VALIDATION_ERROR;
+    errorCode = ErrorCode.REQ_VALIDATION_ERROR;
     message = err.message;
 
     // Try to extract validation details from Mongoose error
