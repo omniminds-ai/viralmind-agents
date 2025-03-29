@@ -39,6 +39,10 @@ import {
 } from '../services/forge/index.ts';
 import { Webhook } from '../services/webhook/index.ts';
 import { requireWalletAddress } from '../services/auth/index.ts';
+import { validateBody } from './middleware/validator.ts';
+import { connectWalletSchema } from './schemas/forge.ts';
+import { errorHandlerAsync } from './middleware/errorHandler.ts';
+import { ApiError, successResponse } from './types/errors.ts';
 
 // Set up interval to refresh pool balances
 const openai = new OpenAI({
@@ -358,22 +362,18 @@ router.get(
 );
 
 // Store wallet address for token
-router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response) => {
-  try {
+router.post(
+  '/connect',
+  validateBody(connectWalletSchema),
+  errorHandlerAsync(async (req: Request<{}, {}, ConnectBody>, res: Response) => {
     const { token, address, signature, timestamp } = req.body;
-
-    if (!token || !address) {
-      res.status(400).json({ error: 'Token and address are required' });
-      return;
-    }
 
     // If signature and timestamp are provided, verify the signature
     if (signature && timestamp) {
       // Check if timestamp is within 5 minutes
       const now = Date.now();
       if (now - timestamp > 5 * 60 * 1000) {
-        res.status(400).json({ error: 'Timestamp expired' });
-        return;
+        throw ApiError.badRequest('Timestamp expired');
       }
 
       try {
@@ -395,13 +395,11 @@ router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response)
         );
 
         if (!verified) {
-          res.status(400).json({ error: 'Invalid signature' });
-          return;
+          throw ApiError.invalidSignature();
         }
       } catch (verifyError) {
         console.error('Error verifying signature:', verifyError);
-        res.status(400).json({ error: 'Signature verification failed' });
-        return;
+        throw ApiError.internalError('Signature verification failed');
       }
     } else {
       // For backward compatibility, allow connections without signature
@@ -412,12 +410,9 @@ router.post('/connect', async (req: Request<{}, {}, ConnectBody>, res: Response)
     // Store connection token with address
     await WalletConnectionModel.updateOne({ token }, { token, address }, { upsert: true });
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error connecting wallet:', error);
-    res.status(500).json({ error: 'Failed to connect wallet' });
-  }
-});
+    res.status(200).json(successResponse({}));
+  })
+);
 
 // Check connection status
 router.get(

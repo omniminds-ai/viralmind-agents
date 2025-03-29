@@ -7,19 +7,13 @@ import { VPSRegion } from '../../types/gym.ts';
 export const startRaceSessionSchema: ValidationSchema = {
   address: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.isSolanaAddress()
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.isSolanaAddress()]
   },
   region: {
     required: false,
     rules: [
       ValidationRules.isString(),
-      ValidationRules.isIn(
-        ['us-east', 'us-west', 'eu-central', 'ap-southeast'],
-        'Must be a valid region'
-      )
+      ValidationRules.isIn(Object.values(VPSRegion), 'Must be a valid region')
     ]
   }
 };
@@ -60,10 +54,7 @@ export const raceFeedbackSchema: ValidationSchema = {
 export const hintRequestSchema: ValidationSchema = {
   screenshot: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.minLength(1)
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.minLength(1)]
   }
 };
 
@@ -73,10 +64,7 @@ export const hintRequestSchema: ValidationSchema = {
 export const exportSessionQuerySchema: ValidationSchema = {
   sessionId: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.minLength(1)
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.minLength(1)]
   }
 };
 
@@ -86,9 +74,6 @@ export const exportSessionQuerySchema: ValidationSchema = {
 export const exportSessionsSchema: ValidationSchema = {
   sessionIds: {
     required: true,
-    rules: [
-      ValidationRules.isArray(),
-      ValidationRules.isNonEmptyArray()
-    ]
+    rules: [ValidationRules.isArray(), ValidationRules.isNonEmptyArray()]
   }
 };

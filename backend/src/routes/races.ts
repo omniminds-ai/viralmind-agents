@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import DatabaseService from '../services/db/index.ts';
-import { GymVPSService } from '../services/gym-vps/index.ts';
+import { GymVPSService } from '../services/gym/index.ts';
 import GuacamoleService from '../services/guacamole/index.ts';
 import { Webhook } from '../services/webhook/index.ts';
 import OpenAI from 'openai';
