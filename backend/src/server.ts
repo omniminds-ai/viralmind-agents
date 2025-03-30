@@ -93,6 +93,7 @@ import { racesApi } from './api/races.ts';
 import { gymApi } from './api/gym.ts';
 import { forgeApi } from './api/forge/index.ts';
 import { forgeUploadApi } from './api/forge-upload.ts';
+import { walletApi } from './api/wallet.ts';
 import { errorHandler } from './middleware/errorHandler.ts';
 
 app.use('/api/v1/challenges', challengesApi);
@@ -103,6 +104,7 @@ app.use('/api/v1/races', racesApi);
 app.use('/api/v1/gym', gymApi);
 app.use('/api/v1/forge', forgeApi);
 app.use('/api/v1/forge/upload', forgeUploadApi);
+app.use('/api/v1/wallet', walletApi);
 
 // error handling
 catchErrors();

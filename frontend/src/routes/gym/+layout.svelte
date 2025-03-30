@@ -18,7 +18,8 @@
       });
       if (!res.ok) return;
 
-      const data = await res.json();
+      const result = await res.json();
+      const data = result.success ? result.data : result;
       
       if (data.active && data.sessionId) {
         startPolling(data.sessionId);

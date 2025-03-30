@@ -142,7 +142,10 @@
         throw new Error('Failed to create gym on server');
       }
 
-      const gymData = await createResponse.json();
+      const resp = await createResponse.json();
+
+      const gymData = resp.data;
+
       poolId = gymData._id;
       const depositAddress = gymData.depositAddress;
 

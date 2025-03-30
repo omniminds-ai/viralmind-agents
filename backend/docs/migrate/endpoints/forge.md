@@ -19,16 +19,19 @@ The v1 Forge API has been restructured into subdirectories:
 ### Gym Endpoint
 
 **Legacy:**
+
 - **Endpoint:** `GET /gym`
 - **Response:** Direct array of gym races
 
 **v1:**
+
 - **Endpoint:** `GET /gym`
 - **Response:** Standardized format with `success` and `data` fields
 
 #### Response Format Change
 
 **Legacy Response:**
+
 ```json
 [
   {
@@ -41,6 +44,7 @@ The v1 Forge API has been restructured into subdirectories:
 ```
 
 **v1 Response:**
+
 ```json
 {
   "success": true,
@@ -60,40 +64,48 @@ The v1 Forge API has been restructured into subdirectories:
 #### Get User Submissions
 
 **Legacy:**
+
 - **Endpoint:** `GET /submissions`
 - **Response:** Direct array of submissions
 
 **v1:**
+
 - **Endpoint:** `GET /submissions/user`
 - **Response:** Standardized format with `success` and `data` fields
 
 #### Get Pool Submissions
 
 **Legacy:**
+
 - **Endpoint:** `GET /pool-submissions/:poolId`
 - **Response:** Direct array of submissions
 
 **v1:**
+
 - **Endpoint:** `GET /submissions/pool/:poolId`
 - **Response:** Standardized format with `success` and `data` fields
 
 #### Get Submission Status
 
 **Legacy:**
+
 - **Endpoint:** `GET /submission/:id`
 - **Response:** Direct submission object
 
 **v1:**
+
 - **Endpoint:** `GET /submissions/:id`
 - **Response:** Standardized format with `success` and `data` fields
 
 #### Upload Submission
 
 **Legacy:**
+
 - **Endpoint:** `POST /upload-race`
 - **Response:** Direct object with message, submissionId, and files
 
 **v1:**
+
 - **Endpoint:** `POST /submissions/upload`
 - **Response:** Standardized format with `success` and `data` fields
 
@@ -102,40 +114,48 @@ The v1 Forge API has been restructured into subdirectories:
 #### Get App Categories
 
 **Legacy:**
+
 - **Endpoint:** `GET /categories`
 - **Response:** Direct array of categories
 
 **v1:**
+
 - **Endpoint:** `GET /apps/categories`
 - **Response:** Standardized format with `success` and `data` fields
 
 #### Generate Apps
 
 **Legacy:**
+
 - **Endpoint:** `POST /generate`
 - **Response:** Direct object with content and parsing_error
 
 **v1:**
+
 - **Endpoint:** `POST /apps`
 - **Response:** Standardized format with `success` and `data` fields
 
 #### Get Tasks
 
 **Legacy:**
+
 - **Endpoint:** `GET /tasks`
 - **Response:** Direct array of tasks
 
 **v1:**
+
 - **Endpoint:** `GET /apps/tasks`
 - **Response:** Standardized format with `success` and `data` fields
 
 #### Get Apps
 
 **Legacy:**
+
 - **Endpoint:** `GET /apps`
 - **Response:** Direct array of apps
 
 **v1:**
+
 - **Endpoint:** `GET /apps`
 - **Response:** Standardized format with `success` and `data` fields
 
@@ -145,14 +165,14 @@ Several other endpoints have been moved or consolidated in the v1 API:
 
 | Legacy Endpoint | v1 Endpoint | Notes |
 |-----------------|-------------|-------|
-| `POST /connect` | Moved to wallet API | Wallet connection functionality |
-| `GET /check-connection` | Moved to wallet API | Wallet connection check |
+| `POST /connect` | `POST /wallet/connect` | Wallet connection functionality |
+| `GET /check-connection` | `GET /wallet/connection` | Wallet connection check |
 | `POST /chat` | Moved to a separate API | Chat functionality |
 | `POST /refresh` | Consolidated | Pool refresh functionality |
 | `POST /list` | Consolidated | Pool listing functionality |
 | `POST /create` | Consolidated | Pool creation functionality |
 | `POST /update` | Consolidated | Pool update functionality |
-| `GET /balance/:address` | Moved to wallet API | Wallet balance functionality |
+| `GET /balance/:address` | `GET /wallet/balance/:address`| Wallet balance functionality |
 | `GET /pools` | Consolidated | Pool listing functionality |
 
 ## Validation Changes
@@ -174,6 +194,7 @@ The v1 API adds explicit validation for request parameters. For example:
 ### Example: Fetching User Submissions
 
 **Legacy:**
+
 ```javascript
 fetch('/api/forge/submissions', {
   method: 'GET',
@@ -192,6 +213,7 @@ fetch('/api/forge/submissions', {
 ```
 
 **v1:**
+
 ```javascript
 fetch('/api/v1/forge/submissions/user', {
   method: 'GET',
@@ -216,6 +238,7 @@ fetch('/api/v1/forge/submissions/user', {
 ### Example: Uploading a Submission
 
 **Legacy:**
+
 ```javascript
 const formData = new FormData();
 formData.append('file', fileBlob);
@@ -238,6 +261,7 @@ fetch('/api/forge/upload-race', {
 ```
 
 **v1:**
+
 ```javascript
 const formData = new FormData();
 formData.append('file', fileBlob);
@@ -268,6 +292,7 @@ fetch('/api/v1/forge/submissions/upload', {
 The v1 API uses standardized error responses:
 
 **Legacy Error:**
+
 ```json
 {
   "error": "Pool not found"
@@ -275,6 +300,7 @@ The v1 API uses standardized error responses:
 ```
 
 **v1 Error:**
+
 ```json
 {
   "success": false,

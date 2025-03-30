@@ -90,7 +90,8 @@
         return;
       }
 
-      const data = await res.json();
+      const result = await res.json();
+      const data = result.success ? result.data : result;
       console.log(data);
 
       // Update quest if one exists
@@ -162,7 +163,8 @@
           return;
         }
 
-        const data = await res.json();
+        const result = await res.json();
+        const data = result.success ? result.data : result;
         raceSession = data;
         startTime = new Date(data.created_at).getTime();
 
@@ -205,7 +207,8 @@
           throw new Error(errorMsg);
         }
 
-        const data = await res.json();
+        const resp = await res.json();
+        const data = resp.data;
 
         // Set up Guacamole auth token
         if (data.vm_credentials?.guacToken && typeof window !== 'undefined') {
@@ -393,8 +396,7 @@
     <div class="flex flex-1 items-center justify-center p-6">
       <div
         style="width: calc(100vw - 319px); height: calc(100vh - 300px);"
-        class="aspect-video w-full overflow-hidden rounded-sm bg-black/50 shadow-lg"
-      >
+        class="aspect-video w-full overflow-hidden rounded-sm bg-black/50 shadow-lg">
         <div class="relative h-full w-full">
           {#if raceSession?.vm_credentials?.guacToken}
             <div class="absolute inset-0 rounded-sm focus-within:ring-2 focus-within:ring-blue-500">
@@ -402,8 +404,8 @@
                 src={`/guacamole/#/client/${raceSession.vm_credentials.guacClientId}?token=${raceSession.vm_credentials.guacToken}`}
                 title="Guacamole Remote Desktop"
                 class="h-full w-full border-0"
-                allow="clipboard-read; clipboard-write"
-              ></iframe>
+                allow="clipboard-read; clipboard-write">
+              </iframe>
             </div>
           {/if}
 
@@ -422,8 +424,7 @@
     <div class="space-y-4 p-4">
       <button
         class="w-full rounded-xl bg-red-600 px-4 py-2 font-medium text-white transition-colors hover:bg-red-700"
-        on:click={stopRace}
-      >
+        on:click={stopRace}>
         Stop Race
       </button>
     </div>

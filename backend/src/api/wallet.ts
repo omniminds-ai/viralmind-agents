@@ -100,4 +100,4 @@ router.get(
     res.status(200).json(successResponse({ balance }));
   })
 );
-export { router as walletRouter };
+export { router as walletApi };
