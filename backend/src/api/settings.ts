@@ -4,8 +4,20 @@ import BlockcahinService from '../services/blockchain/index.ts';
 import { errorHandlerAsync } from '../middleware/errorHandler.ts';
 import { validateQuery } from '../middleware/validator.ts';
 import { settingsQuerySchema } from './schemas/settings.ts';
-import { ApiError, successResponse } from '../middleware/types/errors.ts';
+import { successResponse } from '../middleware/types/errors.ts';
+import BlockchainService from '../services/blockchain/index.ts';
+import { Keypair } from '@solana/web3.js';
+import { readFileSync } from 'fs';
+
 const router = express.Router();
+// Load treasury wallet
+const solanaRpc = process.env.RPC_URL!;
+const viralToken = process.env.VIRAL_TOKEN!;
+const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
+const blockchainService = new BlockchainService(solanaRpc, '');
+const treasuryKeypair = Keypair.fromSecretKey(
+  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
+);
 
 router.get(
   '/',
@@ -82,6 +94,18 @@ router.get(
     };
 
     return res.status(200).json(successResponse(response));
+  })
+);
+
+// Get treasury balance endpoint
+router.get(
+  '/treasury',
+  errorHandlerAsync(async (_req, res) => {
+    const balance = await blockchainService.getTokenBalance(
+      viralToken,
+      treasuryKeypair.publicKey.toBase58()
+    );
+    res.status(200).json(successResponse({ balance }));
   })
 );
 

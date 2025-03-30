@@ -12,9 +12,6 @@ import { Webhook } from '../services/webhook/index.ts';
 import dotenv from 'dotenv';
 import { TrainingEventModel } from '../models/TrainingEvent.ts';
 import { RaceSessionModel } from '../models/Models.ts';
-import { Keypair } from '@solana/web3.js';
-import { readFileSync } from 'fs';
-import BlockchainService from '../services/blockchain/index.ts';
 import { VPSRegion } from '../types/gym.ts';
 import { DBRaceSession } from '../types/db.ts';
 import { errorHandlerAsync } from '../middleware/errorHandler.ts';
@@ -38,32 +35,10 @@ type RaceSessionInput = Omit<DBRaceSession, '_id'> & {
   category: RaceCategory;
 };
 
-const solanaRpc = process.env.RPC_URL!;
-const viralToken = process.env.VIRAL_TOKEN!;
-const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
-
 // Initialize blockchain service
-const blockchainService = new BlockchainService(solanaRpc, '');
 const guacService = new GuacamoleService();
 
 const generatingHints = new Set<string>();
-
-// Load treasury wallet
-const treasuryKeypair = Keypair.fromSecretKey(
-  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
-);
-
-// Get treasury balance endpoint
-router.get(
-  '/treasury-balance',
-  errorHandlerAsync(async (_req, res) => {
-    const balance = await blockchainService.getTokenBalance(
-      viralToken,
-      treasuryKeypair.publicKey.toBase58()
-    );
-    res.status(200).json(successResponse({ balance }));
-  })
-);
 
 // List all available races
 router.get(
