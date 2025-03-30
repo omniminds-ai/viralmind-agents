@@ -93,7 +93,7 @@ import { racesApi } from './api/races.ts';
 import { gymApi } from './api/gym.ts';
 import { forgeApi } from './api/forge.ts';
 import { forgeUploadApi } from './api/forge-upload.ts';
-import { errorHandler } from './api/middleware/errorHandler.ts';
+import { errorHandler } from './middleware/errorHandler.ts';
 
 app.use('/api/v1/challenges', challengesApi);
 app.use('/api/v1/conversation', conversationApi);

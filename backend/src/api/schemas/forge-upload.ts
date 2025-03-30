@@ -1,4 +1,4 @@
-import { ValidationSchema, ValidationRules } from '../middleware/validator.ts';
+import { ValidationSchema, ValidationRules } from '../../middleware/validator.ts';
 
 /**
  * Schema for initializing a chunked upload
@@ -26,20 +26,13 @@ export const initUploadSchema: ValidationSchema = {
 export const uploadChunkSchema: ValidationSchema = {
   chunkIndex: {
     required: true,
-    rules: [
-      ValidationRules.isNumber(),
-      ValidationRules.min(0),
-      ValidationRules.isInteger()
-    ]
+    rules: [ValidationRules.isNumber(), ValidationRules.min(0), ValidationRules.isInteger()]
   },
   checksum: {
     required: true,
     rules: [
       ValidationRules.isString(),
-      ValidationRules.pattern(
-        /^[a-f0-9]{64}$/i,
-        'Must be a valid SHA-256 hash (64 hex characters)'
-      )
+      ValidationRules.pattern(/^[a-f0-9]{64}$/i, 'Must be a valid SHA-256 hash (64 hex characters)')
     ]
   }
 };
@@ -51,9 +44,6 @@ export const uploadChunkSchema: ValidationSchema = {
 export const uploadIdParamSchema: ValidationSchema = {
   uploadId: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.minLength(1)
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.minLength(1)]
   }
 };

@@ -16,11 +16,9 @@ import { Keypair } from '@solana/web3.js';
 import { readFileSync } from 'fs';
 import BlockchainService from '../services/blockchain/index.ts';
 import { VPSRegion } from '../types/gym.ts';
-import { isAxiosError } from 'axios';
-import { handleAxiosError } from '../services/util.ts';
 import { DBRaceSession } from '../types/db.ts';
-import { errorHandlerAsync } from './middleware/errorHandler.ts';
-import { validateBody, validateParams, ValidationRules } from './middleware/validator.ts';
+import { errorHandlerAsync } from '../middleware/errorHandler.ts';
+import { validateBody, validateParams, ValidationRules } from '../middleware/validator.ts';
 import {
   exportSessionQuerySchema,
   exportSessionsSchema,
@@ -29,7 +27,7 @@ import {
   startRaceSessionSchema,
   updateRaceSessionSchema
 } from './schemas/races.ts';
-import { ApiError, ErrorCode, successResponse } from './types/errors.ts';
+import { ApiError, ErrorCode, successResponse } from '../middleware/types/errors.ts';
 
 dotenv.config();
 

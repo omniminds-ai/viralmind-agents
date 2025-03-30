@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiError, ErrorCode, errorResponse } from '../types/errors.ts';
+import { ApiError, ErrorCode, errorResponse } from './types/errors.ts';
 
 /**
  * Global error handling middleware for Express

@@ -1,4 +1,4 @@
-import { ValidationSchema, ValidationRules } from '../middleware/validator.ts';
+import { ValidationSchema, ValidationRules } from '../../middleware/validator.ts';
 
 /**
  * Schema for challenge-chat stream query parameters

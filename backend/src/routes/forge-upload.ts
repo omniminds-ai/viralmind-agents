@@ -1,7 +1,7 @@
 import express, { Request, Response, Router, NextFunction } from 'express';
 import multer from 'multer';
 import { createReadStream, createWriteStream } from 'fs';
-import { mkdir, unlink, copyFile, stat, writeFile, readFile, readdir } from 'fs/promises';
+import { mkdir, unlink, copyFile, stat, writeFile, readFile } from 'fs/promises';
 import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
@@ -15,7 +15,7 @@ import {
   UploadSession
 } from '../types/index.ts';
 import { addToProcessingQueue, cleanupSession } from '../services/forge/index.ts';
-import { requireWalletAddress } from '../services/auth/index.ts';
+import { requireWalletAddress } from '../middleware/auth.ts';
 
 // Initialize blockchain service
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');

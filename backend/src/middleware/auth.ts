@@ -1,6 +1,6 @@
-import { ApiError } from '../../api/types/errors.ts';
+import { ApiError } from './types/errors.ts';
 import { NextFunction, Request, Response } from 'express';
-import { WalletConnectionModel } from '../../models/Models.ts';
+import { WalletConnectionModel } from '../models/Models.ts';
 
 // Middleware to resolve connect token to wallet address
 export async function requireWalletAddress(req: Request, _res: Response, next: NextFunction) {

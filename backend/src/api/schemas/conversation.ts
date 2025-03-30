@@ -1,4 +1,4 @@
-import { ValidationSchema, ValidationRules } from '../middleware/validator.ts';
+import { ValidationSchema, ValidationRules } from '../../middleware/validator.ts';
 
 /**
  * Schema for submitting a conversation message
@@ -14,10 +14,7 @@ export const submitMessageSchema: ValidationSchema = {
   },
   walletAddress: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.isSolanaAddress()
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.isSolanaAddress()]
   }
 };
 

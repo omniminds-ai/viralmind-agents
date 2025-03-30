@@ -6,15 +6,15 @@ import BlockchainService from '../services/blockchain/index.ts';
 import DatabaseService from '../services/db/index.ts';
 import { ChallengeModel } from '../models/Models.ts';
 import { Webhook } from '../services/webhook/index.ts';
-import { errorHandlerAsync } from './middleware/errorHandler.ts';
-import { validateBody, validateQuery } from './middleware/validator.ts';
-import { 
-  whitelistQuerySchema, 
-  revealServerSchema, 
-  rewardPlayerSchema, 
-  chatMessageSchema 
+import { errorHandlerAsync } from '../middleware/errorHandler.ts';
+import { validateBody, validateQuery } from '../middleware/validator.ts';
+import {
+  whitelistQuerySchema,
+  revealServerSchema,
+  rewardPlayerSchema,
+  chatMessageSchema
 } from './schemas/minecraft.ts';
-import { ApiError, successResponse } from './types/errors.ts';
+import { ApiError, successResponse } from '../middleware/types/errors.ts';
 
 dotenv.config();
 

@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import DatabaseService from '../services/db/index.ts';
 import zstd from '@mongodb-js/zstd';
-import { writeFile } from 'fs/promises';
 import { AWSS3Service } from '../services/aws/index.ts';
 dotenv.config();
 

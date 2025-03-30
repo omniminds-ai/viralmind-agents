@@ -1,4 +1,4 @@
-import { ValidationSchema, ValidationRules } from '../middleware/validator.ts';
+import { ValidationSchema, ValidationRules } from '../../middleware/validator.ts';
 
 /**
  * Schema for wallet connection request
@@ -10,10 +10,7 @@ export const connectWalletSchema: ValidationSchema = {
   },
   address: {
     required: true,
-    rules: [
-      ValidationRules.isString(),
-      ValidationRules.isSolanaAddress()
-    ]
+    rules: [ValidationRules.isString(), ValidationRules.isSolanaAddress()]
   },
   signature: {
     required: false,
@@ -41,10 +38,7 @@ export const checkConnectionSchema: ValidationSchema = {
 export const chatRequestSchema: ValidationSchema = {
   messages: {
     required: true,
-    rules: [
-      ValidationRules.isArray(),
-      ValidationRules.isNonEmptyArray()
-    ]
+    rules: [ValidationRules.isArray(), ValidationRules.isNonEmptyArray()]
   },
   task_prompt: {
     required: true,
@@ -76,10 +70,7 @@ export const createPoolSchema: ValidationSchema = {
   },
   skills: {
     required: true,
-    rules: [
-      ValidationRules.isArray(),
-      ValidationRules.isNonEmptyArray()
-    ]
+    rules: [ValidationRules.isArray(), ValidationRules.isNonEmptyArray()]
   },
   token: {
     required: true,

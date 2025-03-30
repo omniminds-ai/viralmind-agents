@@ -5,10 +5,10 @@ import { LLMService } from '../services/llm/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 import DatabaseService from '../services/db/index.ts';
 import VNCService from '../services/vnc/index.ts';
-import { errorHandlerAsync } from './middleware/errorHandler.ts';
-import { validateBody, validateParams } from './middleware/validator.ts';
+import { errorHandlerAsync } from '../middleware/errorHandler.ts';
+import { validateBody, validateParams } from '../middleware/validator.ts';
 import { submitMessageSchema, conversationIdSchema } from './schemas/conversation.ts';
-import { ApiError, successResponse } from './types/errors.ts';
+import { ApiError, successResponse } from '../middleware/types/errors.ts';
 
 import { executeComputerAction } from '../services/vnc/actions.ts';
 import TournamentService from '../services/tournament/index.ts';

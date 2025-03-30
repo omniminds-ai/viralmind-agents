@@ -15,15 +15,15 @@ import {
   UploadSession
 } from '../types/index.ts';
 import { addToProcessingQueue, cleanupSession } from '../services/forge/index.ts';
-import { requireWalletAddress } from '../services/auth/index.ts';
-import { validateBody, validateParams } from './middleware/validator.ts';
+import { validateBody, validateParams } from '../middleware/validator.ts';
 import {
   initUploadSchema,
   uploadChunkSchema,
   uploadIdParamSchema
 } from './schemas/forge-upload.ts';
-import { errorHandlerAsync } from './middleware/errorHandler.ts';
-import { ApiError, successResponse } from './types/errors.ts';
+import { errorHandlerAsync } from '../middleware/errorHandler.ts';
+import { ApiError, successResponse } from '../middleware/types/errors.ts';
+import { requireWalletAddress } from '../middleware/auth.ts';
 
 // Initialize blockchain service
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
@@ -667,4 +667,4 @@ router.post(
  * ```
  */
 
-export { router as forgeUploadRoute };
+export { router as forgeUploadApi };

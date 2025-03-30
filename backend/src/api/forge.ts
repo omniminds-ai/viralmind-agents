@@ -38,11 +38,11 @@ import {
   TASK_SHOT_EXAMPLES
 } from '../services/forge/index.ts';
 import { Webhook } from '../services/webhook/index.ts';
-import { requireWalletAddress } from '../services/auth/index.ts';
-import { validateBody } from './middleware/validator.ts';
+import { validateBody } from '../middleware/validator.ts';
 import { connectWalletSchema } from './schemas/forge.ts';
-import { errorHandlerAsync } from './middleware/errorHandler.ts';
-import { ApiError, successResponse } from './types/errors.ts';
+import { errorHandlerAsync } from '../middleware/errorHandler.ts';
+import { ApiError, successResponse } from '../middleware/types/errors.ts';
+import { requireWalletAddress } from '../middleware/auth.ts';
 
 // Set up interval to refresh pool balances
 const openai = new OpenAI({

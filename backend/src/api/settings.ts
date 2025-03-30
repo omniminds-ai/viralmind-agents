@@ -1,10 +1,10 @@
 import express, { Request, Response } from 'express';
 import DatabaseService from '../services/db/index.ts';
 import BlockcahinService from '../services/blockchain/index.ts';
-import { errorHandlerAsync } from './middleware/errorHandler.ts';
-import { validateQuery } from './middleware/validator.ts';
+import { errorHandlerAsync } from '../middleware/errorHandler.ts';
+import { validateQuery } from '../middleware/validator.ts';
 import { settingsQuerySchema } from './schemas/settings.ts';
-import { ApiError, successResponse } from './types/errors.ts';
+import { ApiError, successResponse } from '../middleware/types/errors.ts';
 const router = express.Router();
 
 router.get(

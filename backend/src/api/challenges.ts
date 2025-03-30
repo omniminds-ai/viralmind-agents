@@ -6,9 +6,9 @@ import VNCService from '../services/vnc/index.ts';
 import fs from 'fs';
 import path from 'path';
 import { DBChat } from '../types/db.ts';
-import { errorHandlerAsync } from './middleware/errorHandler.ts';
-import { validateParams, validateQuery, ValidationRules } from './middleware/validator.ts';
-import { ApiError, successResponse } from './types/errors.ts';
+import { errorHandlerAsync } from '../middleware/errorHandler.ts';
+import { validateParams, validateQuery, ValidationRules } from '../middleware/validator.ts';
+import { ApiError, successResponse } from '../middleware/types/errors.ts';
 
 dotenv.config();
 

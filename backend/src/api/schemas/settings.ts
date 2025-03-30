@@ -1,4 +1,4 @@
-import { ValidationSchema, ValidationRules } from '../middleware/validator.ts';
+import { ValidationSchema } from '../../middleware/validator.ts';
 
 /**
  * Schema for settings query parameters

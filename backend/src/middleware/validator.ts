@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiError } from '../types/errors.ts';
+import { ApiError } from './types/errors.ts';
 import { PublicKey } from '@solana/web3.js';
 
 /**
