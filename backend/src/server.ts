@@ -91,7 +91,7 @@ import { settingsApi } from './api/settings.ts';
 import { minecraftApi } from './api/minecraft.ts';
 import { racesApi } from './api/races.ts';
 import { gymApi } from './api/gym.ts';
-import { forgeApi } from './api/forge.ts';
+import { forgeApi } from './api/forge/index.ts';
 import { forgeUploadApi } from './api/forge-upload.ts';
 import { errorHandler } from './middleware/errorHandler.ts';
 

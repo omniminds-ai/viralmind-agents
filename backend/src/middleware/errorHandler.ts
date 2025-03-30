@@ -7,7 +7,7 @@ import { ApiError, ErrorCode, errorResponse } from './types/errors.ts';
  */
 export const errorHandler = (
   err: Error | ApiError,
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) => {

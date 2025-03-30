@@ -1,37 +1,4 @@
 import { ValidationSchema, ValidationRules } from '../../middleware/validator.ts';
-
-/**
- * Schema for wallet connection request
- */
-export const connectWalletSchema: ValidationSchema = {
-  token: {
-    required: true,
-    rules: [ValidationRules.isString(), ValidationRules.minLength(1)]
-  },
-  address: {
-    required: true,
-    rules: [ValidationRules.isString(), ValidationRules.isSolanaAddress()]
-  },
-  signature: {
-    required: false,
-    rules: [ValidationRules.isString()]
-  },
-  timestamp: {
-    required: false,
-    rules: [ValidationRules.isNumber(), ValidationRules.min(0)]
-  }
-};
-
-/**
- * Schema for checking wallet connection
- */
-export const checkConnectionSchema: ValidationSchema = {
-  token: {
-    required: true,
-    rules: [ValidationRules.isString(), ValidationRules.minLength(1)]
-  }
-};
-
 /**
  * Schema for chat request
  */
@@ -140,5 +107,31 @@ export const generateContentSchema: ValidationSchema = {
   prompt: {
     required: true,
     rules: [ValidationRules.isString(), ValidationRules.minLength(1)]
+  }
+};
+
+/**
+ * Scheam for getting tasks
+ */
+export const getTasksSchema: ValidationSchema = {
+  pool_id: {
+    required: false,
+    rules: [ValidationRules.isString()]
+  },
+  min_reward: {
+    required: true,
+    rules: [ValidationRules.isString()]
+  },
+  max_reward: {
+    required: true,
+    rules: [ValidationRules.isString()]
+  },
+  categories: {
+    required: false,
+    rules: [ValidationRules.isString()]
+  },
+  query: {
+    required: false,
+    rules: [ValidationRules.isString()]
   }
 };
