@@ -15,7 +15,12 @@ import { RaceSessionModel } from '../models/Models.ts';
 import { VPSRegion } from '../types/gym.ts';
 import { DBRaceSession } from '../types/db.ts';
 import { errorHandlerAsync } from '../middleware/errorHandler.ts';
-import { validateBody, validateParams, ValidationRules } from '../middleware/validator.ts';
+import {
+  validateBody,
+  validateParams,
+  validateQuery,
+  ValidationRules
+} from '../middleware/validator.ts';
 import {
   exportSessionQuerySchema,
   exportSessionsSchema,
@@ -573,7 +578,7 @@ router.post(
 // Export training events for selected race sessions
 router.get(
   '/export',
-  validateBody(exportSessionQuerySchema),
+  validateQuery(exportSessionQuerySchema),
   errorHandlerAsync(async (req: Request, res: Response) => {
     const { sessionId } = req.query;
 
