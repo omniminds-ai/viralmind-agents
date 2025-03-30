@@ -35,7 +35,7 @@ router.get(
       .sort({ createdAt: -1 })
       .select('-__v');
 
-    res.status(200).json(submissions);
+    res.status(200).json(successResponse(submissions));
   })
 );
 

@@ -37,7 +37,7 @@ export const createPoolSchema: ValidationSchema = {
   },
   skills: {
     required: true,
-    rules: [ValidationRules.isArray(), ValidationRules.isNonEmptyArray()]
+    rules: [ValidationRules.isString()]
   },
   token: {
     required: true,
@@ -74,7 +74,7 @@ export const updatePoolSchema: ValidationSchema = {
   },
   skills: {
     required: false,
-    rules: [ValidationRules.isArray()]
+    rules: [ValidationRules.isString()]
   },
   pricePerDemo: {
     required: false,
@@ -119,11 +119,11 @@ export const getTasksSchema: ValidationSchema = {
     rules: [ValidationRules.isString()]
   },
   min_reward: {
-    required: true,
+    required: false,
     rules: [ValidationRules.isString()]
   },
   max_reward: {
-    required: true,
+    required: false,
     rules: [ValidationRules.isString()]
   },
   categories: {

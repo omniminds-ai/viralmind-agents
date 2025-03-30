@@ -8,6 +8,7 @@ import { PublicKey } from '@solana/web3.js';
 export type ValidationRule = {
   validate: ((value: any) => boolean) | ((value: any) => Promise<boolean>);
   message: string;
+  transform?: (value: any) => any; // Optional transform function
 };
 
 /**
@@ -41,8 +42,25 @@ export const ValidationRules = {
   }),
 
   isNumber: (): ValidationRule => ({
-    validate: (value) => typeof value === 'number' && !isNaN(value),
-    message: 'Must be a number'
+    validate: (value) => {
+      console.log(value);
+      if (typeof value === 'string') {
+        // Attempt to cast string to number
+        const num = Number(value);
+        return !isNaN(num);
+      } else if (typeof value === 'number') {
+        return !isNaN(value);
+      }
+      // Other types fail validation
+      return false;
+    },
+    message: 'Must be a number',
+    transform: (value) => {
+      if (typeof value === 'string') {
+        return Number(value);
+      }
+      return value;
+    }
   }),
 
   isBoolean: (): ValidationRule => ({
@@ -171,7 +189,11 @@ export const ValidationRules = {
         ? `Must be a number greater than or equal to ${min}`
         : max !== undefined
         ? `Must be a number less than or equal to ${max}`
-        : 'Must be a valid number'
+        : 'Must be a valid number',
+    transform: (value) => {
+      if (value === undefined) return value;
+      return parseInt(value as string);
+    }
   }),
 
   custom: (validateFn: (value: any) => boolean, message: string): ValidationRule => ({
@@ -186,12 +208,13 @@ export const ValidationRules = {
 export async function validateObject(
   obj: Record<string, any>,
   schema: ValidationSchema
-): Promise<ValidationResult> {
+): Promise<ValidationResult & { transformedValues?: Record<string, any> }> {
   const errors: Record<string, string> = {};
+  const transformedValues: Record<string, any> = {};
 
   // Check each field in the schema
   for (const [field, validation] of Object.entries(schema)) {
-    const value = obj[field];
+    let value = obj[field];
 
     // Check if required field is missing
     if (validation.required && (value === undefined || value === null || value === '')) {
@@ -211,13 +234,22 @@ export async function validateObject(
           errors[field] = rule.message;
           break;
         }
+        
+        // Apply transformation if provided
+        if (rule.transform) {
+          value = rule.transform(value);
+          transformedValues[field] = value;
+          // Update the original object with transformed value
+          obj[field] = value;
+        }
       }
     }
   }
 
   return {
     valid: Object.keys(errors).length === 0,
-    errors
+    errors,
+    transformedValues: Object.keys(transformedValues).length > 0 ? transformedValues : undefined
   };
 }
 
@@ -226,6 +258,7 @@ export async function validateObject(
  */
 export function validateBody(schema: ValidationSchema) {
   return async (req: Request, _res: Response, next: NextFunction) => {
+    // validateObject will update req.body with transformed values
     const { valid, errors } = await validateObject(req.body, schema);
 
     if (!valid) {
@@ -242,6 +275,7 @@ export function validateBody(schema: ValidationSchema) {
  */
 export function validateQuery(schema: ValidationSchema) {
   return async (req: Request, _res: Response, next: NextFunction) => {
+    // validateObject will update req.query with transformed values
     const { valid, errors } = await validateObject(req.query, schema);
 
     if (!valid) {
@@ -258,6 +292,7 @@ export function validateQuery(schema: ValidationSchema) {
  */
 export function validateParams(schema: ValidationSchema) {
   return async (req: Request, _res: Response, next: NextFunction) => {
+    // validateObject will update req.params with transformed values
     const { valid, errors } = await validateObject(req.params, schema);
 
     if (!valid) {

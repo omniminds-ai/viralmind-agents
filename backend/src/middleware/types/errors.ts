@@ -8,7 +8,7 @@ export enum ErrorCode {
   INVALID_WALLET_SIGNATURE = 'INVALID_WALLET_SIGNATURE',
   FORBIDDEN = 'FORBIDDEN',
   NOT_FOUND = 'NOT_FOUND',
-  REQ_VALIDATION_ERROR = 'REQ_VALIDATION_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   CONFLICT = 'CONFLICT',
   PAYMENT_REQUIRED = 'PAYMENT_REQUIRED',
@@ -149,7 +149,7 @@ export class ApiError extends Error {
     message: string = 'Request validation failed',
     details?: Record<string, any>
   ) {
-    return new ApiError(400, ErrorCode.REQ_VALIDATION_ERROR, message, details);
+    return new ApiError(400, ErrorCode.VALIDATION_ERROR, message, details);
   }
 }
 

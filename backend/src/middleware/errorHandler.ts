@@ -28,7 +28,7 @@ export const errorHandler = (
   } else if (err.name === 'ValidationError') {
     // Handle Mongoose validation errors
     statusCode = 400;
-    errorCode = ErrorCode.REQ_VALIDATION_ERROR;
+    errorCode = ErrorCode.VALIDATION_ERROR;
     message = err.message;
 
     // Try to extract validation details from Mongoose error
@@ -93,6 +93,8 @@ export const errorHandlerAsync = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+    Promise.resolve()
+      .then(() => fn(req, res, next))
+      .catch(next);
   };
 };

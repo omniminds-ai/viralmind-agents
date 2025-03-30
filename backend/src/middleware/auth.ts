@@ -6,7 +6,7 @@ import { WalletConnectionModel } from '../models/Models.ts';
 export async function requireWalletAddress(req: Request, res: Response, next: NextFunction) {
   const token = req.headers['x-connect-token'];
   if (!token || typeof token !== 'string') {
-    if (req.url.includes('v1')) {
+    if (req.originalUrl.includes('v1')) {
       throw ApiError.unauthorized('Connect token is required');
     } else {
       res.status(401).json({ error: 'Connect token is required' });
@@ -16,7 +16,7 @@ export async function requireWalletAddress(req: Request, res: Response, next: Ne
 
   const connection = await WalletConnectionModel.findOne({ token });
   if (!connection) {
-    if (req.url.includes('v1')) {
+    if (req.originalUrl.includes('v1')) {
       throw ApiError.unauthorized('Invalid connect token');
     } else {
       res.status(401).json({ error: 'Invalid connect token' });

@@ -405,6 +405,8 @@ router.get(
         // Process tasks and add limit information
         const tasksWithLimitInfo = await Promise.all(
           app.tasks.map(async (task) => {
+            //@ts-ignore - not sure how to type the task correectly, but its  a mongoose object until we call this
+            task = task.toObject();
             let taskLimitReached = false;
             let taskSubmissions = 0;
             let limitReason: string | null = null;

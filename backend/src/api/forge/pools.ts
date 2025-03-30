@@ -98,7 +98,7 @@ router.post(
 );
 
 // Get all training pools for user
-router.post(
+router.get(
   '/',
   requireWalletAddress,
   errorHandlerAsync(async (req: Request, res: Response) => {
@@ -146,7 +146,7 @@ router.post(
       })
     );
 
-    res.status(200).json(poolsWithDemos);
+    res.status(200).json(successResponse(poolsWithDemos));
   })
 );
 
