@@ -35,14 +35,15 @@
     }
 
     try {
-      const response = await fetch('/api/races/history', {
+      const response = await fetch('/api/v1/races/history', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'X-Wallet-Address': $walletStore.publicKey.toString()
         }
       });
-      const data = await response.json();
+      const result = await response.json();
+      const data = result.success ? result.data : result;
 
       // Transform API data to match the Race interface
       races = data.map((session: any, index: number) => ({
@@ -87,7 +88,7 @@
     if (type === 'raw') {
       try {
         const selectedIds = races.filter((r) => r.selected).map((r) => r.id);
-        const response = await fetch('/api/races/export', {
+        const response = await fetch('/api/v1/races/export', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

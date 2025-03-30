@@ -77,7 +77,7 @@
       const signature = await $walletStore.signMessage(message);
       const signatureBase64 = btoa(String.fromCharCode(...signature));
 
-      const response = await fetch('/api/minecraft/reveal', {
+      const response = await fetch('/api/v1/minecraft/reveal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

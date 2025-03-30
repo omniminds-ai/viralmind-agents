@@ -100,7 +100,7 @@ export async function processPayment(message: string, options: PaymentOptions) {
         await connection.confirmTransaction(signature, "confirmed");
 
         // Submit to backend after payment confirmation
-        const response = await fetch(`/api/conversation/submit/${challengeName}`, {
+        const response = await fetch(`/api/v1/conversation/submit/${challengeName}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -112,7 +112,13 @@ export async function processPayment(message: string, options: PaymentOptions) {
             })
         });
 
-        if (!response.ok) {
+        // Check for non-streaming error responses
+        if (response.headers.get('Content-Type')?.includes('application/json')) {
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error.message || 'Unknown error');
+            }
+        } else if (!response.ok) {
             throw new Error('Failed to submit message to backend');
         }
 

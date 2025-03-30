@@ -13,7 +13,7 @@
     submitStatus = 'idle';
 
     try {
-      const response = await fetch('/api/races/feedback', {
+      const response = await fetch('/api/v1/races/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

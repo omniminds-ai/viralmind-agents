@@ -75,7 +75,7 @@
         return;
       }
 
-      const res = await fetch(`/api/races/session/${sessionId}/hint`, {
+      const res = await fetch(`/api/v1/races/session/${sessionId}/hint`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -135,7 +135,7 @@
         return;
       } else {
         // Stop the other session
-        await fetch(`/api/races/session/${$activeRace.sessionId}/stop`, {
+        await fetch(`/api/v1/races/session/${$activeRace.sessionId}/stop`, {
           method: 'POST'
         });
         stopPolling();
@@ -155,7 +155,7 @@
     if (sessionId) {
       try {
         // Get existing session
-        const res = await fetch(`/api/races/session/${sessionId}`);
+        const res = await fetch(`/api/v1/races/session/${sessionId}`);
         if (!res.ok) {
           const data = await res.json();
           handleError(data.error || 'Failed to load session');
@@ -187,7 +187,7 @@
           timestamp: Date.now()
         });
 
-        const res = await fetch(`/api/races/${raceId}/start`, {
+        const res = await fetch(`/api/v1/races/${raceId}/start`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -273,10 +273,11 @@
     const sessionId = urlParams.get('s');
     if (sessionId) {
       try {
-        const response = await fetch(`/api/races/session/${sessionId}/stop`, {
+        const response = await fetch(`/api/v1/races/session/${sessionId}/stop`, {
           method: 'POST'
         });
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.success ? result.data : result;
         if (data.totalRewards) {
           trainingEvents.addEvent({
             type: 'system',

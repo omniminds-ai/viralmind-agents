@@ -52,7 +52,7 @@
       const signatureBase64 = Buffer.from(signature).toString('base64');
 
       // Send address, signature and timestamp to backend
-      await fetch('/api/forge/connect', {
+      await fetch('/api/v1/forge/connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

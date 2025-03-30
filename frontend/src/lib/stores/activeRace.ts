@@ -22,7 +22,7 @@ export function startPolling(sessionId: string) {
   // Poll every 5 seconds
   pollInterval = setInterval(async () => {
     try {
-      const res = await fetch(`/api/races/session/${sessionId}`);
+      const res = await fetch(`/api/v1/races/session/${sessionId}`);
       if (!res.ok) {
         if (res.status === 410) { // Session expired
           activeRace.set(null);
@@ -36,11 +36,15 @@ export function startPolling(sessionId: string) {
 
       const [sessionRes, eventsRes] = await Promise.all([
         res,
-        fetch(`/api/races/export?sessionId=${sessionId}`)
+        fetch(`/api/v1/races/export?sessionId=${sessionId}`)
       ]);
 
-      const data = await sessionRes.json();
-      const eventsData = await eventsRes.json();
+      const sessionResult = await sessionRes.json();
+      const eventsResult = await eventsRes.json();
+      
+      // Extract data from the standardized response format
+      const data = sessionResult.success ? sessionResult.data : sessionResult;
+      const eventsData = eventsResult.success ? eventsResult.data : eventsResult;
 
       // Find the latest quest event
       const lastQuest = eventsData.events

@@ -110,7 +110,7 @@
                   class="rounded-lg bg-stone-800/50 p-1.5 text-gray-400 hover:bg-stone-700/50 hover:text-white"
                   title="View Logs"
                   target="_blank"
-                  href="/api/races/export?sessionId={race.id}"
+                  href="/api/v1/races/export?sessionId={race.id}"
                 >
                   <FileText class="h-4 w-4" />
                 </a>

@@ -118,11 +118,11 @@
       });
 
     // Fetch settings
-    fetch('/api/settings')
+    fetch('/api/v1/settings')
       .then(async (res) => {
         if (!res.ok) throw Error(res.status + ': ' + res.statusText);
-        const data = await res.json();
-        settings = data;
+        const result = await res.json();
+        settings = result.success ? result.data : result;
       })
       .catch((error) => {
         console.error('Failed to fetch settings:', error);

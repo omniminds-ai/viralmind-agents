@@ -27,7 +27,7 @@
       loading = true;
       error = null;
       const response = await fetch(
-        `/api/challenges/get-challenge?name=${encodeURIComponent(name)}&initial=${initial}&price=${price}`
+        `/api/v1/challenges/get-challenge?name=${encodeURIComponent(name)}&initial=${initial}&price=${price}`
       );
 
       if (!response.ok) {
