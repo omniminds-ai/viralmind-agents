@@ -5,7 +5,8 @@ import {
   DBForgeRaceSubmission,
   ForgeSubmissionProcessingStatus,
   WebhookColor,
-  EmbedField
+  EmbedField,
+  UploadLimitType
 } from '../../types/index.ts';
 import { ForgeRaceSubmission, TrainingPoolModel, ForgeAppModel } from '../../models/Models.ts';
 import { promises as fs } from 'fs';
@@ -171,49 +172,126 @@ export async function processNextInQueue() {
             // Default maxReward is the pool's pricePerDemo
             maxReward = pool.pricePerDemo;
 
-            // Check if the task has a rewardLimit
-            if (submission?.meta?.quest.task_id) {
-              const app = await ForgeAppModel.findOne({
-                pool_id: pool._id.toString(),
-                'tasks._id': submission?.meta?.quest.task_id
-              });
-
-              if (app) {
-                const task = app.tasks.find(
-                  (t) => t._id.toString() === submission?.meta?.quest.task_id
-                );
-                if (task?.rewardLimit) {
-                  // Use the task's rewardLimit instead of the pool's pricePerDemo
-                  maxReward = task.rewardLimit;
-                }
-              }
-            }
-
             // Calculate final reward based on grade_result score (clamped 0-100)
             clampedScore = Math.max(0, Math.min(100, gradeResult.score));
 
-            // Check for previous submissions with same or higher score
+            // Reward skip conditions:
+            // 1. Missing task_id
+            // 2. Invalid task_id (no corresponding task found)
+            // 3. Previous submission exists with same title/task_id and higher/equal score
+            // 4. Per-task upload limit reached
+            // 5. Per-gym upload limit reached
+            // 6. Score below 50%
+
+            // Check 1: Missing task_id
+            if (!submission?.meta?.quest.task_id) {
+              reward = 0;
+              gradeResult.reasoning = `( system: no reward given - missing task_id ) ${gradeResult.reasoning}`;
+              break;
+            }
+
+            // Check 2: Invalid task_id
+            const app = await ForgeAppModel.findOne({
+              pool_id: pool._id.toString(),
+              'tasks._id': submission?.meta?.quest.task_id
+            });
+
+            const task = app ? app.tasks.find(
+              (t) => t._id.toString() === submission?.meta?.quest.task_id
+            ) : null;
+
+            if (!app || !task) {
+              reward = 0;
+              gradeResult.reasoning = `( system: no reward given - invalid task_id, no corresponding task found ) ${gradeResult.reasoning}`;
+              break;
+            }
+
+            // Use the task's rewardLimit if it exists
+            if (task.rewardLimit) {
+              maxReward = task.rewardLimit;
+            }
+
+            // Check 3: Previous submission with higher/equal score
             const previousSubmission = await ForgeRaceSubmission.findOne({
               address: submission.address,
               'meta.quest.pool_id': pool._id.toString(),
-              'meta.quest.title': submission?.meta?.quest.title,
+              $or: [
+                { 'meta.quest.title': submission?.meta?.quest.title },
+                { 'meta.quest.task_id': submission?.meta?.quest.task_id }
+              ],
               'grade_result.score': { $gte: gradeResult.score },
               _id: { $ne: submission._id }
             }).sort({ 'grade_result.score': -1 });
 
             if (previousSubmission) {
               reward = 0;
-              // Add prefix to reasoning
               gradeResult.reasoning = `( system: no reward given - previous submission exists with score of ${
                 previousSubmission.grade_result?.score || 0
               } ) ${gradeResult.reasoning}`;
-            } else if (clampedScore < 50) {
-              reward = 0;
-              // Add prefix to reasoning
-              gradeResult.reasoning = `( system: reward returned to pool due to <50% quality score ) ${gradeResult.reasoning}`;
-            } else {
-              reward = Math.max(0, Math.min(maxReward, (maxReward * clampedScore) / 100));
+              break;
             }
+
+            // Check 4: Per-task upload limit
+            if (task.uploadLimit) {
+              const taskSubmissionsCount = await ForgeRaceSubmission.countDocuments({
+                address: submission.address,
+                'meta.quest.task_id': submission?.meta?.quest.task_id,
+                status: ForgeSubmissionProcessingStatus.COMPLETED,
+                _id: { $ne: submission._id }
+              });
+
+              if (taskSubmissionsCount >= task.uploadLimit) {
+                reward = 0;
+                gradeResult.reasoning = `( system: no reward given - per-task upload limit of ${task.uploadLimit} reached ) ${gradeResult.reasoning}`;
+                break;
+              }
+            }
+
+            // Check 5: Per-gym upload limit
+            if (pool.uploadLimit) {
+              let gymSubmissionsCount;
+              const limitType = pool.uploadLimit.limitType;
+              const limitValue = pool.uploadLimit.type;
+
+              if (limitType === UploadLimitType.perDay) {
+                // Get start of today
+                const startOfDay = new Date();
+                startOfDay.setHours(0, 0, 0, 0);
+
+                // Count submissions for today
+                gymSubmissionsCount = await ForgeRaceSubmission.countDocuments({
+                  address: submission.address,
+                  'meta.quest.pool_id': pool._id.toString(),
+                  status: ForgeSubmissionProcessingStatus.COMPLETED,
+                  createdAt: { $gte: startOfDay },
+                  _id: { $ne: submission._id }
+                });
+              } else if (limitType === UploadLimitType.total) {
+                // Count all submissions
+                gymSubmissionsCount = await ForgeRaceSubmission.countDocuments({
+                  address: submission.address,
+                  'meta.quest.pool_id': pool._id.toString(),
+                  status: ForgeSubmissionProcessingStatus.COMPLETED,
+                  _id: { $ne: submission._id }
+                });
+              }
+
+              if (typeof gymSubmissionsCount === 'number' && gymSubmissionsCount >= limitValue) {
+                reward = 0;
+                gradeResult.reasoning = `( system: no reward given - per-gym upload limit of ${limitValue} ${limitType} reached ) ${gradeResult.reasoning}`;
+                break;
+              }
+            }
+
+            // Check 6: Score threshold
+            if (clampedScore < 50) {
+              reward = 0;
+              gradeResult.reasoning = `( system: reward returned to pool due to <50% quality score ) ${gradeResult.reasoning}`;
+              break;
+            }
+
+            // All checks passed, calculate reward
+            reward = Math.max(0, Math.min(maxReward, (maxReward * clampedScore) / 100));
 
             // Create treasury transfer record if reward exists
             if (reward && reward > 0) {
