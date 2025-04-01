@@ -106,7 +106,6 @@ export interface DBForgeApp {
     prompt: string;
     uploadLimit?: number;
     rewardLimit?: number;
-    hide_adult?: boolean;
   }[];
 }
 
