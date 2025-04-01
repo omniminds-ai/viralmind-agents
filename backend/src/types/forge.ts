@@ -149,3 +149,21 @@ export interface ForgeTreasuryTransfer {
   timestamp: number;
   txHash?: string;
 }
+
+export interface UploadChunk {
+  chunkIndex: number;
+  path: string;
+  size: number;
+  checksum: string;
+}
+
+export interface UploadSession {
+  id: string;
+  address: string;
+  totalChunks: number;
+  receivedChunks: Map<number, UploadChunk>;
+  metadata: any;
+  tempDir: string;
+  createdAt: Date;
+  lastUpdated: Date;
+}

@@ -27,14 +27,15 @@
       loading = true;
       error = null;
       const response = await fetch(
-        `/api/challenges/get-challenge?name=${encodeURIComponent(name)}&initial=${initial}&price=${price}`
+        `/api/v1/challenges/get-challenge?name=${encodeURIComponent(name)}&initial=${initial}&price=${price}`
       );
 
       if (!response.ok) {
         throw new Error('Failed to load tournament');
       }
 
-      data = await response.json();
+      const result = await response.json();
+      const data = result.success ? result.data : result;
       messages = data?.chatHistory || [];
       challenge = data?.challenge;
       has_locked_server = challenge?.name === 'viral_steve';
@@ -144,8 +145,7 @@
         <!-- Stream Window -->
         <div
           bind:this={streamContainer}
-          class="relative mx-auto mb-6 aspect-video w-full max-w-[1280px] overflow-hidden rounded-2xl border border-white/10 bg-stone-900"
-        >
+          class="relative mx-auto mb-6 aspect-video w-full max-w-[1280px] overflow-hidden rounded-2xl border border-white/10 bg-stone-900">
           {#if challenge.stream_src}
             <iframe
               src={challenge.stream_src}
@@ -153,18 +153,16 @@
               class="absolute left-0 top-0 h-full w-full"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            ></iframe>
+              allowfullscreen>
+            </iframe>
           {:else if latestScreenshot}
             <img
               src={'https://viralmind.ai' + latestScreenshot.url}
               alt="Latest Tournament Screen"
-              class="absolute left-0 top-0 h-full w-full object-cover"
-            />
+              class="absolute left-0 top-0 h-full w-full object-cover" />
           {:else}
             <div
-              class="absolute left-0 top-0 flex h-full w-full items-center justify-center text-gray-500"
-            >
+              class="absolute left-0 top-0 flex h-full w-full items-center justify-center text-gray-500">
               Loading stream...
             </div>
           {/if}
@@ -175,16 +173,14 @@
           {challenge}
           prize={data.prize}
           breakAttempts={data.break_attempts}
-          startTimeLeft={!tournamentStarted ? startTimeLeft : ''}
-        />
+          startTimeLeft={!tournamentStarted ? startTimeLeft : ''} />
 
         {#if has_locked_server}
           <div class="mt-8">
             <ServerIpReveal
               {tournamentStarted}
               startTimeLeft={!tournamentStarted ? startTimeLeft : ''}
-              name={challenge.name}
-            />
+              name={challenge.name} />
           </div>
         {/if}
       </div>
@@ -202,8 +198,7 @@
       status={challenge.status}
       tournamentPDA={challenge.tournamentPDA}
       programId={challenge.idl.address}
-      challengeName={challenge._id}
-    />
+      challengeName={challenge._id} />
   {/if}
 </div>
 

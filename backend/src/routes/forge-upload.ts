@@ -1,18 +1,21 @@
 import express, { Request, Response, Router, NextFunction } from 'express';
 import multer from 'multer';
 import { createReadStream, createWriteStream } from 'fs';
-import { mkdir, unlink, copyFile, stat, writeFile, readFile, readdir } from 'fs/promises';
+import { mkdir, unlink, copyFile, stat, writeFile, readFile } from 'fs/promises';
 import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
 import { AWSS3Service } from '../services/aws/index.ts';
 import { ForgeRaceSubmission } from '../models/Models.ts';
-import { WalletConnectionModel } from '../models/WalletConnection.ts';
 import { TrainingPoolModel } from '../models/TrainingPool.ts';
 import BlockchainService from '../services/blockchain/index.ts';
-import axios from 'axios';
-import { ForgeSubmissionProcessingStatus, TrainingPoolStatus } from '../types/index.ts';
-import { addToProcessingQueue } from '../services/forge/index.ts';
+import {
+  ForgeSubmissionProcessingStatus,
+  TrainingPoolStatus,
+  UploadSession
+} from '../types/index.ts';
+import { addToProcessingQueue, cleanupSession } from '../services/forge/index.ts';
+import { requireWalletAddress } from '../middleware/auth.ts';
 
 // Initialize blockchain service
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
@@ -25,54 +28,15 @@ const upload = multer({
   }
 });
 
-// In-memory storage for upload sessions
-interface UploadChunk {
-  chunkIndex: number;
-  path: string;
-  size: number;
-  checksum: string;
-}
-
-interface UploadSession {
-  id: string;
-  address: string;
-  totalChunks: number;
-  receivedChunks: Map<number, UploadChunk>;
-  metadata: any;
-  tempDir: string;
-  createdAt: Date;
-  lastUpdated: Date;
-}
-
 // Store active upload sessions
 const activeSessions = new Map<string, UploadSession>();
 
 // Cleanup interval (check for expired sessions every 15 minutes)
-const CLEANUP_INTERVAL = 15 * 60 * 1000;
 const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-
-// Middleware to resolve connect token to wallet address
-async function requireWalletAddress(req: Request, res: Response, next: NextFunction) {
-  const token = req.headers['x-connect-token'];
-  if (!token || typeof token !== 'string') {
-    res.status(401).json({ error: 'Connect token is required' });
-    return;
-  }
-
-  const connection = await WalletConnectionModel.findOne({ token });
-  if (!connection) {
-    res.status(401).json({ error: 'Invalid connect token' });
-    return;
-  }
-
-  // Add the wallet address to the request object
-  // @ts-ignore - Add walletAddress to the request object
-  req.walletAddress = connection.address;
-  next();
-}
+// Helper function to clean up session files
 
 // Middleware to validate upload session
-function requireUploadSession(req: Request, res: Response, next: NextFunction) {
+export function requireUploadSession(req: Request, res: Response, next: NextFunction) {
   const uploadId = req.params.uploadId || req.body.uploadId;
 
   if (!uploadId) {
@@ -89,54 +53,6 @@ function requireUploadSession(req: Request, res: Response, next: NextFunction) {
   // @ts-ignore - Add session to the request object
   req.uploadSession = session;
   next();
-}
-
-// Start cleanup interval
-setInterval(async () => {
-  const now = new Date();
-  const expiredSessions = [];
-
-  // Find expired sessions
-  for (const [id, session] of activeSessions.entries()) {
-    if (now.getTime() - session.lastUpdated.getTime() > SESSION_EXPIRY) {
-      expiredSessions.push(id);
-    }
-  }
-
-  // Clean up expired sessions
-  for (const id of expiredSessions) {
-    const session = activeSessions.get(id);
-    if (session) {
-      console.log(`Cleaning up expired upload session ${id}`);
-      await cleanupSession(session);
-      activeSessions.delete(id);
-    }
-  }
-}, CLEANUP_INTERVAL);
-
-// Helper function to clean up session files
-async function cleanupSession(session: UploadSession): Promise<void> {
-  try {
-    // Delete all chunk files
-    for (const chunk of session.receivedChunks.values()) {
-      await unlink(chunk.path).catch(() => {});
-    }
-
-    // Delete temp directory if it exists
-    if (session.tempDir) {
-      try {
-        const files = await readdir(session.tempDir);
-        for (const file of files) {
-          await unlink(path.join(session.tempDir, file)).catch(() => {});
-        }
-        await unlink(session.tempDir).catch(() => {});
-      } catch (error) {
-        // Ignore errors if directory doesn't exist
-      }
-    }
-  } catch (error) {
-    console.error(`Error cleaning up session ${session.id}:`, error);
-  }
 }
 
 const router: Router = express.Router();

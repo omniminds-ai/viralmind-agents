@@ -71,8 +71,9 @@
 
   async function fetchRaces() {
     try {
-      const response = await fetch('/api/races');
-      const races: Race[] = await response.json();
+      const response = await fetch('/api/v1/races');
+      const result = await response.json();
+      const races: Race[] = result.success ? result.data : result;
 
       // Filter out staked races and group by category
       const freeRaces = races.filter((race) => !race.stakeRequired);

@@ -52,7 +52,7 @@
       const signatureBase64 = Buffer.from(signature).toString('base64');
 
       // Send address, signature and timestamp to backend
-      await fetch('/api/forge/connect', {
+      await fetch('/api/v1/wallet/connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -67,7 +67,7 @@
 
       // Close window after successful connection
       window.location.href = 'viralmind://open';
-      window.close();
+      // window.close();
     } catch (err: unknown) {
       console.error(err);
       const message = err instanceof Error ? err.message : 'Unknown error occurred';

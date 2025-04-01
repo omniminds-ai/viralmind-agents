@@ -125,7 +125,7 @@
         tokenDetails.address = customTokenAddress;
       }
 
-      const createResponse = await fetch('/api/forge/create', {
+      const createResponse = await fetch('/api/v1/forge/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -142,7 +142,10 @@
         throw new Error('Failed to create gym on server');
       }
 
-      const gymData = await createResponse.json();
+      const resp = await createResponse.json();
+
+      const gymData = resp.data;
+
       poolId = gymData._id;
       const depositAddress = gymData.depositAddress;
 
@@ -181,7 +184,7 @@
       // Step 5: Refresh pool to update balance
       currentStep = 'notifying';
 
-      const refreshResponse = await fetch('/api/forge/refresh', {
+      const refreshResponse = await fetch('/api/v1/forge/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -1,4 +1,4 @@
-import express, { Request, Response, Router, NextFunction } from 'express';
+import express, { Request, Response, Router } from 'express';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import OpenAI from 'openai';
 import { TrainingPoolModel } from '../models/TrainingPool.js';
@@ -38,7 +38,7 @@ import {
   TASK_SHOT_EXAMPLES
 } from '../services/forge/index.ts';
 import { Webhook } from '../services/webhook/index.ts';
-import { requireWalletAddress } from '../services/auth/index.ts';
+import { requireWalletAddress } from '../middleware/auth.ts';
 
 // Set up interval to refresh pool balances
 const openai = new OpenAI({

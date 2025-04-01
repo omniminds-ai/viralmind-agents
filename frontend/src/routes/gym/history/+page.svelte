@@ -35,14 +35,15 @@
     }
 
     try {
-      const response = await fetch('/api/races/history', {
+      const response = await fetch('/api/v1/races/history', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'X-Wallet-Address': $walletStore.publicKey.toString()
         }
       });
-      const data = await response.json();
+      const result = await response.json();
+      const data = result.success ? result.data : result;
 
       // Transform API data to match the Race interface
       races = data.map((session: any, index: number) => ({
@@ -87,7 +88,7 @@
     if (type === 'raw') {
       try {
         const selectedIds = races.filter((r) => r.selected).map((r) => r.id);
-        const response = await fetch('/api/races/export', {
+        const response = await fetch('/api/v1/races/export', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -97,7 +98,9 @@
 
         if (!response.ok) throw new Error('Export failed');
 
-        const data = await response.json();
+        const result = await response.json();
+
+        const data = result.success ? result.data : result;
 
         // Create and download the JSON file
         const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -206,13 +209,11 @@
 
       <!-- Action Menu Bar -->
       <div
-        class="mb-8 flex items-center justify-between rounded-xl bg-stone-900/25 px-4 py-3 backdrop-blur-sm"
-      >
+        class="mb-8 flex items-center justify-between rounded-xl bg-stone-900/25 px-4 py-3 backdrop-blur-sm">
         <button
           on:click={() => (showExportDialog = true)}
           class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50 disabled:opacity-50"
-          disabled={selectedCount === 0}
-        >
+          disabled={selectedCount === 0}>
           <Download class="h-4 w-4" />
           Export Dataset
         </button>
@@ -220,8 +221,7 @@
         <div class="flex items-center gap-2">
           <button
             on:click={() => (showTrainDialog = true)}
-            class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50"
-          >
+            class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50">
             <BrainCircuit class="h-4 w-4" />
             Train
             <span class="rounded bg-yellow-500 px-1.5 py-0.5 text-xs text-black">Soon</span>
@@ -229,8 +229,7 @@
 
           <button
             on:click={handleTrade}
-            class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50"
-          >
+            class="flex items-center gap-2 rounded-lg bg-stone-800/50 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-stone-700/50">
             <Coins class="h-4 w-4" />
             Trade
             <span class="rounded bg-yellow-500 px-1.5 py-0.5 text-xs text-black">Soon</span>
@@ -260,20 +259,18 @@
     class="absolute inset-0 z-[2] transition-transform duration-1000 ease-out"
     style="background: radial-gradient(600px circle at {mousePosition.x}% {mousePosition.y}%, rgb(147, 51, 234, 0.1), transparent 100%); 
             transform: translate({(mousePosition.x - 50) * -0.05}px, {(mousePosition.y - 50) *
-      -0.05}px)"
-  ></div>
+      -0.05}px)">
+  </div>
   <div class="absolute inset-0 z-[3] bg-gradient-to-b from-black via-transparent to-black"></div>
 </div>
 
 <TrainDialog
   bind:show={showTrainDialog}
   {selectedCount}
-  onClose={() => (showTrainDialog = false)}
-/>
+  onClose={() => (showTrainDialog = false)} />
 
 <ExportDialog
   bind:show={showExportDialog}
   {selectedCount}
   onClose={() => (showExportDialog = false)}
-  onExport={handleExport}
-/>
+  onExport={handleExport} />

@@ -14,7 +14,7 @@
 
     loading = true;
     try {
-      const response = await fetch('/api/races/transfer-test', {
+      const response = await fetch('/api/v1/races/transfer-test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,7 +25,8 @@
         })
       });
 
-      const data = await response.json();
+      const result = await response.json();
+      const data = result.success ? result.data : result;
       
       if (data.signature) {
         txInfo = `Transfer successful!\nSignature: ${data.signature}`;

@@ -74,7 +74,7 @@
     // setup chat message listener
     if (status === 'active') {
       const stream = new EventSource(
-        'https://viralmind.ai/api/streams/challenge-chat?name=viral_steve'
+        'https://viralmind.ai/api/v1/streams/challenge-chat?name=viral_steve'
       );
       stream.onopen = () => {
         console.log('Chat Stream Opened');

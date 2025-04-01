@@ -55,6 +55,8 @@ app.use(function (req, res, next) {
 // This is set before http headers b/c it breaks the stream
 import { streamsRoute } from './routes/streams.ts';
 app.use('/api/streams', streamsRoute);
+import { streamsApi } from './api/streams.ts';
+app.use('/api/v1/streams', streamsApi);
 
 app.disable('x-powered-by');
 app.set('trust proxy', true);
@@ -63,7 +65,7 @@ app.set('trust proxy', true);
 app.use('/api/screenshots', express.static(path.join(__dirname, 'public', 'screenshots')));
 app.use('/api/recordings', express.static(path.join(__dirname, 'public', 'recordings')));
 
-// UI:
+// legacy api endpoints
 import { challengesRoute } from './routes/challenges.ts';
 import { conversationRoute } from './routes/conversation.ts';
 import { settingsRoute } from './routes/settings.ts';
@@ -82,7 +84,31 @@ app.use('/api/gym', gymRoute);
 app.use('/api/forge', forgeRoute);
 app.use('/api/forge/upload', forgeUploadRoute);
 
+// api v1 endpoints
+import { challengesApi } from './api/challenges.ts';
+import { conversationApi } from './api/conversation.ts';
+import { settingsApi } from './api/settings.ts';
+import { minecraftApi } from './api/minecraft.ts';
+import { racesApi } from './api/races.ts';
+import { gymApi } from './api/gym.ts';
+import { forgeApi } from './api/forge/index.ts';
+import { forgeUploadApi } from './api/forge-upload.ts';
+import { walletApi } from './api/wallet.ts';
+import { errorHandler } from './middleware/errorHandler.ts';
+
+app.use('/api/v1/challenges', challengesApi);
+app.use('/api/v1/conversation', conversationApi);
+app.use('/api/v1/settings', settingsApi);
+app.use('/api/v1/minecraft', minecraftApi);
+app.use('/api/v1/races', racesApi);
+app.use('/api/v1/gym', gymApi);
+app.use('/api/v1/forge', forgeApi);
+app.use('/api/v1/forge/upload', forgeUploadApi);
+app.use('/api/v1/wallet', walletApi);
+
+// error handling
 catchErrors();
+app.use(errorHandler);
 
 async function connectToDatabase() {
   // Production configuration
