@@ -12,7 +12,7 @@ const ForgeAppSchema = new mongoose.Schema<DBForgeApp>(
       {
         prompt: { type: String, required: true },
         uploadLimit: { type: Number, required: false },
-        rewardLimit: { type: Number, required: false }
+        rewardLimit: { type: Number, required: false },
       }
     ]
   },
