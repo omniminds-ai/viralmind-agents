@@ -51,7 +51,7 @@ RUN apt-get update && \
   apt-get autoremove -y && \
   rm -rf /var/lib/apt/lists/*
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 

@@ -26,6 +26,7 @@ await esbuild.build({
     'buffer',
 
     // External packages that should not be bundled
+    '@toondepauw/node-zstd',
     '@anthropic-ai/sdk',
     '@aws-sdk/client-s3',
     '@coral-xyz/anchor',

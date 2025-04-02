@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import DatabaseService from '../services/db/index.ts';
-import zstd from '@mongodb-js/zstd';
+import { Encoder } from '@toondepauw/node-zstd';
 import { AWSS3Service } from '../services/aws/index.ts';
 dotenv.config();
 
 const router = express.Router();
+const encoder = new Encoder(10);
 export const clients = new Set<Response>();
 
 // Modify the event handler to properly format SSE messages
@@ -133,10 +134,7 @@ const processAndCleanup = async (sid: string) => {
           tree: data.data
         };
       });
-      const compressedResults = await zstd.compress(
-        Buffer.from(JSON.stringify(processedResults)),
-        10
-      );
+      const compressedResults = await encoder.encode(Buffer.from(JSON.stringify(processedResults)));
       // handle low data culling
       if (connection.data.length > 1) {
         const s3Service = new AWSS3Service(process.env.AWS_ACCESS_KEY, process.env.AWS_SECRET_KEY);
