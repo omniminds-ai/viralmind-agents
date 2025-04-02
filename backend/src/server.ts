@@ -108,6 +108,7 @@ app.use('/api/v1/wallet', walletApi);
 
 // error handling
 catchErrors();
+
 app.use(errorHandler);
 
 async function connectToDatabase() {

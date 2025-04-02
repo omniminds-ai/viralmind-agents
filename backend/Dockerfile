@@ -53,6 +53,7 @@ RUN apt-get update && \
 
 RUN npm ci
 RUN npm install --cpu=x64 --os=linux --libc=glibc sharp
+RUN npm install --global tsx
 
 COPY . .
 
