@@ -1081,8 +1081,21 @@ router.get('/balance/:address', async (req: Request, res: Response) => {
 // Get all tasks with filtering options
 // Adult content keywords to check against
 const ADULT_KEYWORDS = [
-  'adult', 'xvideo', 'nsfw', 'xxx', 'porn', 'fuck', 'sex ', 'nude', 'naked', 'explicit',
-  'erotic', 'mature', '18+', 'adult content', 'adult material'
+  'adult',
+  'xvideo',
+  'nsfw',
+  'xxx',
+  'porn',
+  'fuck',
+  'sex ',
+  'nude',
+  'naked',
+  'explicit',
+  'erotic',
+  'mature',
+  '18+',
+  'adult content',
+  'adult material'
 ];
 
 router.get('/tasks', async (req: Request, res: Response) => {
@@ -1092,7 +1105,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
     // Function to check if text contains adult content
     const containsAdultContent = (text: string): boolean => {
       const lowerText = text.toLowerCase();
-      return ADULT_KEYWORDS.some(keyword => lowerText.includes(keyword.toLowerCase()));
+      return ADULT_KEYWORDS.some((keyword) => lowerText.includes(keyword.toLowerCase()));
     };
 
     // Build initial query for apps
@@ -1102,7 +1115,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
     if (hide_adult === 'true') {
       appQuery.$and = [
         { name: { $not: { $regex: ADULT_KEYWORDS.join('|'), $options: 'i' } } },
-        { 
+        {
           $or: [
             { description: { $exists: false } },
             { description: { $not: { $regex: ADULT_KEYWORDS.join('|'), $options: 'i' } } }
@@ -1431,6 +1444,8 @@ router.get('/apps', async (req: Request, res: Response) => {
         // Process tasks and add limit information
         const tasksWithLimitInfo = await Promise.all(
           app.tasks.map(async (task) => {
+            //@ts-ignore - not sure how to type the task correectly, but its  a mongoose object until we call this
+            task = task.toObject();
             let taskLimitReached = false;
             let taskSubmissions = 0;
             let limitReason: string | null = null;
