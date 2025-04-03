@@ -133,5 +133,9 @@ export const getTasksSchema: ValidationSchema = {
   query: {
     required: false,
     rules: [ValidationRules.isString()]
+  },
+  hide_adult: {
+    required: false,
+    rules: [ValidationRules.isString()]
   }
 };

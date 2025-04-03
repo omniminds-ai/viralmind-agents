@@ -27,6 +27,10 @@ class BlockchainService {
     this.programId = programId;
   }
 
+  static get MIN_SOL_BALANCE(): number {
+    return 0.017;
+  }
+
   static async getSolPriceInUSDT() {
     let defaultSolPrice = 230;
 
