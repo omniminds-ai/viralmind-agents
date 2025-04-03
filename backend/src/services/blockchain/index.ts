@@ -210,6 +210,10 @@ class BlockchainService {
         usedFeePercentage: currentFeePercentage * 100
       };
     } catch (error: any) {
+      if (error.message.includes('with insufficient funds for rent')) {
+        // account is out of SOL for gas
+        throw new Error('Pool SOL balance insufficient for gas.');
+      }
       console.error('\x1b[31m', 'Transfer failed:', {
         message: error.message,
         logs: error?.logs

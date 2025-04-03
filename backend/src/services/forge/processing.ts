@@ -6,7 +6,8 @@ import {
   ForgeSubmissionProcessingStatus,
   WebhookColor,
   EmbedField,
-  UploadLimitType
+  UploadLimitType,
+  TrainingPoolStatus
 } from '../../types/index.ts';
 import { ForgeRaceSubmission, TrainingPoolModel, ForgeAppModel } from '../../models/Models.ts';
 import { promises as fs } from 'fs';
@@ -196,9 +197,9 @@ export async function processNextInQueue() {
               'tasks._id': submission?.meta?.quest.task_id
             });
 
-            const task = app ? app.tasks.find(
-              (t) => t._id.toString() === submission?.meta?.quest.task_id
-            ) : null;
+            const task = app
+              ? app.tasks.find((t) => t._id.toString() === submission?.meta?.quest.task_id)
+              : null;
 
             if (!app || !task) {
               reward = 0;
@@ -326,15 +327,24 @@ export async function processNextInQueue() {
                 console.log('Initial treasury balance:', treasuryBalance);
 
                 // Attempt blockchain transfer
-                const result = await blockchainService.transferToken(
-                  pool.token.address,
-                  reward,
-                  fromWallet,
-                  submission.address
-                );
+                try {
+                  const result = await blockchainService.transferToken(
+                    pool.token.address,
+                    reward,
+                    fromWallet,
+                    submission.address
+                  );
 
-                if (result && treasuryTransfer) {
-                  treasuryTransfer.txHash = result.signature;
+                  if (result && treasuryTransfer) {
+                    treasuryTransfer.txHash = result.signature;
+                  }
+                } catch (e) {
+                  if ((e as Error).message === 'Pool SOL balance insufficient for gas.') {
+                    // update pool status
+                    pool.status === TrainingPoolStatus.noGas;
+                    await pool.save();
+                  }
+                  throw e;
                 }
 
                 // Get final treasury balance
