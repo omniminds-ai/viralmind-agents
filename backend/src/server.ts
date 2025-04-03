@@ -107,10 +107,10 @@ app.use('/api/v1/forge/upload', forgeUploadApi);
 app.use('/api/v1/wallet', walletApi);
 
 // error handling
-catchErrors();
 
 app.use(errorHandler);
 
+catchErrors();
 async function connectToDatabase() {
   // Production configuration
   try {
