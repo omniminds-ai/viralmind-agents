@@ -63,7 +63,8 @@ export async function processNextInQueue() {
     }
 
     // Update status to processing
-    submission.status = ForgeSubmissionProcessingStatus.PROCESSING;
+    submission.status =
+      ForgeSubmissionProcessingStatus.PROCESSING as ForgeSubmissionProcessingStatus;
     await submission.save();
 
     await notifyForgeWebhook('processing', {
@@ -377,6 +378,12 @@ export async function processNextInQueue() {
                 });
               } catch (error) {
                 console.error('Treasury transfer failed:', error);
+                // Update submission with error
+                await ForgeRaceSubmission.findByIdAndUpdate(submissionId, {
+                  status: ForgeSubmissionProcessingStatus.FAILED,
+                  error:
+                    'Gym payment failed. This gym has been paused until transaction issues are resolved.'
+                });
                 // Continue processing but log the error
                 await notifyForgeWebhook('transfer-error', {
                   title: submission?.meta?.quest.title,
