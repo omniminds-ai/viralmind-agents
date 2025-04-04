@@ -45,20 +45,24 @@ const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 // Middleware to validate upload session
 export function requireUploadSession(req: Request, res: Response, next: NextFunction) {
-  const uploadId = req.params.uploadId || req.body.uploadId;
+  try {
+    const uploadId = req.params.uploadId || req.body.uploadId;
 
-  if (!uploadId) {
-    throw ApiError.badRequest('Upload ID is required');
+    if (!uploadId) {
+      throw ApiError.badRequest('Upload ID is required');
+    }
+
+    const session = activeSessions.get(uploadId);
+    if (!session) {
+      throw ApiError.notFound('Upload session not found or expired');
+    }
+
+    // @ts-ignore - Add session to the request object
+    req.uploadSession = session;
+    next();
+  } catch (e) {
+    next(e);
   }
-
-  const session = activeSessions.get(uploadId);
-  if (!session) {
-    throw ApiError.notFound('Upload session not found or expired');
-  }
-
-  // @ts-ignore - Add session to the request object
-  req.uploadSession = session;
-  next();
 }
 
 const router: Router = express.Router();

@@ -57,7 +57,7 @@ router.post(
 
     // Get SOL balance to check for gas
     const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
-    const noGas = solBalance === 0;
+    const noGas = solBalance <= BlockchainService.MIN_SOL_BALANCE;
 
     // Update pool funds and status
     pool.funds = balance;

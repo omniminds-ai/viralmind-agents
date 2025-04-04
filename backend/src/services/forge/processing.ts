@@ -6,7 +6,8 @@ import {
   ForgeSubmissionProcessingStatus,
   WebhookColor,
   EmbedField,
-  UploadLimitType
+  UploadLimitType,
+  TrainingPoolStatus
 } from '../../types/index.ts';
 import { ForgeRaceSubmission, TrainingPoolModel, ForgeAppModel } from '../../models/Models.ts';
 import { promises as fs } from 'fs';
@@ -62,7 +63,8 @@ export async function processNextInQueue() {
     }
 
     // Update status to processing
-    submission.status = ForgeSubmissionProcessingStatus.PROCESSING;
+    submission.status =
+      ForgeSubmissionProcessingStatus.PROCESSING as ForgeSubmissionProcessingStatus;
     await submission.save();
 
     await notifyForgeWebhook('processing', {
@@ -196,9 +198,9 @@ export async function processNextInQueue() {
               'tasks._id': submission?.meta?.quest.task_id
             });
 
-            const task = app ? app.tasks.find(
-              (t) => t._id.toString() === submission?.meta?.quest.task_id
-            ) : null;
+            const task = app
+              ? app.tasks.find((t) => t._id.toString() === submission?.meta?.quest.task_id)
+              : null;
 
             if (!app || !task) {
               reward = 0;
@@ -326,15 +328,24 @@ export async function processNextInQueue() {
                 console.log('Initial treasury balance:', treasuryBalance);
 
                 // Attempt blockchain transfer
-                const result = await blockchainService.transferToken(
-                  pool.token.address,
-                  reward,
-                  fromWallet,
-                  submission.address
-                );
+                try {
+                  const result = await blockchainService.transferToken(
+                    pool.token.address,
+                    reward,
+                    fromWallet,
+                    submission.address
+                  );
 
-                if (result && treasuryTransfer) {
-                  treasuryTransfer.txHash = result.signature;
+                  if (result && treasuryTransfer) {
+                    treasuryTransfer.txHash = result.signature;
+                  }
+                } catch (e) {
+                  if ((e as Error).message === 'Pool SOL balance insufficient for gas.') {
+                    // update pool status
+                    pool.status === TrainingPoolStatus.noGas;
+                    await pool.save();
+                  }
+                  throw e;
                 }
 
                 // Get final treasury balance
@@ -367,6 +378,12 @@ export async function processNextInQueue() {
                 });
               } catch (error) {
                 console.error('Treasury transfer failed:', error);
+                // Update submission with error
+                await ForgeRaceSubmission.findByIdAndUpdate(submissionId, {
+                  status: ForgeSubmissionProcessingStatus.FAILED,
+                  error:
+                    'Gym payment failed. This gym has been paused until transaction issues are resolved.'
+                });
                 // Continue processing but log the error
                 await notifyForgeWebhook('transfer-error', {
                   title: submission?.meta?.quest.title,

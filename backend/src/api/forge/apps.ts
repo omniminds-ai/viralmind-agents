@@ -80,15 +80,53 @@ router.post(
   })
 );
 
+// Adult content keywords to check against
+const ADULT_KEYWORDS = [
+  'adult',
+  'xvideo',
+  'nsfw',
+  'xxx',
+  'porn',
+  'fuck',
+  'sex ',
+  'nude',
+  'naked',
+  'explicit',
+  'erotic',
+  'mature',
+  '18+',
+  'adult content',
+  'adult material'
+];
+
 // Get all tasks with filtering options
 router.get(
   '/tasks',
   validateQuery(getTasksSchema),
   errorHandlerAsync(async (req: Request, res: Response) => {
-    const { pool_id, min_reward, max_reward, categories, query } = req.query;
+    const { pool_id, min_reward, max_reward, categories, query, hide_adult } = req.query;
+
+    // Function to check if text contains adult content
+    const containsAdultContent = (text: string): boolean => {
+      const lowerText = text.toLowerCase();
+      return ADULT_KEYWORDS.some((keyword) => lowerText.includes(keyword.toLowerCase()));
+    };
 
     // Build initial query for apps
     let appQuery: any = {};
+
+    // If hide_adult is true, filter out apps with adult content in name or description
+    if (hide_adult === 'true') {
+      appQuery.$and = [
+        { name: { $not: { $regex: ADULT_KEYWORDS.join('|'), $options: 'i' } } },
+        {
+          $or: [
+            { description: { $exists: false } },
+            { description: { $not: { $regex: ADULT_KEYWORDS.join('|'), $options: 'i' } } }
+          ]
+        }
+      ];
+    }
 
     // Filter by pool_id if specified
     if (pool_id) {
@@ -171,6 +209,10 @@ router.get(
 
       // Process each task in the app
       for (const task of app.tasks) {
+        // Skip tasks marked as adult content or containing adult keywords when hide_adult is true
+        if (hide_adult === 'true' && containsAdultContent(task.prompt)) {
+          continue;
+        }
         // Determine the effective reward for this task
         // First check if task has a specific rewardLimit, otherwise use pool's pricePerDemo
         const effectiveReward =

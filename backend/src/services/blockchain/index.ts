@@ -27,6 +27,10 @@ class BlockchainService {
     this.programId = programId;
   }
 
+  static get MIN_SOL_BALANCE(): number {
+    return 0.017;
+  }
+
   static async getSolPriceInUSDT() {
     let defaultSolPrice = 230;
 
@@ -206,6 +210,10 @@ class BlockchainService {
         usedFeePercentage: currentFeePercentage * 100
       };
     } catch (error: any) {
+      if (error.message.includes('with insufficient funds for rent')) {
+        // account is out of SOL for gas
+        throw new Error('Pool SOL balance insufficient for gas.');
+      }
       console.error('\x1b[31m', 'Transfer failed:', {
         message: error.message,
         logs: error?.logs
