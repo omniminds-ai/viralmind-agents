@@ -14,7 +14,11 @@ import {
   TrainingPoolStatus,
   UploadSession
 } from '../types/index.ts';
-import { addToProcessingQueue, cleanupSession } from '../services/forge/index.ts';
+import {
+  addToProcessingQueue,
+  cleanupSession,
+  startUploadInterval
+} from '../services/forge/index.ts';
 import { validateBody, validateParams } from '../middleware/validator.ts';
 import {
   initUploadSchema,
@@ -39,9 +43,9 @@ const upload = multer({
 // Store active upload sessions
 const activeSessions = new Map<string, UploadSession>();
 
-// Cleanup interval (check for expired sessions every 15 minutes)
 const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
-// Helper function to clean up session files
+
+startUploadInterval(activeSessions, SESSION_EXPIRY);
 
 // Middleware to validate upload session
 export function requireUploadSession(req: Request, res: Response, next: NextFunction) {

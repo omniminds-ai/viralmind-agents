@@ -95,6 +95,7 @@ import { forgeApi } from './api/forge/index.ts';
 import { forgeUploadApi } from './api/forge-upload.ts';
 import { walletApi } from './api/wallet.ts';
 import { errorHandler } from './middleware/errorHandler.ts';
+import { startRefreshInterval } from './services/forge/pools.ts';
 
 app.use('/api/v1/challenges', challengesApi);
 app.use('/api/v1/conversation', conversationApi);
@@ -146,7 +147,9 @@ async function connectToDatabase() {
   }
 }
 
-httpServer.listen(port, () => {
+httpServer.listen(port, async () => {
   console.log(`Viralmind backend listening on port ${port}`);
-  connectToDatabase().catch(console.dir);
+  await connectToDatabase().catch(console.dir);
+  // refresh pool status
+  startRefreshInterval();
 });
