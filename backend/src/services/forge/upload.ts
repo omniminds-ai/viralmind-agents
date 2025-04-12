@@ -11,6 +11,7 @@ export function stopUploadInterval() {
 
 export function startUploadInterval(activeSessions: Map<string, UploadSession>, expiry: number) {
   uploadInterval = setInterval(async () => {
+    console.log('[Upload Interval] Cleaning up expired sessions.');
     const now = new Date();
     const expiredSessions = [];
 
