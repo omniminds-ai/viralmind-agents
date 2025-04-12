@@ -47,6 +47,8 @@ export function startRefreshInterval() {
 
               // Get SOL balance to check for gas
               const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+              console.log(`[Forge Pools]: Pool SOL: ${solBalance}`);
+              console.log(`[Forge Pools]: Pool VIRAL: ${balance}`);
               const noGas = solBalance <= BlockchainService.MIN_SOL_BALANCE;
 
               // Update pool funds
@@ -59,12 +61,14 @@ export function startRefreshInterval() {
               // Update status based on token and SOL balances
               if (process.env.NODE_ENV != 'development') {
                 if (noGas) {
+                  console.log(`[Forge Pools]: Pool has no gas.`);
                   if (pool.status !== TrainingPoolStatus.noGas) {
                     pool.status = TrainingPoolStatus.noGas;
                     statusChanged = true;
                   }
                 } else if (balance === 0 || balance < pool.pricePerDemo) {
                   if (pool.status !== TrainingPoolStatus.noFunds) {
+                    console.log(`[Forge Pools]: Pool has no funds.`);
                     pool.status = TrainingPoolStatus.noFunds;
                     statusChanged = true;
                   }

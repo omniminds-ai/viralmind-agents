@@ -33,7 +33,6 @@ import {
 import {
   APP_TASK_GENERATION_PROMPT,
   generateAppsForPool,
-  startRefreshInterval,
   SYSTEM_PROMPT,
   TASK_SHOT_EXAMPLES
 } from '../services/forge/index.ts';
@@ -54,9 +53,6 @@ const upload = multer({
     fileSize: 15 * 1024 * 1024 * 1024 // 15GB limit for /upload-race endpoint
   }
 });
-
-// start the refresh interval for pool data
-startRefreshInterval();
 
 // App task generation prompt template
 
