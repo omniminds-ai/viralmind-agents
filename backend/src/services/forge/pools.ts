@@ -27,10 +27,8 @@ export function startRefreshInterval() {
   refreshInterval = setInterval(async () => {
     console.log('[Forge Pools] Refreshing all pool statuses');
     try {
-      // Get all live and paused pools
-      const pools = await TrainingPoolModel.find({
-        status: { $in: [TrainingPoolStatus.live, TrainingPoolStatus.paused] }
-      });
+      // Get all pools
+      const pools = await TrainingPoolModel.find();
 
       // Process pools in batches to avoid too many concurrent blockchain calls
       const batchSize = 5;
@@ -39,6 +37,7 @@ export function startRefreshInterval() {
         await Promise.all(
           batch.map(async (pool) => {
             try {
+              console.log(`[Forge Pools]: Checking pool ${pool.id}`);
               // Get current token balance from blockchain
               const balance = await blockchainService.getTokenBalance(
                 pool.token.address,
