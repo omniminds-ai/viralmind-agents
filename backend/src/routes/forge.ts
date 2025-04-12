@@ -40,7 +40,6 @@ import {
 import { Webhook } from '../services/webhook/index.ts';
 import { requireWalletAddress } from '../middleware/auth.ts';
 
-// Set up interval to refresh pool balances
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });

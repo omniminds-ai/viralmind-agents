@@ -31,7 +31,6 @@ const upload = multer({
 // Store active upload sessions
 const activeSessions = new Map<string, UploadSession>();
 
-// Cleanup interval (check for expired sessions every 15 minutes)
 const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 // Helper function to clean up session files
 
