@@ -46,8 +46,6 @@ export function startRefreshInterval() {
 
               // Get SOL balance to check for gas
               const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
-              console.log(`[Forge Pools]: Pool SOL: ${solBalance}`);
-              console.log(`[Forge Pools]: Pool VIRAL: ${balance}`);
               const noGas = solBalance <= BlockchainService.MIN_SOL_BALANCE;
 
               // Update pool funds
