@@ -14,7 +14,12 @@ let transporter = nodemailer.createTransport({
 
 export const sendEmail = async (options: SendMailOptions) => {
   // defualt ot noreply@viralmind.ai
-  if (!options.from) options.from = 'noreply@viralmind.ai';
+  if (!options.from) {
+    options.from = {
+      name: 'Viralmind',
+      address: 'noreply@viralmind.ai'
+    };
+  }
   const emailRes = await transporter.sendMail(options).catch((e) => {
     console.log(e);
     throw Error('There was an error sending the email.');
