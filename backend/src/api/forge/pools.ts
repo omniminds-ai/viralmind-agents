@@ -10,6 +10,7 @@ import {
   createPoolSchema,
   refreshPoolSchema,
   rewardQuerySchema,
+  updatePoolEmail,
   updatePoolSchema
 } from '../schemas/forge.ts';
 import {
@@ -21,6 +22,9 @@ import {
 import { Keypair } from '@solana/web3.js';
 import BlockchainService from '../../services/blockchain/index.ts';
 import { Webhook } from '../../services/webhook/index.ts';
+import awsSES from '@aws-sdk/client-ses';
+import nodemailer from 'nodemailer';
+import { APIUserAbortError } from 'openai';
 
 // set up the discord webhook
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
@@ -369,6 +373,53 @@ router.get(
         pricePerDemo: pool.pricePerDemo
       })
     );
+  })
+);
+
+router.put(
+  '/email',
+  requireWalletAddress,
+  validateBody(updatePoolEmail),
+  errorHandlerAsync(async (req: Request, res: Response) => {
+    const { id, email } = req.body;
+    const pool = await TrainingPoolModel.findById(id);
+    if (!pool) {
+      throw ApiError.notFound('Pool not found');
+    }
+    // @ts-ignore - Get walletAddress from the request object
+    if (pool.ownerAddress !== req.walletAddress) {
+      throw ApiError.forbidden('Not authorized to edit this pool.');
+    }
+    pool.ownerEmail = email;
+    await pool.save();
+    //todo: send email confirming
+    const ses = new awsSES.SES({
+      region: 'us-east-2',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY,
+        secretAccessKey: process.env.AWS_SECRET_KEY
+      }
+    });
+    let transporter = nodemailer.createTransport({
+      SES: { ses, aws: awsSES }
+    });
+    const emailRes = await transporter
+      .sendMail({
+        from: 'noreply@viralmind.ai',
+        to: email,
+        subject: 'Forge Notifications Active',
+        text: 'Thank you for enabling Viralmind Forge notifications.\nThe next time your gym runs out of $VIRAL or gas you will get an email in this inbox.\n\n - The Viralmind Team'
+      })
+      .catch((e) => {
+        console.log(e);
+        throw ApiError.badRequest('There was an error verifying your email.');
+      });
+
+    if (emailRes.rejected) {
+      console.log(emailRes);
+      throw ApiError.badRequest('There was an error verifying your email.');
+    }
+    res.status(200).end();
   })
 );
 
