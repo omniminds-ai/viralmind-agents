@@ -1,7 +1,7 @@
 const router: Router = express.Router();
 import express, { Request, Response, Router } from 'express';
 import { ApiError, successResponse } from '../../middleware/types/errors.ts';
-import { generateAppsForPool } from '../../services/forge/index.ts';
+import { generateAppsForPool, updatePoolStatus } from '../../services/forge/index.ts';
 import { ForgeAppModel, ForgeRaceSubmission, TrainingPoolModel } from '../../models/Models.ts';
 import { requireWalletAddress } from '../../middleware/auth.ts';
 import { errorHandlerAsync } from '../../middleware/errorHandler.ts';
@@ -51,36 +51,7 @@ router.post(
       throw ApiError.forbidden('Not authorized to refresh this pool');
     }
 
-    // Get current token balance from blockchain
-    const balance = await blockchainService.getTokenBalance(
-      pool.token.address,
-      pool.depositAddress
-    );
-
-    // Get SOL balance to check for gas
-    const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
-    const noGas = solBalance <= BlockchainService.MIN_SOL_BALANCE;
-
-    // Update pool funds and status
-    pool.funds = balance;
-
-    // Update status based on token and SOL balances
-    if (process.env.NODE_ENV != 'development') {
-      if (noGas) {
-        pool.status = TrainingPoolStatus.noGas;
-      } else if (balance === 0) {
-        pool.status = TrainingPoolStatus.noFunds;
-      } else if (balance < pool.pricePerDemo) {
-        pool.status = TrainingPoolStatus.noFunds;
-      } else if (
-        pool.status === TrainingPoolStatus.noFunds ||
-        pool.status === TrainingPoolStatus.noGas
-      ) {
-        pool.status = TrainingPoolStatus.paused;
-      }
-    }
-
-    await pool.save();
+    const { solBalance } = await updatePoolStatus(pool);
 
     // Get demonstration count
     const demoCount = await ForgeRaceSubmission.countDocuments({
@@ -118,25 +89,7 @@ router.get(
           'meta.quest.pool_id': pool._id.toString()
         });
 
-        // Update status to 'no-funds' if balance is 0 or less than pricePerDemo
-        if (process.env.NODE_ENV != 'development') {
-          if (
-            (pool.funds === 0 || pool.funds < pool.pricePerDemo) &&
-            pool.status !== TrainingPoolStatus.noFunds
-          ) {
-            pool.status = TrainingPoolStatus.noFunds;
-            await pool.save(); // Save the updated status
-          }
-        }
-
-        // Get token balance from blockchain
-        const tokenBalance = await blockchainService.getTokenBalance(
-          pool.token.address,
-          pool.depositAddress
-        );
-
-        // Get SOL balance for gas
-        const solBalance = await blockchainService.getSolBalance(pool.depositAddress);
+        const { solBalance, funds: tokenBalance } = await updatePoolStatus(pool);
 
         const poolObj = pool.toObject();
         return {
@@ -388,10 +341,12 @@ router.put(
     if (pool.ownerAddress !== req.walletAddress) {
       throw ApiError.forbidden('Not authorized to edit this pool.');
     }
+    if (pool.ownerEmail === email) {
+      throw ApiError.conflict('This email is already linked to this pool.');
+    }
     pool.ownerEmail = email;
     await pool.save();
     await sendEmail({
-      from: 'noreply@viralmind.ai',
       to: email,
       subject: 'Forge Notifications Active',
       text: 'Thank you for enabling Viralmind Forge notifications.\nThe next time your gym runs out of $VIRAL or gas you will get an email in this inbox.\n\n - The Viralmind Team'

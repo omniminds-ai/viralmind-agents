@@ -24,4 +24,5 @@ export const sendEmail = async (options: SendMailOptions) => {
     console.log(emailRes);
     throw Error('There was an error sending the email.');
   }
+  console.log(`[Emails] Succesffully sent email to ${options.to}`);
 };
