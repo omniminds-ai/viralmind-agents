@@ -27,7 +27,6 @@ export function stopRefreshInterval() {
 
 export function startRefreshInterval() {
   refreshInterval = setInterval(async () => {
-    console.log('[Forge Pools] Refreshing all pool statuses');
     try {
       // Get all pools
       const pools = await TrainingPoolModel.find();
