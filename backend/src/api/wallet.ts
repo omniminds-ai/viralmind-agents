@@ -123,6 +123,9 @@ router.put(
   }),
   errorHandlerAsync(async (req: Request, res: Response) => {
     const { address, nickname } = req.body;
+    //@ts-ignore only let the current wallet update their own nickname
+    if (req.walletAddress !== address)
+      throw ApiError.forbidden("You are not allowed to set this user's nickname");
     await WalletConnectionModel.updateOne({ address }, { $set: { nickname: nickname } });
     res.status(200).json(successResponse(nickname));
   })
