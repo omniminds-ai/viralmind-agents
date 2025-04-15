@@ -282,5 +282,6 @@ export interface DBWalletConnection {
   _id?: Types.ObjectId;
   token: string;
   address: string;
+  nickname?: string;
   createdAt: Date;
 }
