@@ -7,7 +7,7 @@ import { APP_TASK_GENERATION_PROMPT } from './prompts.ts';
 
 // setup the pool refresher
 const blockchainService = new BlockchainService(process.env.RPC_URL || '', '');
-const BALANCE_REFRESH_INTERVAL = 30 * 1000; // 30 seconds
+const BALANCE_REFRESH_INTERVAL = 1000 * 60 * 60 * 2; // 2 hours
 // set up the discord webhook
 const FORGE_WEBHOOK = process.env.GYM_FORGE_WEBHOOK;
 const webhook = new Webhook(FORGE_WEBHOOK);
