@@ -206,13 +206,12 @@ router.post(
 
           if (app) {
             const task = app.tasks.find((t) => t._id.toString() === meta.quest.task_id);
+            const taskSubmissions = await ForgeRaceSubmission.countDocuments({
+              'meta.quest.task_id': meta.quest.task_id,
+              status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
+              reward: { $gt: 0 } // Only count submissions that received a reward
+            });
             if (task?.uploadLimit) {
-              const taskSubmissions = await ForgeRaceSubmission.countDocuments({
-                'meta.quest.task_id': meta.quest.task_id,
-                status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
-                reward: { $gt: 0 } // Only count submissions that received a reward
-              });
-
               if (taskSubmissions >= task.uploadLimit) {
                 throw ApiError.forbidden('Upload limit reached for this task');
               }
@@ -225,6 +224,13 @@ router.post(
               ) {
                 throw ApiError.forbidden('Per-task upload limit reached for this gym');
               }
+            } else if (
+              // also check gym-wide task limit even if there is no limit on the task itself
+              pool.uploadLimit?.limitType === UploadLimitType.perTask &&
+              pool.uploadLimit.type &&
+              taskSubmissions >= pool.uploadLimit.type
+            ) {
+              throw ApiError.forbidden('Per-task upload limit reached for this gym');
             }
           }
         }
