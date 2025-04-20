@@ -65,7 +65,11 @@ router.post(
     }
 
     // Store connection token with address
-    await WalletConnectionModel.updateOne({ token }, { token, address }, { upsert: true });
+    await WalletConnectionModel.updateOne(
+      { token },
+      { $set: { token, address } },
+      { upsert: true }
+    );
 
     res.status(200).json(successResponse({}));
   })
