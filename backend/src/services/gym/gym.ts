@@ -301,14 +301,16 @@ export async function getLeaderboardData() {
     address: string;
     tasks: number;
     rewards: number;
+    avgScore: number;
     nickname?: string;
   }[] = await ForgeRaceSubmission.aggregate([
-    { $match: { status: 'completed', reward: { $exists: true, $gt: 0 } } },
+    { $match: { status: 'completed', reward: { $exists: true, $gt: 0 }, clampedScore: { $gte: 50 } } },
     {
       $group: {
         _id: '$address',
         tasks: { $sum: 1 },
-        rewards: { $sum: '$reward' }
+        rewards: { $sum: '$reward' },
+        avgScore: { $avg: '$clampedScore' }
       }
     },
     {
@@ -327,6 +329,7 @@ export async function getLeaderboardData() {
         address: '$_id',
         tasks: 1,
         rewards: 1,
+        avgScore: 1,
         nickname: { $arrayElemAt: ['$walletConnection.nickname', 0] }
       }
     }
@@ -338,7 +341,8 @@ export async function getLeaderboardData() {
     address: worker.address,
     nickname: worker.nickname || '', // Nickname is optional
     tasks: worker.tasks,
-    rewards: worker.rewards
+    rewards: worker.rewards,
+    avgScore: worker.avgScore
   }));
 
   // Get forge leaderboard - convert string pool_id to ObjectId
