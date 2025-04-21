@@ -6,12 +6,13 @@ import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
 import { AWSS3Service } from '../services/aws/index.ts';
-import { ForgeRaceSubmission } from '../models/Models.ts';
+import { ForgeAppModel, ForgeRaceSubmission } from '../models/Models.ts';
 import { TrainingPoolModel } from '../models/TrainingPool.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 import {
   ForgeSubmissionProcessingStatus,
   TrainingPoolStatus,
+  UploadLimitType,
   UploadSession
 } from '../types/index.ts';
 import {
@@ -427,6 +428,12 @@ router.post(
         throw ApiError.notFound('Pool not found');
       }
 
+      // Check if pool is in live status
+      if (pool.status !== TrainingPoolStatus.live) {
+        console.log(`[UPLOAD] Pool not in live status: ${pool.status}`);
+        throw ApiError.badRequest(`Pool is not active (status: ${pool.status})`);
+      }
+
       // Get current token balance from blockchain to ensure it's up-to-date
       const currentBalance = await blockchainService.getTokenBalance(
         pool.token.address,
@@ -439,17 +446,89 @@ router.post(
         throw ApiError.insufficientFunds('Pool has insufficient funds');
       }
 
-      // Check if pool is in live status
-      if (pool.status !== TrainingPoolStatus.live) {
-        console.log(`[UPLOAD] Pool not in live status: ${pool.status}`);
-        throw ApiError.badRequest(`Pool is not active (status: ${pool.status})`);
-      }
-
       // Update pool funds in database with current balance
       if (pool.funds !== currentBalance) {
         pool.funds = currentBalance;
         await pool.save();
         console.log(`[UPLOAD] Updated pool funds from ${pool.funds} to ${currentBalance}`);
+      }
+
+      // check if pool has upload limits
+      if (pool.uploadLimit?.type) {
+        let gymSubmissions;
+        const poolId = pool._id.toString();
+
+        switch (pool.uploadLimit.limitType) {
+          case UploadLimitType.perDay:
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              'meta.quest.pool_id': poolId,
+              createdAt: { $gte: today },
+              status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
+              reward: { $gt: 0 } // Only count submissions that received a reward
+            });
+
+            if (gymSubmissions >= pool.uploadLimit.type) {
+              console.log(`[UPLOAD] Daily upload limit reached for pool.`);
+              throw ApiError.forbidden('Daily upload limit reached for this pool');
+            }
+            break;
+
+          case UploadLimitType.total:
+            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              'meta.quest.pool_id': poolId,
+              status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
+              reward: { $gt: 0 } // Only count submissions that received a reward
+            });
+
+            if (gymSubmissions >= pool.uploadLimit.type) {
+              console.log(`[UPLOAD] Total upload limit reached for pool.`);
+              throw ApiError.forbidden('Total upload limit reached for this pool.');
+            }
+            break;
+        }
+      }
+
+      // Check task-specific upload limit
+      if (meta.quest?.task_id) {
+        const app = await ForgeAppModel.findOne({
+          pool_id: meta.poolId,
+          'tasks._id': meta.quest.task_id
+        });
+
+        if (app) {
+          const task = app.tasks.find((t) => t._id.toString() === meta.quest.task_id);
+          const taskSubmissions = await ForgeRaceSubmission.countDocuments({
+            'meta.quest.task_id': meta.quest.task_id,
+            status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
+            reward: { $gt: 0 } // Only count submissions that received a reward
+          });
+          if (task?.uploadLimit) {
+            if (taskSubmissions >= task.uploadLimit) {
+              console.log(`[UPLOAD] Total upload limit reached for task.`);
+              throw ApiError.forbidden('Upload limit reached for this task');
+            }
+
+            // Check gym-wide per-task limit if applicable
+            if (
+              pool.uploadLimit?.limitType === UploadLimitType.perTask &&
+              pool.uploadLimit?.type &&
+              taskSubmissions >= pool.uploadLimit.type
+            ) {
+              console.log(`[UPLOAD] Per-Task upload limit reached for pool.`);
+              throw ApiError.forbidden('Per-task upload limit reached for this pool');
+            }
+          } else if (
+            // also check gym-wide task limit even if there is no limit on the task itself
+            pool.uploadLimit?.limitType === UploadLimitType.perTask &&
+            pool.uploadLimit.type &&
+            taskSubmissions >= pool.uploadLimit.type
+          ) {
+            console.log(`[UPLOAD] Per-Task upload limit reached for pool.`);
+            throw ApiError.forbidden('Per-task upload limit reached for this pool');
+          }
+        }
       }
     }
 
