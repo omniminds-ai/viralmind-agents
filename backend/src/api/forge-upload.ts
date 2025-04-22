@@ -528,8 +528,12 @@ router.post(
             console.log(`[UPLOAD] Per-Task upload limit reached for pool.`);
             throw ApiError.forbidden('Per-task upload limit reached for this pool');
           }
+        } else {
+          throw ApiError.conflict('Submission data invalid task');
         }
       }
+    } else {
+      throw ApiError.conflict('Submission data missing task id');
     }
 
     // Check for existing submission
