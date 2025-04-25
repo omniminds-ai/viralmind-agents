@@ -1,8 +1,9 @@
 <script lang="ts">
   import { Download, Lock, UserX, Dumbbell, Hammer } from 'lucide-svelte';
+  import posthog from 'posthog-js';
   import { onMount } from 'svelte';
 
-  let version = '0.0.1';
+  let version = $state('0.0.1');
 
   // Define download URLs (placeholders for now)
   const downloads = {
@@ -23,6 +24,11 @@
         url: '#'
         // size: '150 MB',
         // md5: 'f8d93c8bd36e4d6847e8c5ef9a33e9d5'
+      },
+      arm: {
+        url: '#'
+        // size: '150 MB',
+        // md5: 'f8d93c8bd36e4d6847e8c5ef9a33e9d5'
       }
     },
     linux: {
@@ -35,9 +41,9 @@
   };
 
   // Auto-detect OS for highlighting the appropriate section
-  let detectedOs: 'mac' | 'windows' | 'linux' = 'mac';
-  let selectedOs: 'mac' | 'windows' | 'linux' = 'mac';
-  let detectedArch: 'x64' | 'arm' = 'x64';
+  let detectedOs: 'mac' | 'windows' | 'linux' = $state('mac');
+  let selectedOs: 'mac' | 'windows' | 'linux' = $state('mac');
+  let detectedArch: 'x64' | 'arm' = $state('x64');
 
   onMount(async () => {
     // load download information from our server endpoint
@@ -58,6 +64,10 @@
             url: string;
           };
           'windows-x86_64': {
+            signature: string;
+            url: string;
+          };
+          'windows-arm64': {
             signature: string;
             url: string;
           };
@@ -85,6 +95,9 @@
       downloads.windows = {
         x64: {
           url: release.platforms['windows-x86_64'].url
+        },
+        arm: {
+          url: release.platforms['windows-arm64'].url
         }
       };
     } catch (e) {}
@@ -161,7 +174,7 @@
           class:ring-2={selectedOs === 'mac'}
           class:ring-purple-500={selectedOs === 'mac'}
           class:ring-offset-2={selectedOs === 'mac'}
-          on:click={() => (selectedOs = 'mac')}>
+          onclick={() => (selectedOs = 'mac')}>
           {#if detectedOs === 'mac'}
             <span class="mb-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
               Recommended
@@ -179,7 +192,7 @@
           class:ring-2={selectedOs === 'windows'}
           class:ring-purple-500={selectedOs === 'windows'}
           class:ring-offset-2={selectedOs === 'windows'}
-          on:click={() => (selectedOs = 'windows')}>
+          onclick={() => (selectedOs = 'windows')}>
           {#if detectedOs === 'windows'}
             <span class="mb-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
               Recommended
@@ -197,7 +210,7 @@
           class:ring-2={selectedOs === 'linux'}
           class:ring-purple-500={selectedOs === 'linux'}
           class:ring-offset-2={selectedOs === 'linux'}
-          on:click={() => (selectedOs = 'linux')}>
+          onclick={() => (selectedOs = 'linux')}>
           {#if detectedOs === 'linux'}
             <span class="mb-2 rounded-full bg-purple-100 px-2 py-0.5 text-xs text-purple-800">
               Recommended
@@ -230,6 +243,10 @@
             </div>
             <a
               href={downloads.mac.x64.url}
+              onclick={() => {
+                console.log('aaa');
+                posthog.capture('desktop_download', { os: 'macos_x64' });
+              }}
               class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r {detectedArch ===
               'x64'
                 ? 'from-purple-600 to-blue-500'
@@ -261,6 +278,7 @@
             </div>
             <a
               href={downloads.mac.arm.url}
+              onclick={() => posthog.capture('desktop_download', { os: 'macos_arm' })}
               class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r {detectedArch ===
               'arm'
                 ? 'from-purple-600 to-blue-500'
@@ -295,6 +313,7 @@
             </div>
             <a
               href={downloads.windows.x64.url}
+              onclick={() => posthog.capture('desktop_download', { os: 'windows_x64' })}
               class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r {detectedArch ===
               'x64'
                 ? 'from-purple-600 to-blue-500'
@@ -311,7 +330,7 @@
           </div>
 
           <!-- Windows ARM -->
-          <!-- <div
+          <div
             class="flex flex-col items-center rounded-xl border border-gray-100 bg-white p-6 shadow-sm {detectedArch ===
             'arm'
               ? 'ring-2 ring-purple-500'
@@ -326,6 +345,7 @@
             </div>
             <a
               href={downloads.windows.arm.url}
+              onclick={() => posthog.capture('desktop_download', { os: 'windows_arm' })}
               class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r {detectedArch ===
               'arm'
                 ? 'from-purple-600 to-blue-500'
@@ -333,13 +353,13 @@
               <Download class="h-5 w-5" />
               <span>Download</span>
             </a>
-            <div class="mt-1 text-xs text-gray-500">
+            <!-- <div class="mt-1 text-xs text-gray-500">
               Size: {downloads.windows.arm.size}
             </div>
             <div class="text-xs text-gray-500">
               MD5: {downloads.windows.arm.md5}
-            </div>
-          </div> -->
+            </div> -->
+          </div>
         </div>
       {:else if selectedOs === 'linux'}
         <h3 class="mb-6 text-center text-xl font-semibold text-gray-800">Download for Linux</h3>
@@ -360,6 +380,7 @@
             </div>
             <a
               href={downloads.linux.x64.url}
+              onclick={() => posthog.capture('desktop_download', { os: 'linux_x64' })}
               class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r {detectedArch ===
               'x64'
                 ? 'from-purple-600 to-blue-500'
@@ -391,6 +412,7 @@
             </div>
             <a
               href={downloads.linux.arm.url}
+              onclick={() => posthog.capture('desktop_download', { os: 'linux_arm' })}
               class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r {detectedArch ===
               'arm'
                 ? 'from-purple-600 to-blue-500'

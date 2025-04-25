@@ -33,6 +33,9 @@ export const GET: RequestHandler = async () => {
         'windows-x86_64': {
           url: `${baseUrl}Viralmind.Desktop_${version}_x64_en-US.msi`
         },
+        'windows-arm64': {
+          url: `${baseUrl}Viralmind.Desktop_${version}_arm64_en-US.msi `
+        },
         'darwin-aarch64': {
           url: `${baseUrl}Viralmind.Desktop_${version}_aarch64.dmg`
         }
@@ -50,7 +53,10 @@ export const GET: RequestHandler = async () => {
           url: 'https://github.com/viralmind-ai/desktop/releases/latest/download/Viralmind.Desktop_0.1.0_amd64.deb'
         },
         'windows-x86_64': {
-          url: 'https://github.com/viralmind-ai/desktop/releases/latest/download/Viralmind.Desktop_0.1.0_x64-setup.exe'
+          url: 'https://github.com/viralmind-ai/desktop/releases/latest/download/Viralmind.Desktop_0.1.0_x64_en-US.msi'
+        },
+        'windows-arm64': {
+          url: 'https://github.com/viralmind-ai/desktop/releases/latest/download/Viralmind.Desktop_0.1.0_arm64_en-US.msi'
         },
         'darwin-aarch64': {
           url: 'https://github.com/viralmind-ai/desktop/releases/latest/download/Viralmind.Desktop_0.1.0_aarch64.dmg'
