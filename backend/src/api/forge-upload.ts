@@ -136,12 +136,12 @@ router.post(
     const checksum = req.body.checksum;
 
     if (isNaN(chunkIndex) || chunkIndex < 0 || chunkIndex >= session.totalChunks) {
-      await unlink(req.file.path).catch(() => { });
+      await unlink(req.file.path).catch(() => {});
       throw ApiError.badRequest('Invalid chunk index');
     }
 
     if (!checksum) {
-      await unlink(req.file.path).catch(() => { });
+      await unlink(req.file.path).catch(() => {});
       throw ApiError.badRequest('Checksum is required');
     }
 
@@ -150,7 +150,7 @@ router.post(
     const calculatedChecksum = createHash('sha256').update(fileBuffer).digest('hex');
 
     if (calculatedChecksum !== checksum) {
-      await unlink(req.file.path).catch(() => { });
+      await unlink(req.file.path).catch(() => {});
       throw ApiError.badRequest('Checksum verification failed', {
         expected: checksum,
         calculated: calculatedChecksum
@@ -280,7 +280,8 @@ router.post(
     for (let i = 0; i < sortedChunks.length; i++) {
       const chunk = sortedChunks[i];
       console.log(
-        `[UPLOAD] Writing chunk ${i + 1}/${sortedChunks.length} (index: ${chunk.chunkIndex
+        `[UPLOAD] Writing chunk ${i + 1}/${sortedChunks.length} (index: ${
+          chunk.chunkIndex
         }, size: ${chunk.size} bytes)`
       );
       await new Promise<void>((resolve, reject) => {
@@ -534,6 +535,7 @@ router.post(
         throw ApiError.conflict('Submission data missing task id');
       }
     } else {
+      console.log(meta);
       throw ApiError.conflict('Invalid data missing pool id');
     }
 
