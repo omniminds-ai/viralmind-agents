@@ -243,10 +243,7 @@
             </div>
             <a
               href={downloads.mac.x64.url}
-              onclick={() => {
-                console.log('aaa');
-                posthog.capture('desktop_download', { os: 'macos_x64' });
-              }}
+              onclick={() => posthog.capture('desktop_download', { os: 'macos_x64' })}
               class="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r {detectedArch ===
               'x64'
                 ? 'from-purple-600 to-blue-500'
