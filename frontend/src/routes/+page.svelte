@@ -32,6 +32,7 @@
   } from 'lucide-svelte';
   import type { SettingsRes } from '$lib/types';
   import VideoPopup from '$lib/components/VideoPopup.svelte';
+  import posthog from 'posthog-js';
 
   // Dataset sample type definition
   type DatasetSample = {
@@ -274,7 +275,10 @@
             demonstrations.
           </p>
           <button
-            on:click={() => (showTrainingVideo = true)}
+            on:click={() => {
+              showTrainingVideo = true;
+              posthog.capture('watch_training_demo');
+            }}
             class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow transition-colors hover:bg-gray-50">
             <PlayCircle class="h-5 w-5" />
             Watch Demo
@@ -302,7 +306,10 @@
             specialized agent.
           </p>
           <button
-            on:click={() => (showForgeVideo = true)}
+            on:click={() => {
+              showForgeVideo = true;
+              posthog.capture('watch_forge_demo');
+            }}
             class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow transition-colors hover:bg-gray-50">
             <PlayCircle class="h-5 w-5" />
             Watch Demo
@@ -319,6 +326,7 @@
             <div class="relative">
               <input
                 type="text"
+                disabled
                 bind:value={dreamAgentInput}
                 placeholder={placeholders[placeholderIndex]}
                 class="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-purple-500 focus:ring-purple-500" />
@@ -353,15 +361,99 @@
             <button
               on:click={handleGenerateGym}
               class="w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-blue-600">
-              Generate Training Gym
+              Create a Gym in the App
             </button>
           </div>
         </div>
       </div>
 
+      <!-- Agent Chat -->
+      <div class="grid items-center gap-12 lg:grid-cols-2">
+        <div
+          class="relative order-2 aspect-video overflow-hidden rounded-xl border shadow-2xl lg:order-1">
+          <div class="absolute inset-0 bg-gray-50 backdrop-blur-sm"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-full max-w-lg space-y-4 p-6">
+              <!-- Bot Welcome -->
+              <div class="flex items-start gap-2">
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
+                  <Bot class="h-4 w-4 text-purple-400" />
+                </div>
+                <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                  <p>
+                    Hi! I'm VM-1, your computer-use assistant. What would you like help with? 🖥️
+                  </p>
+                </div>
+              </div>
+
+              <!-- User Request -->
+              <div class="flex flex-row-reverse items-start gap-2">
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
+                  <User class="h-4 w-4 text-blue-400" />
+                </div>
+                <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
+                  <p>Can you help me find a good Italian restaurant nearby that's open late?</p>
+                </div>
+              </div>
+
+              <!-- Bot Response -->
+              <div class="flex items-start gap-2">
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
+                  <Bot class="h-4 w-4 text-purple-400" />
+                </div>
+                <div class="space-y-2">
+                  <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                    <p>
+                      I'll help you find a great late-night Italian spot! Let me check DoorDash for
+                      you.
+                    </p>
+                  </div>
+                  <div
+                    class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600">
+                    <Search class="h-4 w-4 animate-pulse text-gray-400" />
+                    Searching DoorDash...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-1 text-left lg:order-2">
+          <div class="mb-3 flex flex-wrap gap-2">
+            <div
+              class="inline-block rounded-full bg-purple-100 px-4 py-1 text-sm font-medium text-purple-800">
+              Coming Soon
+            </div>
+          </div>
+          <div class="mb-4 flex items-center gap-3">
+            <div
+              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
+              <Bot class="h-6 w-6 text-purple-500" />
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900">VM-1 Computer Use Agent</h2>
+          </div>
+          <p class="mb-6 text-lg text-gray-600">
+            Complete computer tasks with VM-1, a state-of-the-art computer-use agent trained with
+            the data generated by the community.
+          </p>
+
+          <button
+            on:click={() => {
+              showAgentVideo = true;
+              posthog.capture('watch_agent_demo');
+            }}
+            class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow transition-colors hover:bg-gray-50">
+            <PlayCircle class="h-5 w-5" />
+            Watch Demo
+          </button>
+          <VideoPopup videoId="VVj7I1SyTI8" bind:isOpen={showAgentVideo} />
+        </div>
+      </div>
+
       <!-- The Data -->
       <div class="mb-20 grid items-center gap-12 lg:grid-cols-2">
-        <div class="order-1 text-left lg:order-2">
+        <div class="text-left">
           <div class="mb-3 flex flex-wrap gap-2">
             <div
               class="inline-block rounded-full bg-green-100 px-4 py-1 text-sm font-medium text-green-800">
@@ -391,7 +483,7 @@
           </a>
         </div>
         <div
-          class="relative order-2 h-[400px] overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-2xl lg:order-1">
+          class="relative h-[400px] overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-2xl">
           <div class="mb-3 flex items-center justify-between text-sm font-medium text-gray-700">
             <span>Dataset Preview</span>
             <span class="text-xs text-gray-500">5M+ samples</span>
@@ -530,81 +622,6 @@
                       </div>
                     {/if}
                   {/each}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Agent Chat -->
-      <div class="grid items-center gap-12 opacity-50 lg:grid-cols-2">
-        <div class=" text-left">
-          <div class="mb-3 flex flex-wrap gap-2">
-            <div
-              class="inline-block rounded-full bg-green-100 px-4 py-1 text-sm font-medium text-green-800">
-              Open Weights
-            </div>
-            <div
-              class="inline-block rounded-full bg-purple-100 px-4 py-1 text-sm font-medium text-purple-800">
-              Coming Soon
-            </div>
-          </div>
-          <div class="mb-4 flex items-center gap-3">
-            <div
-              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
-              <Bot class="h-6 w-6 text-purple-500" />
-            </div>
-            <h2 class="text-3xl font-bold text-gray-900">Computer-Use Agent</h2>
-          </div>
-          <p class="mb-6 text-lg text-gray-600">
-            Chat with VM-1, a state-of-the-art computer-use agent trained with the data generated by
-            the community.
-          </p>
-        </div>
-        <div class="relative aspect-video overflow-hidden rounded-xl border shadow-2xl">
-          <div class="absolute inset-0 bg-gray-50 backdrop-blur-sm"></div>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-full max-w-lg space-y-4 p-6">
-              <!-- Bot Welcome -->
-              <div class="flex items-start gap-2">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-                  <Bot class="h-4 w-4 text-purple-400" />
-                </div>
-                <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
-                  <p>
-                    Hi! I'm VM-1, your computer-use assistant. What would you like help with? 🖥️
-                  </p>
-                </div>
-              </div>
-
-              <!-- User Request -->
-              <div class="flex flex-row-reverse items-start gap-2">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20">
-                  <User class="h-4 w-4 text-blue-400" />
-                </div>
-                <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
-                  <p>Can you help me find a good Italian restaurant nearby that's open late?</p>
-                </div>
-              </div>
-
-              <!-- Bot Response -->
-              <div class="flex items-start gap-2">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-                  <Bot class="h-4 w-4 text-purple-400" />
-                </div>
-                <div class="space-y-2">
-                  <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
-                    <p>
-                      I'll help you find a great late-night Italian spot! Let me check DoorDash for
-                      you.
-                    </p>
-                  </div>
-                  <div
-                    class="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-xs text-gray-600">
-                    <Search class="h-4 w-4 animate-pulse text-gray-400" />
-                    Searching DoorDash...
-                  </div>
                 </div>
               </div>
             </div>
