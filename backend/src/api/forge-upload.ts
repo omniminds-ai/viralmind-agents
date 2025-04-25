@@ -10,6 +10,7 @@ import { ForgeAppModel, ForgeRaceSubmission } from '../models/Models.ts';
 import { TrainingPoolModel } from '../models/TrainingPool.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 import {
+  DBForgeRaceSubmission,
   ForgeSubmissionProcessingStatus,
   TrainingPoolStatus,
   UploadLimitType,
@@ -358,7 +359,7 @@ router.post(
     console.log(`[UPLOAD] Meta JSON path: ${metaJsonPath}`);
     const metaJson = await readFile(metaJsonPath, 'utf8');
     console.log(`[UPLOAD] Meta JSON content length: ${metaJson.length}`);
-    const meta = JSON.parse(metaJson);
+    const meta: DBForgeRaceSubmission['meta'] = JSON.parse(metaJson);
     console.log(`[UPLOAD] Parsed meta data, id: ${meta.id}`);
 
     // Create UUID from meta.id + address
@@ -410,6 +411,9 @@ router.post(
       })
     );
     console.log(`[UPLOAD] All files uploaded to S3 successfully`);
+
+    meta.generatedTime = meta.quest.reward.time;
+    meta.poolId = meta.quest.pool_id;
 
     // Verify time if poolId and generatedTime provided
     if (meta.poolId && meta.generatedTime) {
@@ -529,14 +533,14 @@ router.post(
             throw ApiError.forbidden('Per-task upload limit reached for this pool');
           }
         } else {
-          throw ApiError.conflict('Submission data invalid task');
+          throw ApiError.badRequest('Submission Error: invalid task');
         }
       } else {
-        throw ApiError.conflict('Submission data missing task id');
+        throw ApiError.badRequest('Invalid data: missing task id');
       }
     } else {
       console.log(meta);
-      throw ApiError.conflict('Invalid data missing pool id');
+      throw ApiError.badRequest('Invalid data: missing pool id');
     }
 
     // Check for existing submission
