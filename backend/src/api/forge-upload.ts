@@ -412,17 +412,11 @@ router.post(
     );
     console.log(`[UPLOAD] All files uploaded to S3 successfully`);
 
-    meta.generatedTime = meta.quest.reward.time;
     meta.poolId = meta.quest.pool_id;
 
-    // Verify time if poolId and generatedTime provided
-    if (meta.poolId && meta.generatedTime) {
+    // Verify time if poolId
+    if (meta.poolId) {
       console.log(`[UPLOAD] Verifying time for pool submission, poolId: ${meta.poolId}`);
-      const now = Date.now();
-      if (now - meta.generatedTime > 5 * 60 * 1000) {
-        console.log(`[UPLOAD] Generated time expired: ${meta.generatedTime} (now: ${now})`);
-        throw ApiError.badRequest('Generated time expired');
-      }
 
       // Verify pool exists and check balance
       console.log(`[UPLOAD] Verifying pool balance and status for poolId: ${meta.poolId}`);

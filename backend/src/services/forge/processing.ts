@@ -165,12 +165,6 @@ export async function processNextInQueue() {
         console.log('Processing pool reward:', pool.name);
         while (retries > 0) {
           try {
-            // Verify time is within last 5 minutes
-            const now = Date.now();
-            const generatedTime = submission?.meta?.quest.reward.time;
-            // if (now - generatedTime > 5 * 60 * 1000) {
-            //   throw new Error("Generated time expired");
-            // }
             // Default maxReward is the pool's pricePerDemo
             maxReward = pool.pricePerDemo;
 
