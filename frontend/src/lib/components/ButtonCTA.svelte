@@ -9,9 +9,9 @@
   let { href, target = '_self', class: className, variant = 'primary', children }: Props = $props();
 
   const styles = {
-    primary: 'bg-gradient-to-r from-blue-400 to-blue-600 text-white',
+    primary: 'bg-gradient-to-r from-purple-400 to-purple-600 text-white',
     secondary:
-      'bg-black/60 backdrop-blur-sm border-2 border-blue-500/50 text-blue-300 hover:text-white hover:border-blue-400 hover:bg-blue-900/40'
+      'bg-black/60 backdrop-blur-sm border-2 border-purple-500/50 text-purple-300 hover:text-white hover:border-purple-400 hover:bg-purple-900/40'
   };
 </script>
 

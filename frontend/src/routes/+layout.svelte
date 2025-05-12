@@ -2,7 +2,7 @@
   import '../app.css';
   import Navbar from '$lib/components/Navbar.svelte';
   import GymHeader from '$lib/components/GymHeader.svelte';
-  // import Footer from '$lib/components/Footer.svelte';
+  import Footer from '$lib/components/Footer.svelte';
   import { page } from '$app/state';
   import WalletProvider from '$lib/components/solana/WalletProvider.svelte';
   import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
@@ -56,7 +56,7 @@
   {/if}
   {@render children()}
   {#if !isTournamentRoute}
-<!--    <Footer />-->
+    <Footer />
   {/if}
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-YHVTLY9G7H"></script>

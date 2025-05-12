@@ -49,9 +49,9 @@
 </script>
 
 <svelte:head>
-  <title>viralmind.ai - Viralmind Desktop</title>
-  <meta property="og:title" content="viralmind.ai - Viralmind Desktop" />
-  <meta name="twitter:title" content="viralmind.ai - Viralmind Desktop" />
+  <title>OmniMinds.ai - Viralmind Desktop</title>
+  <meta property="og:title" content="OmniMinds.ai - Viralmind Desktop" />
+  <meta name="twitter:title" content="OmniMinds.ai - Viralmind Desktop" />
   <meta
     name="description"
     content="Your unified platform for contributing to, training, and evaluating computer-use agents, all in one powerful desktop application." />
@@ -121,7 +121,7 @@
           </div>
           <h2 class="mb-4 text-4xl font-bold text-gray-900">Training Gym</h2>
           <p class="mb-6 text-xl text-gray-600">
-            Record your everyday computer tasks to train AI models and earn $VIRAL tokens.
+            Record your everyday computer tasks to train AI models and earn $TOKEN tokens.
             High-quality demonstrations earn more per task, rewarding expert skill.
           </p>
           <ul class="mb-8 space-y-3">
@@ -237,7 +237,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <div class="text-2xl font-bold text-blue-600">75,000</div>
-                <div class="text-sm text-gray-600">$VIRAL Required</div>
+                <div class="text-sm text-gray-600">$TOKEN Required</div>
               </div>
               <div>
                 <div class="text-2xl font-bold text-blue-600">13,600</div>
@@ -336,7 +336,7 @@
               <Split class="mb-6 h-8 w-8 text-gray-400" />
               <div
                 class="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm">
-                Better quality = more $VIRAL earned
+                Better quality = more $TOKEN earned
               </div>
             </div>
           </div>
@@ -396,7 +396,7 @@
               <Split class="mb-2 h-10 w-10 text-gray-400" />
               <div
                 class="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm">
-                Better quality = more $VIRAL earned
+                Better quality = more $TOKEN earned
               </div>
             </div>
           </div>
