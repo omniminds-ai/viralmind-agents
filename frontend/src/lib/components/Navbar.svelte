@@ -61,9 +61,9 @@
         <a href="/" class="group flex items-center">
           <img
             src={logo}
-            alt="ViralMind"
-            class="hidden h-8 w-8 transition-transform group-hover:scale-105 lg:block" />
-          <img src={logoTitle} alt="ViralMind" class="block h-8 transition-transform lg:hidden" />
+            alt="OmniMinds"
+            class="hidden w-8 transition-transform group-hover:scale-105 lg:block" />
+          <img src={logoTitle} alt="OmniMinds" class="block scale-200 transition-transform lg:hidden" />
         </a>
 
         <!-- Desktop Navigation -->

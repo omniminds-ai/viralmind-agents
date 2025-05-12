@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Twitter, MessageCircle, BarChart, Github } from 'lucide-svelte';
+
 </script>
 
 <!-- Spacer to prevent content from going under fixed navbar -->
@@ -46,15 +47,15 @@
         <div
           class="flex w-full items-center justify-center gap-2 rounded-full border-2 bg-gray-200/75 px-4 py-1 md:w-3/4 lg:w-1/2 xl:w-1/4">
           <span class="text-xs font-semibold uppercase">contract:</span>
-          <code class="truncate font-mono text-sm md:w-full">
-            HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump
+          <code class="truncate font-mono text-sm md:w-full align-middle">
+            Contract Address
           </code>
-          <button
-            class="text-xs hover:text-gray-900"
-            onclick={() =>
-              navigator.clipboard.writeText('HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump')}>
-            Copy
-          </button>
+<!--          <button-->
+<!--            class="text-xs hover:text-gray-900"-->
+<!--            onclick={() =>-->
+<!--              navigator.clipboard.writeText('Contract Address')}>-->
+<!--            Copy-->
+<!--          </button>-->
         </div>
       </div>
     </div>

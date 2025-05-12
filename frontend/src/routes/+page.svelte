@@ -138,7 +138,7 @@
 <div class="min-h-screen">
   <!-- Hero Section -->
   <section class="relative bg-white">
-    <div class="mx-auto max-w-7xl px-6 py-8 md:px-4 md:py-24">
+    <div class="mx-auto max-w-7xl px-6 py-8 md:px-4 md:py-12">
       <div class="grid items-start gap-4 lg:grid-cols-2">
         <!-- Left Content -->
         <div>
@@ -185,7 +185,7 @@
                 <button
                   class="flex-1 cursor-pointer text-left font-mono text-xs text-black/50 transition-colors hover:text-purple-600 md:text-sm"
                   on:click={copyToClipboard}>
-                  HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump
+                  $TOKEN
                 </button>
                 <div class="ml-2 flex items-center gap-3">
                   {#if copied}
@@ -205,7 +205,7 @@
                 <!-- Centered tooltip that shows when hovering over the whole container -->
                 <div
                   class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-60 -translate-x-1/2 rounded-md bg-black px-3 py-2 text-center text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                  Click to copy. Visit the $VIRAL page to learn more.
+                  Click to copy. Visit the $TOKEN page to learn more.
                   <div
                     class="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 transform bg-black">
                   </div>
@@ -251,7 +251,7 @@
   </section>
 
   <!-- Features Section -->
-  <section class="bg-gray-50 py-20">
+  <section class="bg-gray-50">
     <div class="mx-auto flex max-w-6xl flex-col gap-24 px-4 py-12">
       <!-- Training Gym -->
       <div class="mb-20 grid items-center gap-12 lg:grid-cols-2">
@@ -260,18 +260,18 @@
         </div>
         <div class="text-left">
           <div
-            class="mb-3 inline-block rounded-full bg-purple-100 px-4 py-1 text-sm font-medium text-purple-800">
-            Earn $VIRAL by sharing data
+            class="mb-3 inline-block rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-800">
+            Earn $TOKEN by sharing data
           </div>
           <div class="mb-4 flex items-center gap-3">
             <div
-              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
-              <Dumbbell class="h-6 w-6 text-purple-500" />
+              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700/5 to-blue-500/5">
+              <Dumbbell class="h-6 w-6 text-blue-700" />
             </div>
             <h2 class="text-3xl font-bold text-gray-900">Training Gym</h2>
           </div>
           <p class="mb-6 text-lg text-gray-600">
-            Show AI how to use apps, earn rewards. Get instant $VIRAL payments when you upload
+            Show AI how to use apps, earn rewards. Get instant $TOKEN payments when you upload
             demonstrations.
           </p>
           <button
@@ -292,12 +292,12 @@
         <div class="order-2 text-left lg:order-1">
           <div
             class="mb-3 inline-block rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-800">
-            Spend $VIRAL to build powerful AI
+            Spend $TOKEN to build powerful AI
           </div>
           <div class="mb-4 flex items-center gap-3">
             <div
-              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
-              <Hammer class="h-6 w-6 text-purple-500" />
+              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700/5 to-blue-500/5">
+              <Hammer class="h-6 w-6 text-blue-700" />
             </div>
             <h2 class="text-3xl font-bold text-gray-900">The Forge</h2>
           </div>
@@ -329,7 +329,7 @@
                 disabled
                 bind:value={dreamAgentInput}
                 placeholder={placeholders[placeholderIndex]}
-                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-purple-500 focus:ring-purple-500" />
+                class="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-700 focus:ring-blue-700" />
               <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                 <Hammer class="h-5 w-5 text-gray-400" />
               </div>
@@ -340,27 +340,27 @@
             <div class="mb-2 text-sm font-medium text-gray-700">Estimated Requirements</div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <div class="text-2xl font-bold text-purple-600">
+                <div class="text-2xl font-bold text-blue-900">
                   {estimatedAmount.toLocaleString()}
                 </div>
-                <div class="text-sm text-gray-600">$VIRAL Required</div>
+                <div class="text-sm text-gray-600">$TOKEN Required</div>
               </div>
               <div>
-                <div class="text-2xl font-bold text-purple-600">
+                <div class="text-2xl font-bold text-blue-900">
                   {Math.floor(estimatedAmount / pricePerDemo).toLocaleString()}
                 </div>
                 <div class="text-sm text-gray-600">Demonstrations</div>
               </div>
             </div>
             <div class="mt-2 text-sm text-gray-500">
-              At {pricePerDemo} $VIRAL per demonstration
+              At {pricePerDemo} $TOKEN per demonstration
             </div>
           </div>
 
           <div>
             <button
               on:click={handleGenerateGym}
-              class="w-full rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-blue-600">
+              class="w-full rounded-lg bg-gradient-to-r from-blue-900 to-blue-500 px-6 py-3 text-white transition-colors hover:from-blue-700 hover:to-blue-600">
               Create a Gym in the App
             </button>
           </div>
@@ -376,10 +376,10 @@
             <div class="w-full max-w-lg space-y-4 p-6">
               <!-- Bot Welcome -->
               <div class="flex items-start gap-2">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-                  <Bot class="h-4 w-4 text-purple-400" />
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-700/20">
+                  <Bot class="h-4 w-4 text-blue-400" />
                 </div>
-                <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
                   <p>
                     Hi! I'm VM-1, your computer-use assistant. What would you like help with? 🖥️
                   </p>
@@ -398,11 +398,11 @@
 
               <!-- Bot Response -->
               <div class="flex items-start gap-2">
-                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20">
-                  <Bot class="h-4 w-4 text-purple-400" />
+                <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-700/20">
+                  <Bot class="h-4 w-4 text-blue-400" />
                 </div>
                 <div class="space-y-2">
-                  <div class="rounded-lg bg-purple-100 px-3 py-2 text-sm text-purple-900">
+                  <div class="rounded-lg bg-blue-100 px-3 py-2 text-sm text-blue-900">
                     <p>
                       I'll help you find a great late-night Italian spot! Let me check DoorDash for
                       you.
@@ -422,14 +422,14 @@
         <div class="order-1 text-left lg:order-2">
           <div class="mb-3 flex flex-wrap gap-2">
             <div
-              class="inline-block rounded-full bg-purple-100 px-4 py-1 text-sm font-medium text-purple-800">
+              class="inline-block rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-800">
               Coming Soon
             </div>
           </div>
           <div class="mb-4 flex items-center gap-3">
             <div
-              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
-              <Bot class="h-6 w-6 text-purple-500" />
+              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700/5 to-blue-500/5">
+              <Bot class="h-6 w-6 text-blue-700" />
             </div>
             <h2 class="text-3xl font-bold text-gray-900">VM-1 Computer Use Agent</h2>
           </div>
@@ -466,8 +466,8 @@
           </div>
           <div class="mb-4 flex items-center gap-3">
             <div
-              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5">
-              <Book class="h-6 w-6 text-purple-500" />
+              class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700/5 to-blue-500/5">
+              <Book class="h-6 w-6 text-blue-700" />
             </div>
             <h2 class="text-3xl font-bold text-gray-900">Video-Language-Action Dataset</h2>
           </div>
@@ -493,13 +493,13 @@
             <span class="mr-1">Filters:</span>
             <div class="flex items-center gap-1">
               <div
-                class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-purple-100">
+                class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-blue-100">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  class="h-3 w-3 text-purple-600">
+                  class="h-3 w-3 text-blue-900">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               </div>
@@ -507,13 +507,13 @@
             </div>
             <div class="flex items-center gap-1">
               <div
-                class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-purple-100">
+                class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-blue-100">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  class="h-3 w-3 text-purple-600">
+                  class="h-3 w-3 text-blue-900">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               </div>
@@ -521,13 +521,13 @@
             </div>
             <div class="flex items-center gap-1">
               <div
-                class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-purple-100">
+                class="inline-flex h-4 w-4 items-center justify-center rounded border border-gray-300 bg-blue-100">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  class="h-3 w-3 text-purple-600">
+                  class="h-3 w-3 text-blue-900">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               </div>
@@ -647,20 +647,20 @@
   </section>
 
   <!-- FAQ Section -->
-  <section class="bg-gray-100 py-20">
-    <div class="mx-auto max-w-6xl px-4">
-      <h2 class="mb-12 text-center text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>
+<!--  <section class="bg-gray-100 py-20">-->
+<!--    <div class="mx-auto max-w-6xl px-4">-->
+<!--      <h2 class="mb-12 text-center text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>-->
 
-      {#if settings?.faq}
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {#each settings.faq as faq}
-            <div class="rounded-lg p-6">
-              <h3 class="mb-3 text-lg font-semibold text-gray-900">{faq.question}</h3>
-              <p class="text-gray-600">{faq.answer}</p>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  </section>
+<!--      {#if settings?.faq}-->
+<!--        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">-->
+<!--          {#each settings.faq as faq}-->
+<!--            <div class="rounded-lg p-6">-->
+<!--              <h3 class="mb-3 text-lg font-semibold text-gray-900">{faq.question}</h3>-->
+<!--              <p class="text-gray-600">{faq.answer}</p>-->
+<!--            </div>-->
+<!--          {/each}-->
+<!--        </div>-->
+<!--      {/if}-->
+<!--    </div>-->
+<!--  </section>-->
 </div>
