@@ -1,0 +1,19 @@
+{
+  "name": "omniminds-website-starter",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "routes": [
+    {
+      "pattern": "omniminds.ai",
+      "custom_domain": true
+    },
+    {
+    "pattern": "www.omniminds.ai",
+    "custom_domain": true
+    }
+  ]
+}

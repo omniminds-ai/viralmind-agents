@@ -2,6 +2,7 @@
 <script lang="ts">
   import logo from '$lib/assets/logo.png';
   import logoTitle from '$lib/assets/Logo_Standard_dark.png';
+
   import {
     Download,
     Book,
@@ -61,9 +62,9 @@
         <a href="/" class="group flex items-center">
           <img
             src={logo}
-            alt="ViralMind"
-            class="hidden h-8 w-8 transition-transform group-hover:scale-105 lg:block" />
-          <img src={logoTitle} alt="ViralMind" class="block h-8 transition-transform lg:hidden" />
+            alt="OmniMinds"
+            class="hidden w-8 transition-transform group-hover:scale-105 lg:block" />
+          <img src={logoTitle} alt="OmniMinds" class="block h-14 transition-transform lg:hidden" />
         </a>
 
         <!-- Desktop Navigation -->
@@ -90,14 +91,14 @@
                 class="absolute left-0 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
                 transition:slide>
                 <a
-                  href="/viral"
+                  href="/omnis"
                   class="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
                     <Coins class="h-4 w-4 text-purple-500" />
                   </div>
                   <div>
-                    <div class="font-medium text-gray-900">Viral Token</div>
-                    <div class="text-xs text-gray-500">Earn and spend $VIRAL</div>
+                    <div class="font-medium text-gray-900">$OMNIS</div>
+                    <div class="text-xs text-gray-500">$OMNIS Tokenomics</div>
                   </div>
                 </a>
                 <a
@@ -133,17 +134,17 @@
                     <div class="text-xs text-gray-500">Build custom agents</div>
                   </div>
                 </a>
-                <a
-                  href="/gym"
-                  class="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
-                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
-                    <Earth class="h-4 w-4 text-purple-500" />
-                  </div>
-                  <div>
-                    <div class="font-medium text-gray-900">Training Gym Classic</div>
-                    <div class="text-xs text-gray-500">Browser-based version</div>
-                  </div>
-                </a>
+<!--                <a-->
+<!--                  href="/gym"-->
+<!--                  class="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">-->
+<!--                  <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">-->
+<!--                    <Earth class="h-4 w-4 text-purple-500" />-->
+<!--                  </div>-->
+<!--                  <div>-->
+<!--                    <div class="font-medium text-gray-900">Training Gym Classic</div>-->
+<!--                    <div class="text-xs text-gray-500">Browser-based version</div>-->
+<!--                  </div>-->
+<!--                </a>-->
               </div>
             {/if}
           </div>
@@ -170,92 +171,99 @@
                 class="absolute left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
                 transition:slide>
                 <a
-                  href="https://discord.gg/C9NyQmkz5W"
+                  href=""
                   target="_blank"
-                  class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
+                  class="disabled flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <i class="si si-discord h-4 w-4" />
-                  Discord
+                  Discord <span class="text-xs">(soon...)</span>
                 </a>
                 <a
-                  href="https://t.me/viralmind"
+                  href="https://t.me/omnimindsai"
                   target="_blank"
                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <i class="si si-telegram h-4 w-4" />
                   Telegram
                 </a>
                 <a
-                  href="https://twitter.com/ViralMindAI"
+                  href="https://twitter.com/omnimindsai"
                   target="_blank"
                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <i class="si si-twitter h-4 w-4" />
                   Twitter
                 </a>
                 <a
-                  href="https://github.com/viralmind-ai"
+                  href="https://github.com/omniminds-ai"
                   target="_blank"
                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <i class="si si-github h-4 w-4" />
                   GitHub
                 </a>
-              </div>
-            {/if}
-          </div>
-
-          <!-- Research Dropdown -->
-          <div class="relative">
-            <button
-              class="navbar-dropdown-button group flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-              onclick={() => (isDropdownOpen = isDropdownOpen === 'research' ? null : 'research')}
-              onblur={(e) => {
-                // Only close if not clicking another dropdown button
-                const relatedTarget = e.relatedTarget as HTMLElement;
-                if (!relatedTarget || !relatedTarget.closest('.navbar-dropdown-button')) {
-                  setTimeout(() => (isDropdownOpen = null), 200);
-                }
-              }}>
-              <Database class="h-4 w-4 transition-transform group-hover:scale-110" />
-              Research
-              <ChevronDown class="h-4 w-4" />
-            </button>
-
-            {#if isDropdownOpen === 'research'}
-              <div
-                class="absolute left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 shadow-lg"
-                transition:slide>
                 <a
-                  href="/datasets"
-                  class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
-                  <Database class="h-4 w-4" />
-                  Datasets
-                </a>
-                <a
-                  href="https://docs.viralmind.ai/"
+                  href="https://github.com/omniminds-ai/viralmind-airdrop"
                   target="_blank"
                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
-                  <Book class="h-4 w-4" />
-                  Documentation
+                  <i class="si si-github h-4 w-4" />
+                  ViralMind Airdrop
                 </a>
               </div>
             {/if}
           </div>
+
+<!--          &lt;!&ndash; Research Dropdown &ndash;&gt;-->
+<!--          <div class="relative">-->
+<!--            <button-->
+<!--              class="navbar-dropdown-button group flex items-center gap-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"-->
+<!--              onclick={() => (isDropdownOpen = isDropdownOpen === 'research' ? null : 'research')}-->
+<!--              onblur={(e) => {-->
+<!--                // Only close if not clicking another dropdown button-->
+<!--                const relatedTarget = e.relatedTarget as HTMLElement;-->
+<!--                if (!relatedTarget || !relatedTarget.closest('.navbar-dropdown-button')) {-->
+<!--                  setTimeout(() => (isDropdownOpen = null), 200);-->
+<!--                }-->
+<!--              }}>-->
+<!--              <Database class="h-4 w-4 transition-transform group-hover:scale-110" />-->
+<!--              Research-->
+<!--              <ChevronDown class="h-4 w-4" />-->
+<!--            </button>-->
+
+<!--            {#if isDropdownOpen === 'research'}-->
+<!--              <div-->
+<!--                class="absolute left-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 shadow-lg"-->
+<!--                transition:slide>-->
+<!--                <a-->
+<!--                  href="/datasets"-->
+<!--                  class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">-->
+<!--                  <Database class="h-4 w-4" />-->
+<!--                  Datasets-->
+<!--                </a>-->
+<!--                <a-->
+<!--                  href="https://docs.viralmind.ai/"-->
+<!--                  target="_blank"-->
+<!--                  class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">-->
+<!--                  <Book class="h-4 w-4" />-->
+<!--                  Documentation-->
+<!--                </a>-->
+<!--              </div>-->
+<!--            {/if}-->
+<!--          </div>-->
         </nav>
       </div>
 
       <!-- Right side -->
       <div class="flex items-center space-x-4">
-        <div class="hidden md:block">
-          <WalletMultiButton />
-        </div>
-        <a
-          href="/download"
-          class="group hidden items-center gap-3 rounded-full bg-gradient-to-r from-purple-600 to-blue-500 py-1.5 pl-4 pr-5 text-sm font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] hover:from-purple-500 hover:to-blue-400 hover:shadow-purple-500/30 sm:flex">
-          <div class="rounded-full bg-white/10 p-1">
-            <Download class="h-4 w-4 transition-transform group-hover:scale-110" />
-          </div>
-          <div class="flex items-center gap-2">
-            <span>Download for Desktop</span>
-          </div>
-        </a>
+<!--        <div class="hidden md:block">-->
+<!--          <WalletMultiButton />-->
+<!--        </div>-->
+<!--        <a-->
+<!--          href="/download"-->
+<!--          class="group hidden items-center gap-3 rounded-full bg-gradient-to-r from-purple-600 to-blue-500 py-1.5 pl-4 pr-5 text-sm font-medium text-white shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] hover:from-purple-500 hover:to-blue-400 hover:shadow-purple-500/30 sm:flex">-->
+<!--          <div class="rounded-full bg-white/10 p-1">-->
+<!--            <Download class="h-4 w-4 transition-transform group-hover:scale-110" />-->
+<!--          </div>-->
+<!--          <div class="flex items-center gap-2">-->
+<!--            <span>Download for Desktop</span>-->
+<!--          </div>-->
+<!--        </a>-->
 
         <!-- Mobile menu button -->
         <button
@@ -280,10 +288,10 @@
           <div class="border-t border-gray-200 pt-2">
             <p class="px-2 py-1 text-xs font-semibold uppercase text-gray-500">Ecosystem</p>
             <a
-              href="/viral"
+              href="/omnis"
               class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
               <Coins class="h-5 w-5" />
-              Viral Token
+              $OMNIS
             </a>
             <a
               href="/desktop"
@@ -303,12 +311,12 @@
               <Hammer class="h-5 w-5" />
               The Forge
             </a> -->
-            <a
-              href="/gym"
-              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
-              <Earth class="h-5 w-5" />
-              Training Gym Classic
-            </a>
+<!--            <a-->
+<!--              href="/gym"-->
+<!--              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">-->
+<!--              <Earth class="h-5 w-5" />-->
+<!--              Training Gym Classic-->
+<!--            </a>-->
           </div>
 
           <!-- Community Section -->
@@ -323,67 +331,74 @@
             {#if isMobileCommunityDropdownOpen}
               <div transition:slide>
                 <a
-                  href="https://github.com/viralmind-ai"
+                  href=""
                   target="_blank"
-                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
-                  <i class="si si-github h-5 w-5" />
-                  <span class="animated-underline">GitHub</span>
-                </a>
-                <a
-                  href="https://discord.gg/C9NyQmkz5W"
-                  target="_blank"
-                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+                  class="disabled flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
                   <i class="si si-discord h-5 w-5" />
-                  Discord
+                  Discord (soon)
                 </a>
                 <a
-                  href="https://t.me/viralmind"
+                  href="https://t.me/omnimindsai"
                   target="_blank"
                   class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
                   <i class="si si-telegram h-5 w-5" />
                   Telegram
                 </a>
                 <a
-                  href="https://twitter.com/ViralMindAI"
+                  href="https://twitter.com/omnimindsai"
                   target="_blank"
                   class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
                   <i class="si si-twitter h-5 w-5" />
                   Twitter
+                </a>
+                <a
+                  href="https://github.com/omniminds-ai"
+                  target="_blank"
+                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+                  <i class="si si-github h-5 w-5" />
+                  <span class="animated-underline">GitHub</span>
+                </a>
+                <a
+                  href="https://github.com/omniminds-ai/viralmind-airdrop"
+                  target="_blank"
+                  class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+                  <i class="si si-github h-5 w-5" />
+                  <span class="animated-underline">ViralMind Airdrop</span>
                 </a>
               </div>
             {/if}
           </div>
 
           <!-- Research Section -->
-          <div class="border-t border-gray-200 pt-2">
-            <p class="px-2 py-1 text-xs font-semibold uppercase text-gray-500">Research</p>
-            <a
-              href="/datasets"
-              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
-              <Database class="h-5 w-5" />
-              Datasets
-            </a>
-            <a
-              href="https://docs.viralmind.ai/"
-              target="_blank"
-              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
-              <Book class="h-5 w-5" />
-              Documentation
-            </a>
-          </div>
+<!--          <div class="border-t border-gray-200 pt-2">-->
+<!--            <p class="px-2 py-1 text-xs font-semibold uppercase text-gray-500">Research</p>-->
+<!--            <a-->
+<!--              href="/datasets"-->
+<!--              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">-->
+<!--              <Database class="h-5 w-5" />-->
+<!--              Datasets-->
+<!--            </a>-->
+<!--            <a-->
+<!--              href="https://docs.viralmind.ai/"-->
+<!--              target="_blank"-->
+<!--              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">-->
+<!--              <Book class="h-5 w-5" />-->
+<!--              Documentation-->
+<!--            </a>-->
+<!--          </div>-->
 
-          <div class="mt-2 border-t border-gray-200 pt-4">
-            <a
-              href="/download"
-              class="flex items-center gap-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-2.5 text-white transition-all hover:from-purple-500 hover:to-blue-400">
-              <Download class="h-5 w-5 text-white/90" />
-              <span class="font-medium">Download for Desktop</span>
-            </a>
-          </div>
+<!--          <div class="mt-2 border-t border-gray-200 pt-4">-->
+<!--            <a-->
+<!--              href="/download"-->
+<!--              class="flex items-center gap-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 px-4 py-2.5 text-white transition-all hover:from-purple-500 hover:to-blue-400">-->
+<!--              <Download class="h-5 w-5 text-white/90" />-->
+<!--              <span class="font-medium">Download for Desktop</span>-->
+<!--            </a>-->
+<!--          </div>-->
 
-          <div class="">
-            <WalletMultiButton />
-          </div>
+<!--          <div class="">-->
+<!--            <WalletMultiButton />-->
+<!--          </div>-->
         </nav>
       </div>
     {/if}
