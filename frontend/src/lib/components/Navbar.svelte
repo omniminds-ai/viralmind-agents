@@ -2,6 +2,7 @@
 <script lang="ts">
   import logo from '$lib/assets/logo.png';
   import logoTitle from '$lib/assets/Logo_Standard_dark.png';
+
   import {
     Download,
     Book,
@@ -63,7 +64,7 @@
             src={logo}
             alt="OmniMinds"
             class="hidden w-8 transition-transform group-hover:scale-105 lg:block" />
-          <img src={logoTitle} alt="OmniMinds" class="block scale-200 transition-transform lg:hidden" />
+          <img src={logoTitle} alt="OmniMinds" class="block h-14 transition-transform lg:hidden" />
         </a>
 
         <!-- Desktop Navigation -->
@@ -90,14 +91,14 @@
                 class="absolute left-0 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-2 shadow-lg"
                 transition:slide>
                 <a
-                  href=""
+                  href="/omnis"
                   class="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
                     <Coins class="h-4 w-4 text-purple-500" />
                   </div>
                   <div>
-                    <div class="font-medium text-gray-900">Token (soon)</div>
-                    <div class="text-xs text-gray-500">Earn and spend</div>
+                    <div class="font-medium text-gray-900">$OMNIS</div>
+                    <div class="text-xs text-gray-500">$OMNIS Tokenomics</div>
                   </div>
                 </a>
                 <a
@@ -198,11 +199,11 @@
                   GitHub
                 </a>
                 <a
-                  href="https://github.com/omniminds-ai/viralmind-airdop"
+                  href="https://github.com/omniminds-ai/viralmind-airdrop"
                   target="_blank"
                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
                   <i class="si si-github h-4 w-4" />
-                  Airdrop Details
+                  ViralMind Airdrop
                 </a>
               </div>
             {/if}
@@ -286,12 +287,12 @@
           <!-- Ecosystem Section -->
           <div class="border-t border-gray-200 pt-2">
             <p class="px-2 py-1 text-xs font-semibold uppercase text-gray-500">Ecosystem</p>
-<!--            <a-->
-<!--              href="/viral"-->
-<!--              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">-->
-<!--              <Coins class="h-5 w-5" />-->
-<!--              Viral Token-->
-<!--            </a>-->
+            <a
+              href="/omnis"
+              class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
+              <Coins class="h-5 w-5" />
+              $OMNIS
+            </a>
             <a
               href="/desktop"
               class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
@@ -358,11 +359,11 @@
                   <span class="animated-underline">GitHub</span>
                 </a>
                 <a
-                  href="https://github.com/omniminds-ai"
+                  href="https://github.com/omniminds-ai/viralmind-airdrop"
                   target="_blank"
                   class="flex items-center gap-3 px-2 py-2 text-gray-600 transition-colors hover:text-gray-900">
                   <i class="si si-github h-5 w-5" />
-                  <span class="animated-underline">GitHub</span>
+                  <span class="animated-underline">ViralMind Airdrop</span>
                 </a>
               </div>
             {/if}

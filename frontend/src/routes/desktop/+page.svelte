@@ -92,7 +92,7 @@
             Download Now
           </ButtonCTA>
           <a
-            href="https://github.com/viralmind-ai/desktop"
+            href="https://github.com/omniminds-ai/vm-desktop"
             target="_blank"
             class="group inline-flex items-center gap-2 px-6 py-3 text-gray-900">
             <Github class="h-5 w-5" />

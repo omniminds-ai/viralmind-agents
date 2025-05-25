@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Twitter, MessageCircle, BarChart, Github } from 'lucide-svelte';
-  const targetEpoch = 1747674000000; // target timestamp in milliseconds
+  const contractAddress= "G6iRK8kN67HJFrPA1CDA5KZaPJMiBu3bqdd9vdKBpump"
+  const targetEpoch = 1747746000000; // target timestamp in milliseconds
   let countdown = $state("0d 0h 0m 0s");
   function updateCountdown() {
     const now = Date.now();
@@ -20,10 +21,10 @@
   }
 
   // Initial call to avoid delay
-  updateCountdown();
+  // updateCountdown();
 
   // Update every second
-  const timer = setInterval(updateCountdown, 1000);
+  // const timer = setInterval(updateCountdown, 1000);
 
 </script>
 
@@ -69,17 +70,17 @@
 
         <!-- Contract Address -->
         <div
-          class="flex w-full items-center justify-center gap-2 rounded-full border-2 bg-gray-200/75 px-4 py-1 md:w-3/4 lg:w-1/2 xl:w-1/3">
-          <span class="text-xs font-semibold uppercase w-full">Launching in:</span>
-          <code class="truncate font-mono text-sm md:w-full align-middle">
-            {countdown}
+          class="flex w-full items-start justify-start gap-2 rounded-full border-2 bg-gray-200/75 px-4 py-1 md:w-1/2 lg:w-1/2 xl:w-1/3">
+          <span class="text-xs font-semibold uppercase w-1/2">Contract:</span>
+          <code class="truncate font-mono text-sm align-middle">
+            {contractAddress}
           </code>
-<!--          <button-->
-<!--            class="text-xs hover:text-gray-900"-->
-<!--            onclick={() =>-->
-<!--              navigator.clipboard.writeText('Contract Address')}>-->
-<!--            Copy-->
-<!--          </button>-->
+          <button
+            class="text-xs hover:text-gray-900"
+            onclick={() =>
+              navigator.clipboard.writeText(contractAddress)}>
+            Copy
+          </button>
         </div>
       </div>
     </div>
