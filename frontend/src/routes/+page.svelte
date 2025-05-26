@@ -165,26 +165,26 @@
                 href="https://t.me/omnimindsai"
                 target="_blank"
                 class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-purple-600">
-
                 <svg class="h-12 w-12" viewBox="0 0 24 24" fill="#FFF">
-                  <path d="M12 4C10.4178 4 8.87103 4.46919 7.55544 5.34824C6.23985 6.22729 5.21447 7.47672 4.60897 8.93853C4.00347 10.4003 3.84504 12.0089 4.15372 13.5607C4.4624 15.1126 5.22433 16.538 6.34315 17.6569C7.46197 18.7757 8.88743 19.5376 10.4393 19.8463C11.9911 20.155 13.5997 19.9965 15.0615 19.391C16.5233 18.7855 17.7727 17.7602 18.6518 16.4446C19.5308 15.129 20 13.5823 20 12C20 9.87827 19.1571 7.84344 17.6569 6.34315C16.1566 4.84285 14.1217 4 12 4ZM15.93 9.48L14.62 15.67C14.52 16.11 14.26 16.21 13.89 16.01L11.89 14.53L10.89 15.46C10.8429 15.5215 10.7824 15.5715 10.7131 15.6062C10.6438 15.6408 10.5675 15.6592 10.49 15.66L10.63 13.66L14.33 10.31C14.5 10.17 14.33 10.09 14.09 10.23L9.55 13.08L7.55 12.46C7.12 12.33 7.11 12.03 7.64 11.83L15.35 8.83C15.73 8.72 16.05 8.94 15.93 9.48Z"/>
+                  <path
+                    d="M12 4C10.4178 4 8.87103 4.46919 7.55544 5.34824C6.23985 6.22729 5.21447 7.47672 4.60897 8.93853C4.00347 10.4003 3.84504 12.0089 4.15372 13.5607C4.4624 15.1126 5.22433 16.538 6.34315 17.6569C7.46197 18.7757 8.88743 19.5376 10.4393 19.8463C11.9911 20.155 13.5997 19.9965 15.0615 19.391C16.5233 18.7855 17.7727 17.7602 18.6518 16.4446C19.5308 15.129 20 13.5823 20 12C20 9.87827 19.1571 7.84344 17.6569 6.34315C16.1566 4.84285 14.1217 4 12 4ZM15.93 9.48L14.62 15.67C14.52 16.11 14.26 16.21 13.89 16.01L11.89 14.53L10.89 15.46C10.8429 15.5215 10.7824 15.5715 10.7131 15.6062C10.6438 15.6408 10.5675 15.6592 10.49 15.66L10.63 13.66L14.33 10.31C14.5 10.17 14.33 10.09 14.09 10.23L9.55 13.08L7.55 12.46C7.12 12.33 7.11 12.03 7.64 11.83L15.35 8.83C15.73 8.72 16.05 8.94 15.93 9.48Z" />
                 </svg>
 
                 Join Telegram
               </a>
-<!--              <a-->
-<!--                href="https://github.com/omni/desktop"-->
-<!--                target="_blank"-->
-<!--                class="group inline-flex items-center gap-2 px-6 py-3 text-gray-900">-->
-<!--                <Star class="h-5 w-5" />-->
-<!--                <span class="animated-underline">Star on GitHub</span>-->
-<!--              </a>-->
+              <!--              <a-->
+              <!--                href="https://github.com/omni/desktop"-->
+              <!--                target="_blank"-->
+              <!--                class="group inline-flex items-center gap-2 px-6 py-3 text-gray-900">-->
+              <!--                <Star class="h-5 w-5" />-->
+              <!--                <span class="animated-underline">Star on GitHub</span>-->
+              <!--              </a>-->
             </div>
           </div>
         </div>
 
         <!-- Right Content -->
-        <div class="relative bottom-0 rounded-xl">
+        <div class="relative bottom-0 overflow-x-hidden rounded-xl">
           <video src={exampleUsage} autoplay loop muted playsinline class=" -mr-[25%] w-[125%]">
           </video>
           <div
@@ -325,13 +325,13 @@
             </div>
           </div>
 
-<!--          <div>-->
-<!--            <button-->
-<!--              on:click={handleGenerateGym}-->
-<!--              class="w-full rounded-lg bg-gradient-to-r from-purple-900 to-purple-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-purple-600">-->
-<!--              Create a Gym in the App-->
-<!--            </button>-->
-<!--          </div>-->
+          <!--          <div>-->
+          <!--            <button-->
+          <!--              on:click={handleGenerateGym}-->
+          <!--              class="w-full rounded-lg bg-gradient-to-r from-purple-900 to-purple-500 px-6 py-3 text-white transition-colors hover:from-purple-700 hover:to-purple-600">-->
+          <!--              Create a Gym in the App-->
+          <!--            </button>-->
+          <!--          </div>-->
         </div>
       </div>
 
@@ -443,12 +443,12 @@
             The first open dataset of its kind, designed for frontier action models that live on the
             desktop.
           </p>
-<!--          <a-->
-<!--            href="/datasets"-->
-<!--            class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow transition-colors hover:bg-gray-50">-->
-<!--            <Book class="h-5 w-5" />-->
-<!--            Learn More-->
-<!--          </a>-->
+          <!--          <a-->
+          <!--            href="/datasets"-->
+          <!--            class="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-gray-900 shadow transition-colors hover:bg-gray-50">-->
+          <!--            <Book class="h-5 w-5" />-->
+          <!--            Learn More-->
+          <!--          </a>-->
         </div>
         <div
           class="relative h-[400px] overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-2xl">
@@ -589,20 +589,22 @@
                         </div>
                       </div>
                     {/if}
-                  {/each}<div class="mt-12 text-center">-->
-                  <!--        <h2 class="mb-4 text-3xl font-bold text-gray-900">Ready to get started?</h2>-->
-                  <!--        <p class="mx-auto mb-6 max-w-2xl text-lg text-gray-600">-->
-                  <!--          Contribute to the future of AI assistance with our desktop app. Download now and join our-->
-                  <!--          growing community.-->
-                  <!--        </p>-->
-                  <!--        <div class="flex justify-center">-->
-                  <!--          <ButtonCTA href="/download" class="inline-flex items-center gap-2">-->
-                  <!--            <Download class="h-5 w-5" />-->
-                  <!--            Download for Desktop-->
-                  <!--          </ButtonCTA>-->
-                  <!--        </div>-->
-                  <!--      </div>-->
-                  <!--    </
+                  {/each}
+                  <div class="mt-12 text-center">
+                    -->
+                    <!--        <h2 class="mb-4 text-3xl font-bold text-gray-900">Ready to get started?</h2>-->
+                    <!--        <p class="mx-auto mb-6 max-w-2xl text-lg text-gray-600">-->
+                    <!--          Contribute to the future of AI assistance with our desktop app. Download now and join our-->
+                    <!--          growing community.-->
+                    <!--        </p>-->
+                    <!--        <div class="flex justify-center">-->
+                    <!--          <ButtonCTA href="/download" class="inline-flex items-center gap-2">-->
+                    <!--            <Download class="h-5 w-5" />-->
+                    <!--            Download for Desktop-->
+                    <!--          </ButtonCTA>-->
+                    <!--        </div>-->
+                    <!--      </div>-->
+                    <!--    </
                                   </div>
                                 </div>
                               </div>
@@ -611,25 +613,31 @@
                         </div>
 
                         <!-- Ready to Get Started -->
-
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
   </section>
 
   <!-- FAQ Section -->
-<!--  <section class="bg-gray-100 py-20">-->
-<!--    <div class="mx-auto max-w-6xl px-4">-->
-<!--      <h2 class="mb-12 text-center text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>-->
+  <!--  <section class="bg-gray-100 py-20">-->
+  <!--    <div class="mx-auto max-w-6xl px-4">-->
+  <!--      <h2 class="mb-12 text-center text-4xl font-bold text-gray-900">Frequently Asked Questions</h2>-->
 
-<!--      {#if settings?.faq}-->
-<!--        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">-->
-<!--          {#each settings.faq as faq}-->
-<!--            <div class="rounded-lg p-6">-->
-<!--              <h3 class="mb-3 text-lg font-semibold text-gray-900">{faq.question}</h3>-->
-<!--              <p class="text-gray-600">{faq.answer}</p>-->
-<!--            </div>-->
-<!--          {/each}-->
-<!--        </div>-->
-<!--      {/if}-->
-<!--    </div>-->
-<!--  </section>-->
+  <!--      {#if settings?.faq}-->
+  <!--        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">-->
+  <!--          {#each settings.faq as faq}-->
+  <!--            <div class="rounded-lg p-6">-->
+  <!--              <h3 class="mb-3 text-lg font-semibold text-gray-900">{faq.question}</h3>-->
+  <!--              <p class="text-gray-600">{faq.answer}</p>-->
+  <!--            </div>-->
+  <!--          {/each}-->
+  <!--        </div>-->
+  <!--      {/if}-->
+  <!--    </div>-->
+  <!--  </section>-->
 </div>
