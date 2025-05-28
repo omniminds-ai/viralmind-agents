@@ -11,7 +11,7 @@ import { readFileSync } from 'fs';
 
 const router = express.Router();
 // Load treasury wallet
-const solanaRpc = process.env.RPC_URL!;
+const solanaRpc = process.env.SOLANA_RPC_URL!;
 const viralToken = process.env.VIRAL_TOKEN!;
 const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
 const blockchainService = new BlockchainService(solanaRpc, '');
@@ -27,7 +27,7 @@ router.get(
     const pages = await DatabaseService.getPages({});
     const endpoints = pages?.find((page) => page.name === 'api-endpoints')?.content?.endpoints;
     const faq = pages?.find((page) => page.name === 'faq')?.content?.faq;
-    const jailToken = pages?.find((page) => page.name === 'viral-token')?.content;
+    const jailToken = pages?.find((page) => page.name === 'omnis-token')?.content;
 
     const solPrice = await BlockcahinService.getSolPriceInUSDT();
 

@@ -1,11 +1,11 @@
-# ViralMind.ai 🧠
+# Omniminds.ai 🧠
 
-[viralmind.ai](https://www.viralmind.ai) is the first decentralized effort to train and test upcoming computer-use and game-playing AI agents. Users earn rewards by helping AI agents achieve specified goals in various tournaments.
+[omniminds.ai](https://www.omniminds.ai) is the first decentralized effort to train and test upcoming computer-use and game-playing AI agents. Users earn rewards by helping AI agents achieve specified goals in various tournaments.
 
 ## 🔗 Useful Links
 
-- **Community**: [https://t.me/viralmind](https://t.me/viralmind)
-- **Documentation**: [https://docs.viralmind.ai/](https://docs.viralmind.ai/)
+- **Community**: [https://t.me/omnimindsai](https://t.me/omnimindsai)
+- **Documentation**: [https://docs.omniminds.ai/](https://docs.omniminds.ai/)
 - **Smart Contract**: HW7D5MyYG4Dz2C98axfjVBeLWpsEnofrqy6ZUwqwpump
 
 ## 🎯 Our Vision
@@ -100,4 +100,4 @@ docker compose up --build
 
 ## 📞 Contact & Support
 
-For technical support or partnership inquiries, reach out at **contact@viralmind.ai**
+For technical support or partnership inquiries, reach out at **contact@omniminds.ai**

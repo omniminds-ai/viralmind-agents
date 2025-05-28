@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "dev": "pwd && export NODE_OPTIONS=--openssl-legacy-provider && nodemon",
+    "dev": "nodemon",
     "build": "node esbuild.js",
     "start": "export NODE_OPTIONS=--openssl-legacy-provider && node build/server.js",
     "tournament": "node --loader ts-node/esm --experimental-specifier-resolution=node scripts/cli.ts",
@@ -38,12 +38,13 @@
     "nodemailer": "^6.10.1",
     "openai": "^4.73.1",
     "random-words": "^2.0.1",
-    "sharp": "^0.33.5",
+    "sharp": "^0.34.2",
     "tweetnacl": "^1.0.3",
     "unzipper": "^0.12.3",
     "vnc-rfb-client": "^0.2.0"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.8.0",
     "@types/commander": "^2.12.2",
     "@types/express": "^5.0.0",
     "@types/mongoose": "^5.11.97",
