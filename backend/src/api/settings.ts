@@ -15,9 +15,9 @@ const solanaRpc = process.env.SOLANA_RPC_URL!;
 const viralToken = process.env.VIRAL_TOKEN!;
 const treasuryWalletPath = process.env.GYM_TREASURY_WALLET!;
 const blockchainService = new BlockchainService(solanaRpc, '');
-const treasuryKeypair = Keypair.fromSecretKey(
-  Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
-);
+// const treasuryKeypair = Keypair.fromSecretKey(
+//   Uint8Array.from(JSON.parse(readFileSync(treasuryWalletPath, 'utf-8')))
+// );
 
 router.get(
   '/',
@@ -98,15 +98,15 @@ router.get(
 );
 
 // Get treasury balance endpoint
-router.get(
-  '/treasury',
-  errorHandlerAsync(async (_req, res) => {
-    const balance = await blockchainService.getTokenBalance(
-      viralToken,
-      treasuryKeypair.publicKey.toBase58()
-    );
-    res.status(200).json(successResponse({ balance }));
-  })
-);
-
+// router.get(
+//   '/treasury',
+//   errorHandlerAsync(async (_req, res) => {
+//     const balance = await blockchainService.getTokenBalance(
+//       viralToken,
+//       treasuryKeypair.publicKey.toBase58()
+//     );
+//     res.status(200).json(successResponse({ balance }));
+//   })
+// );
+//
 export { router as settingsApi };
