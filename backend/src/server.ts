@@ -125,7 +125,7 @@ async function connectToDatabase() {
     let clientOptions: ConnectOptions = {
       dbName: process.env.DB_NAME
     };
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'strict-production') {
       // Create a Mongoose client with a MongoClientOptions object to set the Stable API version
       const tlsCAFile = path.resolve('./aws-global-bundle.pem');
       // Verify the certificate file exists
