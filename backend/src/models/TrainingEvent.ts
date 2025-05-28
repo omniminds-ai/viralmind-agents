@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBTrainingEvent } from '../types/index.ts';
 
 export const trainingEventSchema = new mongoose.Schema<DBTrainingEvent>(
@@ -51,3 +51,4 @@ export const trainingEventSchema = new mongoose.Schema<DBTrainingEvent>(
 );
 
 export const TrainingEventModel = mongoose.model('TrainingEvent', trainingEventSchema);
+export const TrainingEventModelFromConnection = (connection: Connection) => connection.model('TrainingEvent', trainingEventSchema);

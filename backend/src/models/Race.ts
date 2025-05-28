@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBRace } from '../types/index.ts';
 
 export const raceSchema = new mongoose.Schema<DBRace>(
@@ -26,3 +26,4 @@ export const raceSchema = new mongoose.Schema<DBRace>(
 );
 
 export const RaceModel = mongoose.model('Race', raceSchema);
+export const RaceModelFromConnection = (connection: Connection) => connection.model('Race', raceSchema);

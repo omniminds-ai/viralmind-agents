@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBChallenge } from '../types/index.ts';
 
 export const challengeSchema = new mongoose.Schema<DBChallenge>(
@@ -66,3 +66,4 @@ export const challengeSchema = new mongoose.Schema<DBChallenge>(
 );
 
 export const ChallengeModel = mongoose.model('Challenge', challengeSchema);
+export const ChallengeModelFromConnection = (connection: Connection) => connection.model('Challenge', challengeSchema);

@@ -6,7 +6,7 @@ import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
 import { AWSS3Service } from '../services/aws/index.ts';
-import { ForgeRaceSubmission } from '../models/Models.ts';
+import { ForgeRaceSubmissionModel } from '../models/Models.ts';
 import { TrainingPoolModel } from '../models/TrainingPool.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 import {
@@ -473,7 +473,7 @@ router.post(
 
       // Check for existing submission
       console.log(`[UPLOAD] Checking for existing submission with ID: ${uuid}`);
-      const tempSub = await ForgeRaceSubmission.findById(uuid);
+      const tempSub = await ForgeRaceSubmissionModel.findById(uuid);
       if (tempSub) {
         console.log(`[UPLOAD] Submission already exists with ID: ${uuid}`);
         res.status(400).json({
@@ -485,7 +485,7 @@ router.post(
 
       // Create submission record
       console.log(`[UPLOAD] Creating new submission record in database`);
-      const submission = await ForgeRaceSubmission.create({
+      const submission = await ForgeRaceSubmissionModel.create({
         _id: uuid,
         address,
         meta,

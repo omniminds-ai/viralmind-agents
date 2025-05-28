@@ -1,7 +1,7 @@
-import { Schema, model } from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBTrainingPool, TrainingPoolStatus, UploadLimitType } from '../types/index.ts';
 
-const trainingPoolSchema = new Schema<DBTrainingPool>(
+const trainingPoolSchema = new mongoose.Schema<DBTrainingPool>(
   {
     name: { type: String, required: true },
     status: {
@@ -45,4 +45,5 @@ const trainingPoolSchema = new Schema<DBTrainingPool>(
   }
 );
 
-export const TrainingPoolModel = model<DBTrainingPool>('TrainingPool', trainingPoolSchema);
+export const TrainingPoolModel = mongoose.model<DBTrainingPool>('TrainingPool', trainingPoolSchema);
+export const TrainingPoolModelFromConnection = (connection: Connection) => connection.model('TrainingPool', trainingPoolSchema);

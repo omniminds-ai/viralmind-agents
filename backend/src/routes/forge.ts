@@ -6,7 +6,7 @@ import { WalletConnectionModel } from '../models/WalletConnection.js';
 import { addToProcessingQueue } from '../services/forge/processing.ts';
 import { ForgeAppModel } from '../models/ForgeApp.js';
 import { ForgeRaceModel } from '../models/ForgeRace.js';
-import { ForgeRaceSubmission } from '../models/ForgeRaceSubmission.js';
+import { ForgeRaceSubmissionModel } from '../models/ForgeRaceSubmission.js';
 import { AWSS3Service } from '../services/aws/index.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 
@@ -164,7 +164,7 @@ router.post(
             case UploadLimitType.perDay:
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.pool_id': poolId,
                 createdAt: { $gte: today },
                 status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
@@ -178,7 +178,7 @@ router.post(
               break;
 
             case UploadLimitType.total:
-              gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.pool_id': poolId,
                 status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
                 reward: { $gt: 0 } // Only count submissions that received a reward
@@ -202,7 +202,7 @@ router.post(
           if (app) {
             const task = app.tasks.find((t) => t._id.toString() === meta.quest.task_id);
             if (task?.uploadLimit) {
-              const taskSubmissions = await ForgeRaceSubmission.countDocuments({
+              const taskSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.task_id': meta.quest.task_id,
                 status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
                 reward: { $gt: 0 } // Only count submissions that received a reward
@@ -228,7 +228,7 @@ router.post(
       }
 
       // check for existing submission
-      const tempSub = await ForgeRaceSubmission.findById(uuid);
+      const tempSub = await ForgeRaceSubmissionModel.findById(uuid);
       if (tempSub) {
         res
           .json({
@@ -239,7 +239,7 @@ router.post(
       }
 
       // Create submission record
-      const submission = await ForgeRaceSubmission.create({
+      const submission = await ForgeRaceSubmissionModel.create({
         _id: uuid,
         address,
         meta,
@@ -270,7 +270,7 @@ router.post(
 router.get('/submission/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const submission = await ForgeRaceSubmission.findById(id);
+    const submission = await ForgeRaceSubmissionModel.findById(id);
 
     if (!submission) {
       res.status(404).json({ error: 'Submission not found' });
@@ -301,7 +301,7 @@ router.get('/submissions', requireWalletAddress, async (req: Request, res: Respo
     // @ts-ignore - Get walletAddress from the request object
     const address = req.walletAddress;
 
-    const submissions = await ForgeRaceSubmission.find({ address })
+    const submissions = await ForgeRaceSubmissionModel.find({ address })
       .sort({ createdAt: -1 })
       .select('-__v');
 
@@ -340,7 +340,7 @@ router.get(
         return;
       }
 
-      const submissions = await ForgeRaceSubmission.find({ 'meta.quest.pool_id': poolId })
+      const submissions = await ForgeRaceSubmissionModel.find({ 'meta.quest.pool_id': poolId })
         .sort({ createdAt: -1 })
         .select('-__v');
 
@@ -628,7 +628,7 @@ router.post(
       await pool.save();
 
       // Get demonstration count
-      const demoCount = await ForgeRaceSubmission.countDocuments({
+      const demoCount = await ForgeRaceSubmissionModel.countDocuments({
         'meta.quest.pool_id': pool._id.toString()
       });
 
@@ -659,7 +659,7 @@ router.post('/list', requireWalletAddress, async (req: Request, res: Response) =
     // Get demonstration counts for each pool
     const poolsWithDemos = await Promise.all(
       pools.map(async (pool) => {
-        const demoCount = await ForgeRaceSubmission.countDocuments({
+        const demoCount = await ForgeRaceSubmissionModel.countDocuments({
           'meta.quest.pool_id': pool._id.toString()
         });
 
@@ -1174,7 +1174,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
           case UploadLimitType.perDay:
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+            gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
               'meta.quest.pool_id': poolId,
               createdAt: { $gte: today },
               status: ForgeSubmissionProcessingStatus.COMPLETED,
@@ -1186,7 +1186,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
             break;
 
           case UploadLimitType.total:
-            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+            gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
               'meta.quest.pool_id': poolId,
               status: ForgeSubmissionProcessingStatus.COMPLETED,
               reward: { $gt: 0 }
@@ -1228,7 +1228,7 @@ router.get('/tasks', async (req: Request, res: Response) => {
           task.uploadLimit ||
           (pool.uploadLimit?.limitType === UploadLimitType.perTask && pool.uploadLimit?.type)
         ) {
-          taskSubmissions = await ForgeRaceSubmission.countDocuments({
+          taskSubmissions = await ForgeRaceSubmissionModel.countDocuments({
             'meta.quest.task_id': task._id.toString(),
             status: ForgeSubmissionProcessingStatus.COMPLETED,
             reward: { $gt: 0 }
@@ -1406,7 +1406,7 @@ router.get('/apps', async (req: Request, res: Response) => {
             case UploadLimitType.perDay:
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.pool_id': poolId,
                 createdAt: { $gte: today },
                 status: ForgeSubmissionProcessingStatus.COMPLETED,
@@ -1418,7 +1418,7 @@ router.get('/apps', async (req: Request, res: Response) => {
               break;
 
             case UploadLimitType.total:
-              gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.pool_id': poolId,
                 status: ForgeSubmissionProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
@@ -1450,7 +1450,7 @@ router.get('/apps', async (req: Request, res: Response) => {
               task.uploadLimit ||
               (pool.uploadLimit?.limitType === UploadLimitType.perTask && pool.uploadLimit?.type)
             ) {
-              taskSubmissions = await ForgeRaceSubmission.countDocuments({
+              taskSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.task_id': task._id.toString(),
                 status: ForgeSubmissionProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward

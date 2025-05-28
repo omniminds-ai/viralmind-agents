@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBGymVps } from '../types/index.ts';
 
 export const gymVPSSchema = new mongoose.Schema<DBGymVps>(
@@ -28,3 +28,4 @@ export const gymVPSSchema = new mongoose.Schema<DBGymVps>(
 );
 
 export const GymVpsModel = mongoose.model('GymVPS', gymVPSSchema);
+export const GymVpsModelFromConnection = (connection: Connection) => connection.model('GymVPS', gymVPSSchema);

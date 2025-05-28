@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { errorHandlerAsync } from '../../middleware/errorHandler.ts';
-import { ForgeAppModel, ForgeRaceSubmission, TrainingPoolModel } from '../../models/Models.ts';
+import { ForgeAppModel, ForgeRaceSubmissionModel, TrainingPoolModel } from '../../models/Models.ts';
 import { ApiError, ErrorCode, successResponse } from '../../middleware/types/errors.ts';
 import { validateBody, validateQuery } from '../../middleware/validator.ts';
 import { generateContentSchema, getTasksSchema } from '../schemas/forge.ts';
@@ -182,7 +182,7 @@ router.get(
           case UploadLimitType.perDay:
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+            gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
               'meta.quest.pool_id': poolId,
               createdAt: { $gte: today },
               status: ForgeSubmissionProcessingStatus.COMPLETED,
@@ -194,7 +194,7 @@ router.get(
             break;
 
           case UploadLimitType.total:
-            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+            gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
               'meta.quest.pool_id': poolId,
               status: ForgeSubmissionProcessingStatus.COMPLETED,
               reward: { $gt: 0 }
@@ -236,7 +236,7 @@ router.get(
           task.uploadLimit ||
           (pool.uploadLimit?.limitType === UploadLimitType.perTask && pool.uploadLimit?.type)
         ) {
-          taskSubmissions = await ForgeRaceSubmission.countDocuments({
+          taskSubmissions = await ForgeRaceSubmissionModel.countDocuments({
             'meta.quest.task_id': task._id.toString(),
             status: ForgeSubmissionProcessingStatus.COMPLETED,
             reward: { $gt: 0 }
@@ -413,7 +413,7 @@ router.get(
             case UploadLimitType.perDay:
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.pool_id': poolId,
                 createdAt: { $gte: today },
                 status: ForgeSubmissionProcessingStatus.COMPLETED,
@@ -425,7 +425,7 @@ router.get(
               break;
 
             case UploadLimitType.total:
-              gymSubmissions = await ForgeRaceSubmission.countDocuments({
+              gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.pool_id': poolId,
                 status: ForgeSubmissionProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward
@@ -457,7 +457,7 @@ router.get(
               task.uploadLimit ||
               (pool.uploadLimit?.limitType === UploadLimitType.perTask && pool.uploadLimit?.type)
             ) {
-              taskSubmissions = await ForgeRaceSubmission.countDocuments({
+              taskSubmissions = await ForgeRaceSubmissionModel.countDocuments({
                 'meta.quest.task_id': task._id.toString(),
                 status: ForgeSubmissionProcessingStatus.COMPLETED,
                 reward: { $gt: 0 } // Only count submissions that received a reward

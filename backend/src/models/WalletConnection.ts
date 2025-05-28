@@ -1,7 +1,7 @@
-import { Schema, model } from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBWalletConnection } from '../types/db.ts';
 
-const walletConnectionSchema = new Schema<DBWalletConnection>(
+const walletConnectionSchema = new mongoose.Schema<DBWalletConnection>(
   {
     token: { type: String, required: true, unique: true },
     address: { type: String, required: true },
@@ -11,7 +11,5 @@ const walletConnectionSchema = new Schema<DBWalletConnection>(
   { collection: 'wallet_connections' }
 );
 
-export const WalletConnectionModel = model<DBWalletConnection>(
-  'WalletConnection',
-  walletConnectionSchema
-);
+export const WalletConnectionModel = mongoose.model<DBWalletConnection>('WalletConnection',  walletConnectionSchema);
+export const WalletConnectionModelFromConnection = (connection: Connection) => connection.model('WalletConnection', walletConnectionSchema);

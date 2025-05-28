@@ -9,7 +9,7 @@ import {
   UploadLimitType,
   TrainingPoolStatus
 } from '../../types/index.ts';
-import { ForgeRaceSubmission, TrainingPoolModel, ForgeAppModel } from '../../models/Models.ts';
+import { ForgeRaceSubmissionModel, TrainingPoolModel, ForgeAppModel } from '../../models/Models.ts';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Keypair } from '@solana/web3.js';
@@ -41,7 +41,7 @@ export async function processNextInQueue() {
     let retries = 3;
     while (retries > 0) {
       try {
-        submission = await ForgeRaceSubmission.findById(submissionId);
+        submission = await ForgeRaceSubmissionModel.findById(submissionId);
         if (submission) break;
         retries--;
         if (retries === 0) {
@@ -208,7 +208,7 @@ export async function processNextInQueue() {
             }
 
             // Check 3: Previous submission with higher/equal score
-            const previousSubmission = await ForgeRaceSubmission.findOne({
+            const previousSubmission = await ForgeRaceSubmissionModel.findOne({
               address: submission.address,
               'meta.quest.pool_id': pool._id.toString(),
               $or: [
@@ -229,7 +229,7 @@ export async function processNextInQueue() {
 
             // Check 4: Per-task upload limit
             if (task.uploadLimit) {
-              const taskSubmissionsCount = await ForgeRaceSubmission.countDocuments({
+              const taskSubmissionsCount = await ForgeRaceSubmissionModel.countDocuments({
                 address: submission.address,
                 'meta.quest.task_id': submission?.meta?.quest.task_id,
                 status: ForgeSubmissionProcessingStatus.COMPLETED,
@@ -255,7 +255,7 @@ export async function processNextInQueue() {
                 startOfDay.setHours(0, 0, 0, 0);
 
                 // Count submissions for today
-                gymSubmissionsCount = await ForgeRaceSubmission.countDocuments({
+                gymSubmissionsCount = await ForgeRaceSubmissionModel.countDocuments({
                   address: submission.address,
                   'meta.quest.pool_id': pool._id.toString(),
                   status: ForgeSubmissionProcessingStatus.COMPLETED,
@@ -264,7 +264,7 @@ export async function processNextInQueue() {
                 });
               } else if (limitType === UploadLimitType.total) {
                 // Count all submissions
-                gymSubmissionsCount = await ForgeRaceSubmission.countDocuments({
+                gymSubmissionsCount = await ForgeRaceSubmissionModel.countDocuments({
                   address: submission.address,
                   'meta.quest.pool_id': pool._id.toString(),
                   status: ForgeSubmissionProcessingStatus.COMPLETED,
@@ -373,7 +373,7 @@ export async function processNextInQueue() {
               } catch (error) {
                 console.error('Treasury transfer failed:', error);
                 // Update submission with error
-                await ForgeRaceSubmission.findByIdAndUpdate(submissionId, {
+                await ForgeRaceSubmissionModel.findByIdAndUpdate(submissionId, {
                   status: ForgeSubmissionProcessingStatus.FAILED,
                   error:
                     'Gym payment failed. This gym has been paused until transaction issues are resolved.'
@@ -441,7 +441,7 @@ export async function processNextInQueue() {
   } catch (error) {
     const errorMessage = (error as Error).message;
     // Update submission with error
-    await ForgeRaceSubmission.findByIdAndUpdate(submissionId, {
+    await ForgeRaceSubmissionModel.findByIdAndUpdate(submissionId, {
       status: ForgeSubmissionProcessingStatus.FAILED,
       error: errorMessage
     });

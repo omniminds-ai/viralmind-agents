@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBRaceSession, VPSRegion } from '../types/index.ts';
 
 export const raceSessionSchema = new mongoose.Schema<DBRaceSession>(
@@ -45,3 +45,4 @@ raceSessionSchema.pre('save', function (next) {
 });
 
 export const RaceSessionModel = mongoose.model('RaceSession', raceSessionSchema);
+export const RaceSessionModelFromConnection = (connection: Connection) => connection.model('RaceSession', raceSessionSchema);

@@ -104,6 +104,7 @@ export interface AppInfo {
 }
 
 export enum ForgeSubmissionProcessingStatus {
+  NOTSTARTED = 'notstarted',
   PENDING = 'pending',
   PROCESSING = 'processing',
   COMPLETED = 'completed',

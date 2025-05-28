@@ -2,7 +2,7 @@ const router: Router = express.Router();
 import express, { Request, Response, Router } from 'express';
 import { ApiError, successResponse } from '../../middleware/types/errors.ts';
 import { generateAppsForPool, updatePoolStatus } from '../../services/forge/index.ts';
-import { ForgeAppModel, ForgeRaceSubmission, TrainingPoolModel } from '../../models/Models.ts';
+import { ForgeAppModel, ForgeRaceSubmissionModel, TrainingPoolModel } from '../../models/Models.ts';
 import { requireWalletAddress } from '../../middleware/auth.ts';
 import { errorHandlerAsync } from '../../middleware/errorHandler.ts';
 import { validateBody, validateQuery } from '../../middleware/validator.ts';
@@ -54,7 +54,7 @@ router.post(
     const { solBalance } = await updatePoolStatus(pool);
 
     // Get demonstration count
-    const demoCount = await ForgeRaceSubmission.countDocuments({
+    const demoCount = await ForgeRaceSubmissionModel.countDocuments({
       'meta.quest.pool_id': pool._id.toString()
     });
 
@@ -85,7 +85,7 @@ router.get(
     // Get demonstration counts for each pool
     const poolsWithDemos = await Promise.all(
       pools.map(async (pool) => {
-        const demoCount = await ForgeRaceSubmission.countDocuments({
+        const demoCount = await ForgeRaceSubmissionModel.countDocuments({
           'meta.quest.pool_id': pool._id.toString()
         });
 

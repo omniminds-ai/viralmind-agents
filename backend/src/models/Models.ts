@@ -4,6 +4,7 @@ export * from './ForgeApp.ts';
 export * from './ForgeRace.ts';
 export * from './ForgeRaceSubmission.ts';
 export * from './GymSession.ts';
+export * from './GymVPS.js';
 export * from './Page.ts';
 export * from './Race.ts';
 export * from './RaceSession.ts';

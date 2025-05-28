@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBChat } from '../types/index.ts';
 
 export const chatSchema = new mongoose.Schema<DBChat>(
@@ -27,3 +27,4 @@ export const chatSchema = new mongoose.Schema<DBChat>(
 );
 
 export const ChatModel = mongoose.model('Chat', chatSchema);
+export const ChatModelFromConnection = (connection: Connection) => connection.model('Chat', chatSchema);

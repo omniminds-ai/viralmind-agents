@@ -6,7 +6,7 @@ import * as path from 'path';
 import { Extract } from 'unzipper';
 import { createHash } from 'crypto';
 import { AWSS3Service } from '../services/aws/index.ts';
-import { ForgeAppModel, ForgeRaceSubmission } from '../models/Models.ts';
+import { ForgeAppModel, ForgeRaceSubmissionModel } from '../models/Models.ts';
 import { TrainingPoolModel } from '../models/TrainingPool.ts';
 import BlockchainService from '../services/blockchain/index.ts';
 import {
@@ -460,7 +460,7 @@ router.post(
           case UploadLimitType.perDay:
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+            gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
               'meta.quest.pool_id': poolId,
               createdAt: { $gte: today },
               status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
@@ -474,7 +474,7 @@ router.post(
             break;
 
           case UploadLimitType.total:
-            gymSubmissions = await ForgeRaceSubmission.countDocuments({
+            gymSubmissions = await ForgeRaceSubmissionModel.countDocuments({
               'meta.quest.pool_id': poolId,
               status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
               reward: { $gt: 0 } // Only count submissions that received a reward
@@ -497,7 +497,7 @@ router.post(
 
         if (app) {
           const task = app.tasks.find((t) => t._id.toString() === meta.quest.task_id);
-          const taskSubmissions = await ForgeRaceSubmission.countDocuments({
+          const taskSubmissions = await ForgeRaceSubmissionModel.countDocuments({
             'meta.quest.task_id': meta.quest.task_id,
             status: ForgeSubmissionProcessingStatus.COMPLETED, // Only count completed submissions
             reward: { $gt: 0 } // Only count submissions that received a reward
@@ -539,7 +539,7 @@ router.post(
 
     // Check for existing submission
     console.log(`[UPLOAD] Checking for existing submission with ID: ${uuid}`);
-    const tempSub = await ForgeRaceSubmission.findById(uuid);
+    const tempSub = await ForgeRaceSubmissionModel.findById(uuid);
     if (tempSub) {
       console.log(`[UPLOAD] Submission already exists with ID: ${uuid}`);
 
@@ -548,7 +548,7 @@ router.post(
 
     // Create submission record
     console.log(`[UPLOAD] Creating new submission record in database`);
-    const submission = await ForgeRaceSubmission.create({
+    const submission = await ForgeRaceSubmissionModel.create({
       _id: uuid,
       address,
       meta,

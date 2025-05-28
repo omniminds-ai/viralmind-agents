@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBForgeRaceSubmission, ForgeSubmissionProcessingStatus } from '../types/index.ts';
 
 export const forgeRaceSubmissionSchema = new mongoose.Schema<DBForgeRaceSubmission>(
@@ -9,7 +9,7 @@ export const forgeRaceSubmissionSchema = new mongoose.Schema<DBForgeRaceSubmissi
     status: {
       type: String,
       enum: Object.values(ForgeSubmissionProcessingStatus),
-      default: ForgeSubmissionProcessingStatus.PENDING
+      default: ForgeSubmissionProcessingStatus.NOTSTARTED
     },
     files: [
       {
@@ -50,4 +50,5 @@ export const forgeRaceSubmissionSchema = new mongoose.Schema<DBForgeRaceSubmissi
 // Index to help with querying pending submissions
 forgeRaceSubmissionSchema.index({ status: 1, createdAt: 1 });
 
-export const ForgeRaceSubmission = mongoose.model('ForgeRaceSubmission', forgeRaceSubmissionSchema);
+export const ForgeRaceSubmissionModel = mongoose.model('ForgeRaceSubmission', forgeRaceSubmissionSchema);
+export const ForgeRaceSubmissionModelFromConnection = (connection: Connection) => connection.model('ForgeRaceSubmission', forgeRaceSubmissionSchema);

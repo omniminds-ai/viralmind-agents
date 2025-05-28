@@ -1,5 +1,6 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBForgeApp } from '../types/index.ts';
+import { challengeSchema } from './Challenge.js';
 
 const ForgeAppSchema = new mongoose.Schema<DBForgeApp>(
   {
@@ -23,3 +24,4 @@ const ForgeAppSchema = new mongoose.Schema<DBForgeApp>(
 );
 
 export const ForgeAppModel = mongoose.model('ForgeApp', ForgeAppSchema);
+export const ForgeAppModelFromConnection = (connection: Connection) => connection.model('ForgeApp', ForgeAppSchema);

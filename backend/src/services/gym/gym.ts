@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import OpenAI from 'openai';
-import { ForgeRaceSubmission, TrainingPoolModel } from '../../models/Models.ts';
+import { ForgeRaceSubmissionModel, TrainingPoolModel } from '../../models/Models.ts';
 import { TrainingPoolStatus } from '../../types/index.ts';
 
 // Cache to store generated instruction lists
@@ -303,7 +303,7 @@ export async function getLeaderboardData() {
     rewards: number;
     avgScore: number;
     nickname?: string;
-  }[] = await ForgeRaceSubmission.aggregate([
+  }[] = await ForgeRaceSubmissionModel.aggregate([
     { $match: { status: 'completed', reward: { $exists: true, $gt: 0 }, clampedScore: { $gte: 50 } } },
     {
       $group: {
@@ -346,7 +346,7 @@ export async function getLeaderboardData() {
   }));
 
   // Get forge leaderboard - convert string pool_id to ObjectId
-  const forgeLeaderboardData = await ForgeRaceSubmission.aggregate([
+  const forgeLeaderboardData = await ForgeRaceSubmissionModel.aggregate([
     {
       $match: {
         status: 'completed',
@@ -392,14 +392,14 @@ export async function getLeaderboardData() {
 
   // Get overall stats
 
-  const totalWorkersResult = await ForgeRaceSubmission.aggregate([
+  const totalWorkersResult = await ForgeRaceSubmissionModel.aggregate([
     { $group: { _id: '$address' } },
     { $count: 'total' }
   ]);
 
   const totalWorkers = totalWorkersResult.length > 0 ? totalWorkersResult[0].total : 0;
 
-  const tasksStats = await ForgeRaceSubmission.aggregate([
+  const tasksStats = await ForgeRaceSubmissionModel.aggregate([
     { $match: { status: 'completed' } },
     {
       $group: {

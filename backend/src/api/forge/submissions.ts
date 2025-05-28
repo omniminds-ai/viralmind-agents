@@ -4,7 +4,7 @@ import { requireWalletAddress } from '../../middleware/auth.ts';
 import multer from 'multer';
 import { errorHandlerAsync } from '../../middleware/errorHandler.ts';
 import { ApiError, successResponse } from '../../middleware/types/errors.ts';
-import { ForgeRaceSubmission, TrainingPoolModel } from '../../models/Models.ts';
+import { ForgeRaceSubmissionModel, TrainingPoolModel } from '../../models/Models.ts';
 import { validateParams, ValidationRules } from '../../middleware/validator.ts';
 export { router as forgeSubmissionsApi };
 
@@ -23,7 +23,7 @@ router.get(
     // @ts-ignore - Get walletAddress from the request object
     const address = req.walletAddress;
 
-    const submissions = await ForgeRaceSubmission.find({ address })
+    const submissions = await ForgeRaceSubmissionModel.find({ address })
       .sort({ createdAt: -1 })
       .select('-__v');
 
@@ -53,7 +53,7 @@ router.get(
       throw ApiError.unauthorized('Not authorized to view submissions for this pool');
     }
 
-    const submissions = await ForgeRaceSubmission.find({ 'meta.quest.pool_id': poolId })
+    const submissions = await ForgeRaceSubmissionModel.find({ 'meta.quest.pool_id': poolId })
       .sort({ createdAt: -1 })
       .select('-__v');
 
@@ -68,7 +68,7 @@ router.get(
   requireWalletAddress,
   errorHandlerAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const submission = await ForgeRaceSubmission.findById(id);
+    const submission = await ForgeRaceSubmissionModel.findById(id);
 
     if (!submission) {
       throw ApiError.notFound('Submission not found');

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { DBForgeRace } from '../types/index.ts';
 
 // Store generated races
@@ -19,3 +19,4 @@ export const forgeRaceSchema = new mongoose.Schema<DBForgeRace>(
 );
 
 export const ForgeRaceModel = mongoose.model('ForgeRace', forgeRaceSchema);
+export const ForgeRaceModelFromConnection = (connection: Connection) => connection.model('ForgeRace', forgeRaceSchema);
