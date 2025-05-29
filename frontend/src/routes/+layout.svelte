@@ -17,7 +17,7 @@
   const isTournamentRoute = $derived(page.url.pathname.startsWith('/tournament'));
 
   const title = $derived.by(() => {
-    let pre = 'OmniMinds.ai';
+    let pre = 'Omniminds';
     const route = page.route.id?.split('/')[1];
     if (route) {
       pre += ' - ' + route[0].toUpperCase() + route.slice(1, route.length);

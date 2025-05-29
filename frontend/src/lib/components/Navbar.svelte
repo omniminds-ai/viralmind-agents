@@ -62,9 +62,9 @@
         <a href="/" class="group flex items-center">
           <img
             src={logo}
-            alt="OmniMinds"
+            alt="Omniminds"
             class="hidden w-8 transition-transform group-hover:scale-105 lg:block" />
-          <img src={logoTitle} alt="OmniMinds" class="block h-14 transition-transform lg:hidden" />
+          <img src={logoTitle} alt="Omniminds" class="block h-14 transition-transform lg:hidden" />
         </a>
 
         <!-- Desktop Navigation -->

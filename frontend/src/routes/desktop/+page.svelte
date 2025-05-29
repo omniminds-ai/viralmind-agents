@@ -49,9 +49,9 @@
 </script>
 
 <svelte:head>
-  <title>OmniMinds.ai - Viralmind Desktop</title>
-  <meta property="og:title" content="OmniMinds.ai - Viralmind Desktop" />
-  <meta name="twitter:title" content="OmniMinds.ai - Viralmind Desktop" />
+  <title>Omniminds - Viralmind Desktop</title>
+  <meta property="og:title" content="Omniminds.ai - Viralmind Desktop" />
+  <meta name="twitter:title" content="Omniminds.ai - Viralmind Desktop" />
   <meta
     name="description"
     content="Your unified platform for contributing to, training, and evaluating computer-use agents, all in one powerful desktop application." />

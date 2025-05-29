@@ -142,8 +142,8 @@
       <div class="grid items-start gap-4 lg:grid-cols-2">
         <!-- Left Content -->
         <div>
-          <img src={logo_full} alt="OmniMinds Logo" class="mb-6 hidden h-16 md:block" />
-          <img src={logo} alt="OmniMinds Logo" class="mb-6 block h-16 md:hidden" />
+          <img src={logo_full} alt="Omniminds Logo" class="mb-6 hidden h-16 md:block" />
+          <img src={logo} alt="Omniminds Logo" class="mb-6 block h-16 md:hidden" />
           <h1 class="mb-4 text-5xl font-bold">
             <span
               class="bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">

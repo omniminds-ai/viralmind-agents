@@ -47,7 +47,7 @@
 </script>
 
 <svelte:head>
-  <title>Omniminds.ai - $OMNIS</title>
+  <title>Omniminds - $OMNIS</title>
   <meta property="og:title" content="Omniminds.ai - $OMNIS" />
   <meta name="twitter:title" content="Omniminds.ai - $OMNIS" />
   <meta
